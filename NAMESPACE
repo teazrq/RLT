@@ -1,0 +1,9 @@
+useDynLib(RLT, .registration = TRUE)
+
+export(RLT,
+       MuteRate,
+       print.RLT,
+       predict.RLT)
+
+S3method(print, RLT)
+S3method(predict, RLT)

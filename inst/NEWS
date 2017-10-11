@@ -1,0 +1,8 @@
+Package: RLT
+Version: 3.1.0
+
+---------------------------------------------------------------------------------
+This is the first release of this package on CRAN. Previous versions (<= 3.0.0)
+were released on the author's personal website. There are some minor changes to
+the parameter names compared with previous versions.
+---------------------------------------------------------------------------------

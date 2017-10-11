@@ -1,0 +1,15 @@
+Package: RLT
+Version: 3.1.0
+Date: 2017-04-08
+Title: Reinforcement Learning Trees
+Author: Ruoqing Zhu <teazrq@gmail.com>
+Maintainer: Ruoqing Zhu <teazrq@gmail.com>
+Depends: R (>= 3.0.0)
+Suggests: randomForest, parallel, survival, randomForestSRC, glmnet
+Description: Random forest with a variety of additional features for regression, classification and survival analysis. The features include: parallel computing with OpenMP, embedded model for selecting the splitting variable (based on Zhu, Zeng & Kosorok, 2015), subject weight, variable weight, tracking subjects used in each tree, etc.
+License: GPL (>= 2)
+URL: https://sites.google.com/site/teazrq/
+NeedsCompilation: yes
+Repository: CRAN
+RoxygenNote: 6.0.1
+Packaged: 2017-04-09 17:22:48 UTC; Ruoqing Zhu
