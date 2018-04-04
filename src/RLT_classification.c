@@ -34,7 +34,6 @@
 //
 //  **********************************************************************
 
-# include <omp.h>
 # include <string.h>
 # include <Rconfig.h>
 # include <Rdefines.h>
@@ -93,30 +92,19 @@ void Fit_Trees_classification(double** dataX_matrix,
 
 	// parallel computing... set cores
 
-	useCores = imin(ntrees, useCores);
+	useCores = imin(ntrees, imax(1, useCores));
 
-	int haveCores = omp_get_num_procs();
+	if (useCores > 0) OMPMSG(1);
 
-	if(useCores <= 0)
-	{
-		useCores = 1;
-		if (summary >= 2)
-			Rprintf("Use at least 1 core. \n");
-	}
+	int haveCores = omp_get_max_threads();
 
 	if(useCores > haveCores)
 	{
-		if (summary >= 2)
-			Rprintf("Do not have %i cores, use maximum %i cores. \n", useCores, haveCores);
-
-		useCores = haveCores;
+	  if (summary) Rprintf("Do not have %i cores, use maximum %i cores. \n", useCores, haveCores);
+	  useCores = haveCores;
 	}
 
-	omp_set_num_threads(useCores);
-
-	// parallel computing:
-
-	#pragma omp parallel private(nt, i, j, k)
+	#pragma omp parallel private(nt, i, j, k) num_threads(useCores)
 	{
 		#pragma omp for schedule(guided)   // defines the chunk size
 		for (nt = 0; nt < ntrees; nt++) // fit all trees

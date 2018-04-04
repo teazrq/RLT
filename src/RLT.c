@@ -34,7 +34,6 @@
 //
 //  **********************************************************************
 
-# include <omp.h>
 # include <string.h>
 # include <Rconfig.h>
 # include <Rdefines.h>
@@ -81,7 +80,7 @@ SEXP RLT_regression(SEXP datasetX_R,
 
 	if (myPara->summary >= 1)
 	{
-		Rprintf("Reinforcement Learning Trees for regression, Version 2.0 \n");
+		Rprintf("Reinforcement Learning Trees for regression model \n");
 		printParameters(myPara);
 	}
 
@@ -218,13 +217,13 @@ SEXP RLT_regression(SEXP datasetX_R,
 	SET_VECTOR_ELT(set_name_r, 6, mkChar("NumOfComb"));	// number of x combination
 	SET_VECTOR_ELT(set_name_r, 7, mkChar("SplitValue"));// splitting value
 
-	char str[10];
+	char str[20];
 
 	for (i = 0; i < combsplit; i ++)
 	{
-		sprintf(str, "SplitVar%i", i+1);
+		sprintf(str, "SplitVar%d", i+1);
 		SET_VECTOR_ELT(set_name_r, 8+i, mkChar(str)); 			// x var
-		sprintf(str, "Loading%i", i+1);
+		sprintf(str, "Loading%d", i+1);
 		SET_VECTOR_ELT(set_name_r, 8+i+combsplit, mkChar(str));	// x loading
 	}
 
@@ -457,8 +456,8 @@ SEXP RLT_classification(SEXP datasetX_R,
 
 	if (myPara->summary >= 1)
 	{
-		Rprintf("Reinforcement Learning Trees for regression, Version 2.0 \n");
-		printParameters(myPara);
+	  Rprintf("Reinforcement Learning Trees for classification model \n");
+	  printParameters(myPara);
 	}
 
 	int data_n = myPara->data_n;
@@ -595,19 +594,19 @@ SEXP RLT_classification(SEXP datasetX_R,
 	SET_VECTOR_ELT(set_name_r, 6, mkChar("NumOfComb"));	// number of x combination
 	SET_VECTOR_ELT(set_name_r, 7, mkChar("SplitValue"));// splitting value
 
-	char str[10];
+	char str[20];
 
 	for (i = 0; i < combsplit; i ++)
 	{
-		sprintf(str, "SplitVar%i", i+1);
+		sprintf(str, "SplitVar%d", i+1);
 		SET_VECTOR_ELT(set_name_r, 8+i, mkChar(str)); 			// x var
-		sprintf(str, "Loading%i", i+1);
+		sprintf(str, "Loading%d", i+1);
 		SET_VECTOR_ELT(set_name_r, 8+i+combsplit, mkChar(str));	// x loading
 	}
 
 	for (i = 0; i < nclass; i ++)
 	{
-		sprintf(str, "Class%i", i);
+		sprintf(str, "Class%d", i);
 		SET_VECTOR_ELT(set_name_r, 8 + 2*combsplit + i, mkChar(str)); // y class
 	}
 
@@ -889,8 +888,8 @@ SEXP RLT_survival(SEXP datasetX_R,
 
 	if (myPara->summary >= 1)
 	{
-		Rprintf("Reinforcement Learning Trees for regression, Version 2.0 \n");
-		printParameters(myPara);
+	  Rprintf("Reinforcement Learning Trees for survival model \n");
+	  printParameters(myPara);
 	}
 
 	int data_n = myPara->data_n;
@@ -1009,17 +1008,17 @@ SEXP RLT_survival(SEXP datasetX_R,
 		Rprintf("--------- start to fit RLT trees ------------ \n");
 
 /*  FILE * Output;
-	Output = fopen("error.txt", "w+");
-	fprintf(Output, " --- Start fitting trees --- \n");
-	fclose(Output);  */
+	Output = fopen("error.txt", "w");
+	fprintf(Output, " --- Start fitting RLT model --- \n");
+	fclose(Output);*/
 
   GetRNGstate();
 	Fit_Trees_survival(dataX_matrix, dataY_vector, dataCensor_vector, dataInterval_vector, tree_matrix, surv_matrix, AllError, VarImp, ObsTrack, myPara, ncat, subjectweight, variableweight, partialdata, usevariable, protectvariable, data_n, dataX_p, nfail_unique);
 	PutRNGstate();
 
-/* 	Output = fopen("error.txt", "a");
-	fprintf(Output, " --- end fitting trees --- \n");
-	fclose(Output);	 */
+/*	Output = fopen("error.txt", "a");
+	fprintf(Output, " --- End fitting RLT model --- \n");
+	fclose(Output); */
 
 	// free some memory that is not used in the output
 	free(dataX_matrix);
@@ -1053,13 +1052,13 @@ SEXP RLT_survival(SEXP datasetX_R,
 	SET_VECTOR_ELT(set_name_r, 6, mkChar("NumOfComb"));	// number of x combination
 	SET_VECTOR_ELT(set_name_r, 7, mkChar("SplitValue"));// splitting value
 
-	char str[10];
+	char str[20];
 
 	for (i = 0; i < combsplit; i ++)
 	{
-		sprintf(str, "SplitVar%i", i+1);
+		sprintf(str, "SplitVar%d", i+1);
 		SET_VECTOR_ELT(set_name_r, 8+i, mkChar(str)); 			// x var
-		sprintf(str, "Loading%i", i+1);
+		sprintf(str, "Loading%d", i+1);
 		SET_VECTOR_ELT(set_name_r, 8+i+combsplit, mkChar(str));	// x loading
 	}
 

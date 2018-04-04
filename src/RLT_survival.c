@@ -34,7 +34,6 @@
 //
 //  **********************************************************************
 
-# include <omp.h>
 # include <string.h>
 # include <Rconfig.h>
 # include <Rdefines.h>
@@ -90,6 +89,7 @@ void Fit_Trees_survival(double** dataX_matrix,
 	int importance = myPara->importance;
 	int use_sub_weight = myPara->use_sub_weight;
 	double resample_prob = myPara->resample_prob;
+	// int reinforcement = myPara->reinforcement;
 
 	int resample_size = (int) use_n*resample_prob;
 	int nt;
@@ -97,38 +97,23 @@ void Fit_Trees_survival(double** dataX_matrix,
 
 	// parallel computing... set cores
 
-	useCores = imin(ntrees, useCores);
+	useCores = imin(ntrees, imax(1, useCores));
 
-	int haveCores = omp_get_num_procs();
+	if (useCores > 0) OMPMSG(1);
 
-	if(useCores <= 0)
-	{
-		useCores = 1;
-		if (summary >= 2)
-			Rprintf("Use at least 1 core. \n");
-	}
+	int haveCores = omp_get_max_threads();
 
 	if(useCores > haveCores)
 	{
-		if (summary >= 2)
-			Rprintf("Do not have %i cores, use maximum %i cores. \n", useCores, haveCores);
-
-		useCores = haveCores;
+	  if (summary) Rprintf("Do not have %i cores, use maximum %i cores. \n", useCores, haveCores);
+	  useCores = haveCores;
 	}
 
-	omp_set_num_threads(useCores);
-
-	// parallel computing:
-
-	#pragma omp parallel private(nt, i, j, k)
+	#pragma omp parallel private(nt, i, j, k) num_threads(useCores)
 	{
 		#pragma omp for schedule(guided)   // defines the chunk size
 		for (nt = 0; nt < ntrees; nt++) // fit all trees
 		{
-/* 			FILE * Output;
-			Output = fopen("error.txt", "a");
-			fprintf(Output, "Start fitting tree %i with thread %i \n", nt, omp_get_thread_num());
-			fclose(Output); */
 
 			// in-bag and out-of-bag data indicator
 			int *inbagObs = (int *) malloc(resample_size * sizeof(int));
@@ -251,6 +236,25 @@ void Fit_Trees_survival(double** dataX_matrix,
 
 				double** HazardPred_perm = (double **) malloc (oobag_n * sizeof(double*)); // this will be just pointers to the suvival matrix, do not change its value
 
+				// get all variables that are used in the tree, we only need to calculate the VI for these variables
+
+				int dataX_p = myPara->dataX_p;
+				int combsplit = myPara->combsplit;
+
+				int* splitVar = (int *) calloc(dataX_p, sizeof(int));
+
+				i = 0;
+
+				while (tree_matrix[nt][i] != NULL)
+				{
+				  if (tree_matrix[nt][i][0] == 1)
+				  {
+				    for (k = 0; k < combsplit; k ++)
+				      splitVar[(int) tree_matrix[nt][i][8+k] - 1] = 1;
+				  }
+				  i++;
+				}
+
 				// start to permute variable j
 
 				int* permuteInt = (int *) malloc (oobag_n * sizeof(int));
@@ -268,6 +272,13 @@ void Fit_Trees_survival(double** dataX_matrix,
 
 					for (pj = 0; pj < use_p; pj++)
 					{
+
+					  if (splitVar[ usevariable[pj] ] == 0)
+					  {
+					    AllError[nt][pj] = 0;
+					    continue;
+					  }
+
 						predict_surv_pj(0, Yind, dataX_matrix, tree_matrix[nt], surv_matrix[nt], combsplit, ncat, oobagObs, HazardPred_perm, oobag_n, permuteInt, usevariable[pj]);
 
 						Martingale_Int = 0;
@@ -314,6 +325,7 @@ void Fit_Trees_survival(double** dataX_matrix,
 					}
 				}
 
+				free(splitVar);
 				free(permuteInt);
 				free(HazardPred);
 				free(HazardPred_perm);
@@ -341,6 +353,7 @@ void Fit_Trees_survival(double** dataX_matrix,
 /* 			if (summary >= 2)
 				if ((nt+1) % imax(1, (int)(ntrees/10)) == 0)
 					Rprintf("%2.1f%% trees are done ...\n", (double) 100*(nt+1)/ntrees); */
+
 		}
 
 		// #pragma omp barrier
@@ -370,7 +383,6 @@ void Fit_Trees_survival(double** dataX_matrix,
 		} */
 	}
 
-
 	if (importance)
 	{
 		for (j=0; j<use_p; j++) // calculate variable importance
@@ -392,7 +404,6 @@ void Fit_Trees_survival(double** dataX_matrix,
 			}
 		}
 	}
-
 }
 
 void Split_A_Node_survival(int Node,
@@ -413,11 +424,7 @@ void Split_A_Node_survival(int Node,
 							 int node_p,
 							 int nfail_unique)
 {
-/*  FILE * Output;
-	Output = fopen("error.txt", "a");
-	fprintf(Output, "--- start node %i --- \n", Node);
-	fclose(Output);  */
-
+  //int reinforcement = myPara->reinforcement;
 	int nmin = myPara->nmin;
 	int combsplit = myPara->combsplit;
 	int use_sub_weight = myPara->use_sub_weight;
@@ -433,29 +440,11 @@ void Split_A_Node_survival(int Node,
 	for (i = 1; i<node_n; i++)
 		node_fail += dataCensor_vector[useObs[i]];
 
-	// Rprintf("At node %i, %i obs, %i failures \n", Node, node_n, node_fail);
-
-/* 	if (myPara->reinforcement)
-	{
-		Rprintf("At node %i, %i obs, %i failures \n", Node, node_n, node_fail);
-		Rprintf("Use variables: ");
-		for (j=0; j< node_p; j++)
-			Rprintf(" %i", usevariable[j]);
-		Rprintf("  \n");
-
-		Rprintf("protected variables: ");
-		for (j=0; j< myPara->dataX_p; j++)
-			if (protectvariable[j])
-				Rprintf(" %i", j);
-		Rprintf("  \n");
-	} */
-
-
-
-	if (node_fail < nmin)						// Terminate this node
+	// Terminate this node if number of failure is too small
+	if (node_fail < 2*nmin)
 	{
 
-TerminateThisNode:	;
+TerminateThisNode:;
 
 		int survNode = 0;
 
@@ -689,7 +678,6 @@ TerminateThisNode:	;
 				tree_matrix_nt[Node][8+j] = NAN;
 				tree_matrix_nt[Node][8+combsplit+j] = NAN;
 			}
-
 		}
 
 		// release memory for the split information
@@ -753,8 +741,6 @@ TerminateThisNode:	;
 }
 
 
-
-
 SplitRule* Find_A_Split_Survival(int* useObs,
 								   double** dataX_matrix,
 								   int* dataY_vector,
@@ -772,7 +758,7 @@ SplitRule* Find_A_Split_Survival(int* useObs,
 								   int root)
 {
 	// Get parameters
-	int nmin = myPara->nmin;
+
 	int mtry = myPara->mtry;
 	int split_gen = myPara->split_gen;
 	int nspliteach = myPara->nspliteach;
@@ -780,6 +766,8 @@ SplitRule* Find_A_Split_Survival(int* useObs,
 	int reinforcement = myPara->reinforcement;
 	int use_sub_weight = myPara->use_sub_weight;
 	int use_var_weight = myPara->use_var_weight;
+  int n_th_embed = myPara->n_th_embed;
+
 
 	SplitRule *OneSplit = malloc(sizeof(SplitRule)); 	// Create a split rule
 	OneSplit->NCombinations = 0; 						// When NCombinations == 0, no split is found
@@ -798,18 +786,60 @@ SplitRule* Find_A_Split_Survival(int* useObs,
 	int use_var;
 
 	int node_fail = 0;
-	for (i = 1; i<node_n; i++)
+	for (i = 0; i<node_n; i++)
 		node_fail += dataCensor_vector[useObs[i]];
 
-	if (reinforcement & (node_fail >= 2*nmin) & (node_p > 1)) // use reinforcement learning
+	int nmin = myPara->nmin;
+  double alpha = myPara->alpha;
+
+	nmin = imax(nmin, (int) (alpha*node_fail));
+
+	if (reinforcement & (node_fail < n_th_embed) & (node_p > 1) & (!root) )
 	{
-/* 		Rprintf("fit with reinforcement learning with sample size %i and variables %i. List of variables: \n", node_n, node_p);
-		for (j=0; j< node_p; j++) Rprintf(" %i  ", usevariable[j]);
-		Rprintf("\n"); */
+	   //FILE * Output;
+	   //Output = fopen("error.txt", "a");
+	   //fprintf(Output, "This should not happen, sample size %i, nfail %i, nmin %i", node_n, node_fail, nmin);
+	   //fclose(Output);
 
-		// Rprintf("Start reinforcement...");
+	   int dataX_p = myPara->dataX_p;
+	   int protect_p = 0;
+	   for (j = 0; j < dataX_p; j++)
+	     if (protectvariable[j] == 1)
+	       protect_p++;
 
+	   if (protect_p == 1) // if there is only one variable, do single split
+	   {
+	     //Output = fopen("error.txt", "a");
+	     //fprintf(Output, "--- just 1 variable, skip \n");
+	     //fclose(Output);
+	     goto DoASingleSplit;
+	   }
+
+	   j = random_in_range(0, protect_p) + 1; // randomly select the j th variable in the proected list
+	   use_var = -1;
+
+	   do{j -= protectvariable[++use_var];} while (j > 0); // output the varaible index use_var
+
+
+	   if (ncat[use_var] > 1)  // get the splitting point
+	   {
+	     OneSplit_Cat_Survival(&bestValue, &bestScore, dataX_matrix[use_var], dataY_vector, dataCensor_vector, subjectweight, useObs, use_sub_weight, ncat[use_var], node_n, nfail_unique, split_gen == 4 ? 4 : 3, nspliteach, select_method, nmin);
+	   }else{
+	     OneSplit_Cont_Survival(&bestValue, &bestScore, dataX_matrix[use_var], dataY_vector, dataCensor_vector, subjectweight, useObs, use_sub_weight, node_n, nfail_unique, split_gen == 4 ? 4 : 3, nspliteach, select_method, nmin);
+	   }
+
+	   OneSplit->NCombinations = 1; 				// regular split always with 1 splitting variable
+	   OneSplit->OneSplitVariable = use_var;		// for 1 split, loading is not needed
+	   OneSplit->SplitValue = bestValue;
+
+	   //Output = fopen("error.txt", "a");
+	   //fprintf(Output, "--- choose variable %i, with splitting point %f \n", use_var, bestValue);
+	   //fclose(Output);
+
+	}else if (reinforcement & (node_fail >= n_th_embed) & (node_p > 1)) // use reinforcement learning
+	{
 		// setup parameters
+
 		PARAMETERS *myPara_embed = malloc(sizeof(PARAMETERS));
 		myPara_embed->data_n = myPara->data_n;
 		myPara_embed->dataX_p = myPara->dataX_p;
@@ -818,6 +848,7 @@ SplitRule* Find_A_Split_Survival(int* useObs,
 		myPara_embed->ntrees = myPara->ntrees_embed;
 		myPara_embed->mtry = imax(node_p, imax(1, node_p*myPara->mtry_embed));
 		myPara_embed->nmin = myPara->nmin_embed;
+		myPara_embed->alpha = myPara->alpha;
 		myPara_embed->split_gen = myPara->split_gen_embed;
 		myPara_embed->nspliteach = myPara->nspliteach_embed;
 		myPara_embed->select_method = myPara->select_method;
@@ -1094,10 +1125,13 @@ DoASingleSplit:; // if embedded model did not find anything, come here
 					// Rprintf("Variable %i is a categorical variable \n", use_var+1);
 					OneSplit_Cat_Survival(&tempValue, &tempScore, dataX_matrix[use_var], dataY_vector, dataCensor_vector, subjectweight, useObs, use_sub_weight, x_cat, node_n, nfail_unique, split_gen, nspliteach, select_method, nmin);
 					// Rprintf("cut at %f, get score %f \n", tempValue, tempScore);
+
 				}else{
+
 					// Rprintf("Variable %i is a continuous variable \n", use_var+1);
 					OneSplit_Cont_Survival(&tempValue, &tempScore, dataX_matrix[use_var], dataY_vector, dataCensor_vector, subjectweight, useObs, use_sub_weight, node_n, nfail_unique, split_gen, nspliteach, select_method, nmin);
 					// Rprintf("cut at %f, get score %f \n", tempValue, tempScore);
+
 				}
 
 				if (tempScore > bestScore)
@@ -1130,6 +1164,7 @@ DoASingleSplit:; // if embedded model did not find anything, come here
 
 void OneSplit_Cont_Survival(double *cutValue, double* score, double* x, int* y, int* c, double* weights, int* useObs, int use_weight, int n, int nfail, int split_gen, int nspliteach, int select_method, int nmin)
 {
+
 	*cutValue = NAN;
 	*score = -1;
 
@@ -1210,7 +1245,7 @@ void OneSplit_Cont_Survival(double *cutValue, double* score, double* x, int* y, 
 
 		if (use_weight)
 		{
-			error("Cannot do weighted split yet");
+			error("Cannot do weighted ranked split yet");
 		}else{
 
 			// Rprintf("searching for a ranked split");
@@ -1232,60 +1267,59 @@ void OneSplit_Cont_Survival(double *cutValue, double* score, double* x, int* y, 
 			i=0;
 			j=0;
 
-			while (i < 1 && j < 1)
-			{
-				if (i <= j)
-				{
-					i += copy_xyc[lower_first++].c;
-				}
+			while (copy_xyc[lower_first].c == 0)
+			  lower_first++;
 
-				if (i >= j)
-				{
-					j += copy_xyc[upper_first--].c;
-				}
-			}
+			while (copy_xyc[upper_first].c == 0)
+			  upper_first--;
 
 			// this is a weird situation where we cannot acturally find a split...
-			if (copy_xyc[lower_first].x == copy_xyc[n-1].x || copy_xyc[0].x == copy_xyc[upper_first].x)
+			if (copy_xyc[lower_first].x >= copy_xyc[upper_first].x)
 			{
-				free(copy_xyc);
-				return;
+			  free(copy_xyc);
+			  return;
 			}
 
+			// otherwise, first get the lower and upper bound that maintains the terminal node size
 			int lower = lower_first;
 			int upper = upper_first;
+			i = 1;
 
-			while (i < (int) nmin/2 && j < (int) nmin/2)
+			while (i < nmin)
 			{
-				if (i <= j)
-				{
-					i += copy_xyc[lower++].c;
-				}
-
-				if (i >= j)
-				{
-					j += copy_xyc[upper--].c;
-				}
+			    do{lower++;} while (copy_xyc[lower].c == 0);
+			    do{upper--;} while (copy_xyc[upper].c == 0);
+			    i++;
 			}
+
+			// this is an other weird situation where lower is larger than upper...
+			/*if (lower > upper)
+			{
+			  lower = lower + upper;
+			  upper = lower - upper;
+			  lower = lower - upper;
+			}*/
 
 			// Rprintf("get lower value %i and upper value %i \n", lower, upper+1);
 
 			for (i=0; i<nspliteach; i++)
 			{
 				a_random_rank = random_in_range(lower, upper); // get a random rank for split
+        // the cut will be places at x values of a_random_rank-1 and a_random_rank
 
-				// adjust for ties
-				if (copy_xyc[a_random_rank].x == copy_xyc[0].x)
+				// adjust for ties if the value is equal to the edge value
+				while (copy_xyc[a_random_rank].x == copy_xyc[lower_first].x) a_random_rank++;
+				while (copy_xyc[a_random_rank-1].x == copy_xyc[upper_first].x) a_random_rank--;
+
+				// while in the middle of a sequence of ties, either move up or move down
+				if (copy_xyc[a_random_rank].x == copy_xyc[a_random_rank-1].x)
 				{
-					while (copy_xyc[a_random_rank].x == copy_xyc[0].x) a_random_rank++;
-				}else if (copy_xyc[a_random_rank-1].x == copy_xyc[n-1].x)
-				{
-					while (copy_xyc[a_random_rank-1].x == copy_xyc[n-1].x) a_random_rank--;
-				}else if (unif_rand() > 0.5) // while in the middle of a sequence of ties, either move up or move down
-				{
-					while (copy_xyc[a_random_rank].x == copy_xyc[a_random_rank-1].x) a_random_rank++;
-				}else{
-					while (copy_xyc[a_random_rank].x == copy_xyc[a_random_rank-1].x) a_random_rank--;
+				  if(unif_rand() > 0.5)
+				  {
+				    do{a_random_rank++;} while (copy_xyc[a_random_rank].x == copy_xyc[a_random_rank-1].x);
+				  }else{
+				    do{a_random_rank--;} while (copy_xyc[a_random_rank].x == copy_xyc[a_random_rank-1].x);
+				  }
 				}
 
 				// get cut and score
@@ -1336,40 +1370,29 @@ void OneSplit_Cont_Survival(double *cutValue, double* score, double* x, int* y, 
 			i=0;
 			j=0;
 
-			while (i < 1 && j < 1)
-			{
-				if (i <= j)
-				{
-					i += copy_xyc[lower_first++].c;
-				}
+			while (copy_xyc[lower_first].c == 0)
+			  lower_first++;
 
-				if (i >= j)
-				{
-					j += copy_xyc[upper_first--].c;
-				}
-			}
+			while (copy_xyc[upper_first].c == 0)
+			  upper_first--;
 
 			// this is a weird situation where we cannot acturally find a split...
-			if (copy_xyc[lower_first].x == copy_xyc[n-1].x || copy_xyc[0].x == copy_xyc[upper_first].x)
+			if (copy_xyc[lower_first].x >= copy_xyc[upper_first].x)
 			{
-				free(copy_xyc);
-				return;
+			  free(copy_xyc);
+			  return;
 			}
 
+			// otherwise, first get the lower and upper bound that maintains the terminal node size
 			int lower = lower_first;
 			int upper = upper_first;
+			i = 1;
 
-			while (i < (int) nmin/2 && j < (int) nmin/2)
+			while (i < nmin)
 			{
-				if (i <= j)
-				{
-					i += copy_xyc[lower++].c;
-				}
-
-				if (i >= j)
-				{
-					j += copy_xyc[upper--].c;
-				}
+			  do{lower++;} while (copy_xyc[lower].c == 0);
+			  do{upper--;} while (copy_xyc[upper].c == 0);
+			  i++;
 			}
 
 			// Rprintf("get lower value %i and upper value %i \n", lower, upper+1);
