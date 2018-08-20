@@ -34,6 +34,15 @@
 //
 //  **********************************************************************
 
+#ifdef _OPENMP
+#include <omp.h>
+#define OMPMSG(...)
+#else
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
+#define OMPMSG(...) Rprintf("Package is not compiled with OpenMP (omp.h).\n")
+#endif
+
 #ifndef RLT_utility
 #define RLT_utility
 
@@ -70,7 +79,7 @@ typedef struct _PARAMETERS
 	int nmin_embed;
 	int split_gen_embed;
 	int nspliteach_embed;
-	int naive_embed;
+	int n_th_embed;
 
 	int use_sub_weight;
 	int use_var_weight;
@@ -80,6 +89,8 @@ typedef struct _PARAMETERS
 	double combsplit_th;
 	double resample_prob_embed;
 	double mtry_embed;
+	double alpha;
+
 } PARAMETERS;
 
 typedef struct _SplitRule

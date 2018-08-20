@@ -34,7 +34,6 @@
 //
 //  **********************************************************************
 
-# include <omp.h>
 # include <string.h>
 # include <Rconfig.h>
 # include <Rdefines.h>
@@ -82,7 +81,7 @@ void copyParameters(PARAMETERS* myPara, SEXP parameters_int, SEXP parameters_dou
 	myPara->nmin_embed = INTEGER(parameters_int)[16];
 	myPara->split_gen_embed = INTEGER(parameters_int)[17];
 	myPara->nspliteach_embed = INTEGER(parameters_int)[18];
-	myPara->naive_embed = INTEGER(parameters_int)[19];
+	myPara->n_th_embed = INTEGER(parameters_int)[19];
 
 	myPara->importance = INTEGER(parameters_int)[20];
 	myPara->use_sub_weight = INTEGER(parameters_int)[21];
@@ -96,12 +95,12 @@ void copyParameters(PARAMETERS* myPara, SEXP parameters_int, SEXP parameters_dou
 	myPara->combsplit_th = REAL(parameters_double)[2];
 	myPara->resample_prob_embed = REAL(parameters_double)[3];
 	myPara->mtry_embed = REAL(parameters_double)[4];
+	myPara->alpha = REAL(parameters_double)[5];
 }
 
 void printParameters(PARAMETERS* myPara)
 {
 	Rprintf("RLT all tuning parameters detail: ---------------------------------------\n");
-	Rprintf("Model                      									  = %s \n", myPara->model == 1 ? "Regression" : myPara->model == 2 ? "Classification" : "Survival");
 	Rprintf("Use CPU cores:                                          useCores = %i \n", myPara->useCores);
 	Rprintf("Data number of observations:                                   n = %i \n", myPara->data_n);
 	Rprintf("Data number of features:                                       p = %i \n", myPara->dataX_p);
@@ -109,6 +108,7 @@ void printParameters(PARAMETERS* myPara)
 	Rprintf("Number of variables try at each split:                      mtry = %i \n", myPara->mtry);
 	Rprintf("Minimum terminal node size:                                 nmin = %i \n", myPara->nmin);
 	// Rprintf("Selection method:                                  select_method = %i \n", myPara->select_method);
+	Rprintf("Minimum proportion of sample size for child node:          alpha = %0.2f \n", myPara->alpha);
 	Rprintf("Splitting point generating method:                     split_gen = %s \n", myPara->split_gen == 1 ? "Random" : myPara->split_gen == 2 ? "Uniform" : myPara->split_gen == 3 ? "Rank" : "Best");
 	if (myPara->split_gen != 4)
 	Rprintf("Number of random splits:                              nspliteach = %i \n", myPara->nspliteach);
@@ -123,7 +123,6 @@ void printParameters(PARAMETERS* myPara)
 
 	if (myPara->reinforcement == 1)
 	{
-		Rprintf("----naive embed model mode:                          naive_embed = %s \n", myPara->naive_embed ? "Yes" : "No");
 		Rprintf("----Use variable muting:                                  muting = %s \n", myPara->muting == -1 ? "By percent" : myPara->muting == 0 ? "No" : "By count");
 
 		if (myPara->muting == -1)
@@ -132,6 +131,7 @@ void printParameters(PARAMETERS* myPara)
 		Rprintf("----Number of protected variables:                    protectVar = %i \n", myPara->protectVar);
 		Rprintf("----Use linear combination split:                      combsplit = %i \n", myPara->combsplit);
 		Rprintf("----Linear combination threshold:                   combsplit_th = %.2f \n", myPara->combsplit_th);
+		Rprintf("----Minimum sample size to fit embedded models        n_th_embed = %i \n", myPara->n_th_embed);
 		Rprintf("----Number of embedded trees:                       ntrees_embed = %i \n", myPara->ntrees_embed);
 		Rprintf("----Embedded trees minimum terminal node size:        nmin_embed = %i \n", myPara->nmin_embed);
 		Rprintf("----Embedded trees re-sampling probability:  resample_prob_embed = %2.1f%% \n", myPara->resample_prob_embed*100);

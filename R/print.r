@@ -34,9 +34,8 @@ print.RLT<- function(x, ...)
       cat("        muting by count:", x$muting, "at each split \n")
 
     if (x$muting == -1)
-      cat("                 muting:", paste(round(x$muting.percent*100,2), "%", sep=""), "at each split \n")
-
-    cat("    protected variables:", x$protectVar, "\n")
+      cat("                  muting:", paste(round(x$muting.percent*100,2), "%", sep=""), "at each split \n")
+      cat("     protected variables:", x$protect, "\n")
 
     if (x$combsplit > 1)
       cat("     Linear combination:", x$combsplit, "with VI threshold", x$combsplit.th, "\n")

@@ -9,6 +9,7 @@
 #' @param ntrees Number of trees, \code{ntrees = 100} if use reinforcement, \code{ntrees = 1000} otherwise
 #' @param mtry Number of variables used at each internal node, only for \code{reinforcement = FALSE}
 #' @param nmin Minimum number of observations reqired in an internal node to perform a split. Set this to twice of the desired terminal node size.
+#' @param alpha Minimum number of observations required for each child node as a portion of the parent node. Must be within \code{(0, 0.5]}.
 #' @param split.gen How the cutting points are generated
 #' @param nsplit Number of random cutting points to compare for each variable at an internal node
 #' @param resample.prob Proportion of in-bag samples
@@ -26,6 +27,7 @@
 #' @param combsplit Number of variables used in a combination split. \code{combsplit = 1} gives regular binary split; \code{combsplit > 1} produces linear combination splits.
 #' @param combsplit.th The mininum threshold (as a relative measurement compared to the best variable) for a variable to be used in the combination split.
 #' @param random.select Randomly select a varaible from the top variable in the linear combination as the splitting rule.
+#' @param embed.n.th Number of observations to stop the embedded model and choose randomly from the current protected variables.
 #' @param embed.ntrees Number of embedded trees
 #' @param embed.resample.prob Proportion of in-bag samples for embedded trees
 #' @param embed.mtry Number of variables used for embedded trees, as proportion
@@ -80,6 +82,7 @@ RLT <- function(x, y, censor = NULL, model = "regression",
 				ntrees = if (reinforcement) 100 else 500,
 				mtry = max(1, as.integer(ncol(x)/3)),
 				nmin = max(1, as.integer(log(nrow(x)))),
+				alpha = 0.4,
 				split.gen = "random",
 				nsplit = 1,
 				resample.prob = 0.9,
@@ -97,6 +100,7 @@ RLT <- function(x, y, censor = NULL, model = "regression",
 				combsplit = 1,
 				combsplit.th = 0.25,
 				random.select = 0,
+				embed.n.th = 4*nmin,
 				embed.ntrees = max(1, -atan(0.01*(ncol(x) - 500))/pi*100 + 50),
 				embed.resample.prob = 0.8,
 				embed.mtry = 1/2,
@@ -124,9 +128,6 @@ RLT <- function(x, y, censor = NULL, model = "regression",
 
     if (any(is.na(x))) stop("NA not permitted in x")
     if (any(is.na(y))) stop("NA not permitted in y")
-
-	# not implemented in version 2.0
-	naive.embed = 0
 
 	# prepare x, continuous and categorical
 	if (is.data.frame(x))
@@ -230,6 +231,7 @@ RLT <- function(x, y, censor = NULL, model = "regression",
 	resample.prob = max(0, min(resample.prob, 1))
 	if (!importance & resample.prob*n < nmin) warning("Re-sampling probability too small, cannot afford a split...")
 
+	alpha = max(0, min(alpha, 0.5))
 
 	split.gen.C = match(split.gen, allsplitting.generator)
 	embed.split.gen.C = match(embed.split.gen, allsplitting.generator)
@@ -250,12 +252,12 @@ RLT <- function(x, y, censor = NULL, model = "regression",
 	parameters.int = c(print.summary, use.cores, ntrees, mtry, nmin,
 	                   split.gen.C, nsplit, select.method.C, nclass, replacement,
 	                   npermute, reinforcement, muting, protect, combsplit,
-	                   embed.ntrees, embed.nmin, embed.split.gen.C, embed.nsplit, naive.embed,
+	                   embed.ntrees, embed.nmin, embed.split.gen.C, embed.nsplit, embed.n.th,
 	                   importance, use.sub.weight, use.var.weight, track.obs, random.select)
 
 	storage.mode(parameters.int) <- "integer"
 
-	parameters.double = c(resample.prob, muting.percent, combsplit.th, embed.resample.prob, embed.mtry)
+	parameters.double = c(resample.prob, muting.percent, combsplit.th, embed.resample.prob, embed.mtry, alpha)
 	storage.mode(parameters.double) <- "double"
 
 	# fit model
@@ -353,7 +355,7 @@ RLT <- function(x, y, censor = NULL, model = "regression",
 		RLT.fit$embed.mtry = embed.mtry
 		RLT.fit$embed.split.gen = embed.split.gen
 		RLT.fit$embed.nsplit = embed.nsplit
-		RLT.fit$naive.embed = naive.embed
+		RLT.fit$embed.n.th = embed.n.th
 	}
 
 	RLT.fit$parameters.int = parameters.int
