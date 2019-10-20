@@ -1,9 +1,3 @@
-useDynLib(RLT, .registration = TRUE)
-
-export(RLT,
-       MuteRate,
-       print.RLT,
-       predict.RLT)
-
-S3method(print, RLT)
-S3method(predict, RLT)
+useDynLib(RLT, .registration=TRUE)
+exportPattern("^[[:alpha:]]+")
+importFrom(Rcpp, evalCpp)
