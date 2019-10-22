@@ -69,4 +69,47 @@ void Surv_Uni_Terminate_Node(size_t Node,
                              vec& obs_weight,
                              uvec& obs_id,
                              bool useobsweight);
+
+void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
+                           const mat& X,
+                           const uvec& Y,
+                           const uvec& Censor,
+                           const uvec& Ncat,
+                           const PARAM_GLOBAL& Param,
+                           const PARAM_RLT& RLTParam,
+                           vec& obs_weight,
+                           uvec& obs_id,
+                           vec& var_weight,
+                           uvec& var_id);
+
+void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit, 
+                         uvec& obs_id,
+                         const vec& x,
+                         const uvec& Y,
+                         const uvec& Censor,
+                         double penalty,
+                         int split_gen,
+                         int split_rule,
+                         int nsplit,
+                         size_t nmin, 
+                         double alpha,
+                         vec& obs_weight,
+                         bool useobsweight);
+    
+void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
+                        uvec& obs_id,
+                        const vec& x,
+                        const uvec& Y,
+                        const uvec& Censor,
+                        double penalty,
+                        int split_gen,
+                        int split_rule,
+                        int nsplit,
+                        size_t nmin,
+                        double alpha,
+                        vec& obs_weight,
+                        bool useobsweight,
+                        size_t ncat);
+
+
 #endif

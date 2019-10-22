@@ -1,6 +1,6 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Regression
+//  Univariate Survival 
 //  **********************************
 
 // my header file
@@ -96,8 +96,7 @@ void Surv_Uni_Forest_Build(const mat& X,
       // trim and record tree
       // DEBUG_Rcout << "-- Forest[nt].NodeType " << Forest[nt].NodeType << std::endl;
       
-      Forest[nt].NodeSurv[0] = {0, 1, 1};
-      DEBUG_Rcout << "-- Forest[nt].NodeSurv " << Forest[nt].NodeSurv << std::endl;
+      // DEBUG_Rcout << "-- Forest[nt].NodeSurv " << Forest[nt].NodeSurv << std::endl;
       
       TreeLength = Forest[nt].get_tree_length();
       

@@ -67,7 +67,7 @@ void Reg_Uni_Terminate_Node(size_t Node,
 						    bool usesubweight);
 
 
-void Reg_Uni_Find_A_Split(Reg_Uni_Split_Class& OneSplit,
+void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
 						  const mat& X,
 						  const vec& Y,
 						  const uvec& Ncat,
@@ -78,7 +78,7 @@ void Reg_Uni_Find_A_Split(Reg_Uni_Split_Class& OneSplit,
 						  vec& var_weight,
 						  uvec& var_id);
 
-void Reg_Uni_Split_Cont(Reg_Uni_Split_Class& TempSplit, 
+void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit, 
                         uvec& obs_id,
                         const vec& x,
                         const vec& Y,
@@ -91,7 +91,7 @@ void Reg_Uni_Split_Cont(Reg_Uni_Split_Class& TempSplit,
                         vec& obs_weight,
                         bool useobsweight);
 
-void Reg_Uni_Split_Cat(Reg_Uni_Split_Class& TempSplit, 
+void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit, 
                        uvec& obs_id,
                        const vec& x,
                        const vec& Y,

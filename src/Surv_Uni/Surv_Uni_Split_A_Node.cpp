@@ -1,6 +1,6 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Regression
+//  Univariate Survival 
 //  **********************************
 
 // my header file
@@ -44,7 +44,12 @@ TERMINATENODE:
     
   }else{
     
-    DEBUG_Rcout << "  -- find a split " << Node << std::endl;
+    Uni_Split_Class OneSplit;
+    
+    Surv_Uni_Find_A_Split(OneSplit, X, Y, Censor, Ncat, Param, Param_RLT, obs_weight, obs_id, var_weight, var_id);
+    
+    DEBUG_Rcout << "  -- Found split on variable " << OneSplit.var << " cut " << OneSplit.value << " and score " << OneSplit.score << std::endl;
+    
     goto TERMINATENODE;
   }
 }
@@ -72,9 +77,12 @@ void Surv_Uni_Terminate_Node(size_t Node,
   {
     // DEBUG_Rcout << "terminate weighted" << std::endl;
     
+    OneTree.NodeSurv(Node) = {1, 0.8, 0.6, 0.4, 0.2, 0}; // replace later 
+    
   }else{
     // DEBUG_Rcout << "terminate nonweighted" << std::endl;
     
+    OneTree.NodeSurv(Node) = {1, 0.9, 0.7, 0.5, 0.3, 0.1, 0}; // replace later 
   }
 
 }

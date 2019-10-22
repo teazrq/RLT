@@ -12,7 +12,7 @@
 using namespace Rcpp;
 using namespace arma;
 
-void Reg_Uni_Split_Cat(Reg_Uni_Split_Class& TempSplit,
+void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                        uvec& obs_id,
                        const vec& x,
                        const vec& Y,

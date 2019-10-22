@@ -1,27 +1,28 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Regression
+//  Univariate Survival 
 //  **********************************
 
 // my header file
 # include "../RLT.h"
 # include "../Trees//Trees.h"
 # include "../Utility/Utility.h"
-# include "../regForest.h"
+# include "../survForest.h"
 
 using namespace Rcpp;
 using namespace arma;
 
-void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
-                          const mat& X,
-                          const vec& Y,
-                          const uvec& Ncat,
-                          const PARAM_GLOBAL& Param,
-                          const PARAM_RLT& RLTParam,
-                          vec& obs_weight,
-                          uvec& obs_id,
-                          vec& var_weight,
-                          uvec& var_id)
+void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
+						  const mat& X,
+						  const uvec& Y,
+						  const uvec& Censor,
+						  const uvec& Ncat,
+						  const PARAM_GLOBAL& Param,
+						  const PARAM_RLT& RLTParam,
+						  vec& obs_weight,
+						  uvec& obs_id,
+						  vec& var_weight,
+						  uvec& var_id)
 {
   
   size_t mtry = Param.mtry;
@@ -41,7 +42,7 @@ void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   
   uvec var_try = arma::randperm(P, mtry);
   
-  DEBUG_Rcout << "    --- Reg_Find_A_Split with mtry = " << mtry << std::endl;
+  DEBUG_Rcout << "    --- Surv_Find_A_Split with mtry = " << mtry << std::endl;
 
   for (size_t j = 0; j < mtry; j++)
   {
@@ -56,17 +57,16 @@ void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
       
     if (Ncat(temp_var) > 1) // categorical variable 
     {
-      
-      Reg_Uni_Split_Cat(TempSplit, obs_id, X.unsafe_col(temp_var), Y, 0.0, 
-                        split_gen, split_rule, nsplit, nmin, alpha, obs_weight, useobsweight, Ncat(temp_var));
-      
+      Surv_Uni_Split_Cat(TempSplit, obs_id, X.unsafe_col(temp_var), Y, Censor, 0.0, 
+                         split_gen, split_rule, nsplit, nmin, alpha, obs_weight, useobsweight, Ncat(temp_var));
+        
       DEBUG_Rcout << "    --- try var " << temp_var << " at cut " << TempSplit.value << " (categorical) with score " << TempSplit.score << std::endl;
       
     }else{ // continuous variable
       
-      Reg_Uni_Split_Cont(TempSplit, obs_id, X.unsafe_col(temp_var), Y, 0.0, 
+      Surv_Uni_Split_Cont(TempSplit, obs_id, X.unsafe_col(temp_var), Y, Censor, 0.0, 
                           split_gen, split_rule, nsplit, nmin, alpha, obs_weight, useobsweight);
-      
+        
       DEBUG_Rcout << "    --- try var " << temp_var << " at cut " << TempSplit.value << " (continuous) with score " << TempSplit.score << std::endl;
     }
     

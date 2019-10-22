@@ -45,7 +45,7 @@ TERMINATENODE:
     
     DEBUG_Rcout << "  -- Do split" << std::endl;
     
-    Reg_Uni_Split_Class OneSplit;
+    Uni_Split_Class OneSplit;
     
     Reg_Uni_Find_A_Split(OneSplit, X, Y, Ncat, Param, Param_RLT, obs_weight, obs_id, var_weight, var_id);
 

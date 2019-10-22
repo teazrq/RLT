@@ -219,18 +219,7 @@ public:
   }
 };
 
-
-
-
-
-class Reg_Uni_Split_Class: public Uni_Split_Class{
-public:
-  size_t var = 0;
-  
-  void print(void) {
-    Rcout << "Splitting varible is " << var << " value is " << value << " score is " << score << std::endl;
-  }
-};
+// for classification 
 
 class Reg_Cat_Class: public Base_Cat_Class{
 public:
@@ -276,8 +265,6 @@ public:
     RightNode.resize(TreeLength);
     field_vec_resize(NodeSurv, TreeLength);
     NodeSize.resize(TreeLength);
-    
-
   }
   
   void extend()
@@ -290,7 +277,7 @@ public:
     NodeType(span(OldLength, NewLength-1)) = 0;
     
     SplitVar.resize(NewLength);
-    SplitVar(span(OldLength, NewLength-1)) = SplitVar[0]; // this should be P+1 already because intitialization
+    SplitVar(span(OldLength, NewLength-1)) = SplitVar[0]; // this should be P+1 already because of intitialization
     
     SplitValue.resize(NewLength);
     SplitValue(span(OldLength, NewLength-1)) = 0;
@@ -301,16 +288,11 @@ public:
     RightNode.resize(NewLength);
     RightNode(span(OldLength, NewLength-1)) = 0;
     
+    field_vec_resize(NodeSurv, NewLength);
+    
     NodeSize.resize(NewLength);
     NodeSize(span(OldLength, NewLength-1)) = 0;
-    
-    
   }
 };
-
-
-
-
-
 
 #endif

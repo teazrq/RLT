@@ -191,13 +191,16 @@ void field_vec_resize(arma::field<arma::vec>& A, size_t size)
 {
   Rcout << " trim tree to size " << size << std::endl;
   arma::field<arma::vec> B(size);
-  for (size_t i = 0; i < size; i++)
+  
+  size_t common_size = (A.n_elem > size) ? size : A.n_elem;
+
+  for (size_t i = 0; i < common_size; i++)
   {
     B[i] = vec(A[i].begin(), A[i].size(), false, true);
   }
   
   A.set_size(size);
-  for (size_t i = 0; i < size; i++)
+  for (size_t i = 0; i < common_size; i++)
   {
     A[i] = vec(B[i].begin(), B[i].size(), false, true);
   }
