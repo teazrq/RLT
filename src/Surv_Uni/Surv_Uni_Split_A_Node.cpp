@@ -18,6 +18,7 @@ void Surv_Uni_Split_A_Node(size_t Node,
                            const mat& X,
                            const uvec& Y,
                            const uvec& Censor,
+                           const size_t NFail,
                            const uvec& Ncat,
                            const PARAM_GLOBAL& Param,
                            const PARAM_RLT& Param_RLT,
@@ -40,7 +41,7 @@ void Surv_Uni_Split_A_Node(size_t Node,
 TERMINATENODE:
 
     DEBUG_Rcout << "  -- Terminate node " << Node << std::endl;
-    Surv_Uni_Terminate_Node(Node, OneTree, OneNodeRegi, Y, Censor, Param, obs_weight, obs_id, useobsweight);
+    Surv_Uni_Terminate_Node(Node, OneTree, OneNodeRegi, Y, Censor, NFail, Param, obs_weight, obs_id, useobsweight);
     
   }else{
     
@@ -50,7 +51,73 @@ TERMINATENODE:
     
     DEBUG_Rcout << "  -- Found split on variable " << OneSplit.var << " cut " << OneSplit.value << " and score " << OneSplit.score << std::endl;
     
-    goto TERMINATENODE;
+    // if did not find a good split, terminate
+    if (OneSplit.score <= 0)
+      goto TERMINATENODE;
+    
+    // construct indices for left and right nodes
+    DEBUG_Rcout << "  -- splitting value is " << OneSplit.value << std::endl;
+    
+    uvec left_id(obs_id.n_elem);
+    
+    if ( Ncat(OneSplit.var) == 1 )
+    {
+      split_id(X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id);  
+      
+      DEBUG_Rcout << "  -- select cont variable " << OneSplit.var << " split at " << OneSplit.value << std::endl;
+    }else{
+      split_id_cat(X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id, Ncat(OneSplit.var));
+      
+      DEBUG_Rcout << "  -- select cat variable " << OneSplit.var << " split at " << OneSplit.value << std::endl;
+    }    
+    
+    // if this happens something about the splitting rule is wrong
+    if (left_id.n_elem == N or obs_id.n_elem == N)
+      goto TERMINATENODE;
+    
+    // check if the current tree is long enough to store two more nodes
+    // if not, extend the current tree
+    
+    if ( OneTree.NodeType( OneTree.NodeType.size() - 2) > 0 )
+    {
+      DEBUG_Rcout << "  ------------- extend tree length: this shouldn't happen ----------- " << std::endl;
+      
+      // extend tree structure
+      OneTree.extend();
+      
+      // extend noderegi
+      if ( kernel_ready and (OneTree.NodeType.n_elem > OneNodeRegi.size()) )
+        OneNodeRegi.resize( OneTree.NodeType.n_elem ); // I think this creates copy, we need a more efficent way to do it...    
+    }    
+    
+    // find the locations of next left and right nodes     
+    OneTree.NodeType(Node) = 2; // 0: unused, 1: reserved; 2: internal node; 3: terminal node	
+    size_t NextLeft = Node;
+    size_t NextRight = Node;
+    OneTree.find_next_nodes(NextLeft, NextRight);
+    
+    DEBUG_Rcout << "  -- Next Left at " << NextLeft << std::endl;
+    DEBUG_Rcout << "  -- Next Right at " << NextRight << std::endl;
+
+    // record tree 
+    
+    OneTree.SplitVar(Node) = OneSplit.var;
+    OneTree.SplitValue(Node) = OneSplit.value;
+    OneTree.LeftNode(Node) = NextLeft;
+    OneTree.RightNode(Node) = NextRight;
+    
+    OneTree.NodeSize(Node) = left_id.n_elem + obs_id.n_elem;
+    
+
+    Surv_Uni_Split_A_Node(NextLeft, OneTree, OneNodeRegi,
+                          X, Y, Censor, NFail, Ncat, Param, Param_RLT,
+                          obs_weight, left_id, var_weight, var_id);
+    
+    
+    Surv_Uni_Split_A_Node(NextRight, OneTree, OneNodeRegi,
+                          X, Y, Censor, NFail, Ncat, Param, Param_RLT,
+                          obs_weight, obs_id, var_weight, var_id);
+
   }
 }
 
@@ -61,6 +128,7 @@ void Surv_Uni_Terminate_Node(size_t Node,
                              std::vector<arma::uvec>& OneNodeRegi,
                              const uvec& Y,
                              const uvec& Censor,
+                             const size_t NFail,
                              const PARAM_GLOBAL& Param,
                              vec& obs_weight,
                              uvec& obs_id,
@@ -77,12 +145,40 @@ void Surv_Uni_Terminate_Node(size_t Node,
   {
     // DEBUG_Rcout << "terminate weighted" << std::endl;
     
-    OneTree.NodeSurv(Node) = {1, 0.8, 0.6, 0.4, 0.2, 0}; // replace later 
+    OneTree.NodeHaz(Node) = {1, 0.8, 0.6, 0.4, 0.2, 0}; // replace later 
     
   }else{
     // DEBUG_Rcout << "terminate nonweighted" << std::endl;
     
-    OneTree.NodeSurv(Node) = {1, 0.9, 0.7, 0.5, 0.3, 0.1, 0}; // replace later 
+    OneTree.NodeHaz(Node).zeros(NFail + 1); // replace later 
+    OneTree.NodeHaz(Node)(0) = Node; // this one is to backtrack node ID, there should not be any failure here
+    
+    uvec NodeCensor(NFail + 1, fill::zeros);
+    
+    for (size_t i = 0; i < obs_id.n_elem; i++)
+    {
+      if (Censor(obs_id(i)) == 0)
+        NodeCensor( Y(obs_id(i)) )++;
+      else
+        OneTree.NodeHaz(Node)( Y(obs_id(i)) )++;
+    }
+    
+    size_t N = obs_id.n_elem - NodeCensor(0);
+    double h = 1;
+    
+    for (size_t j = 1; j < NFail + 1; j++)
+    {
+      if (N <= 0) break;
+        
+      h = OneTree.NodeHaz(Node)(j) / N;
+      N -= OneTree.NodeHaz(Node)(j) + NodeCensor(j);
+      OneTree.NodeHaz(Node)(j) = h;
+    }
+      
+    DEBUG_Rcout << "node Y" << join_rows(Y(obs_id), Censor(obs_id)) << std::endl;
+    DEBUG_Rcout << "node surv" << OneTree.NodeHaz(Node) << std::endl;
+    
+    
   }
 
 }

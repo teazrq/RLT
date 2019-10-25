@@ -72,8 +72,8 @@ getKernelWeight(RLTfit, X[1:2 + testn, ])
 # survival analysis
 
 set.seed(1)
-n = 500
-p = 100
+n = 50
+p = 10
 X = cbind(matrix(rnorm(n*p), n, p), matrix(as.integer(runif(n*p)*10), n, p))
 X = as.data.frame(X)
 for (j in (1:p + p)) X[,j] = as.factor(X[,j])
@@ -88,7 +88,7 @@ ncores = 1
 nmin = 5
 mtry = p
 sampleprob = 0.5
-rule = "best"
+rule = "random"
 nsplit = ifelse(rule == "best", 0, 3)
 
 start_time <- Sys.time()

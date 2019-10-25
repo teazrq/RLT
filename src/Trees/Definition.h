@@ -238,7 +238,7 @@ public:
 
 class Surv_Uni_Tree_Class: public Uni_Tree_Class{
 public:
-  arma::field<arma::vec> NodeSurv;
+  arma::field<arma::vec> NodeHaz;
   
   // initiate tree
   void initiate(size_t TreeLength, size_t P)
@@ -252,7 +252,7 @@ public:
     LeftNode.zeros(TreeLength);
     RightNode.zeros(TreeLength);
     NodeSize.zeros(TreeLength);
-    NodeSurv.set_size(TreeLength);
+    NodeHaz.set_size(TreeLength);
     SplitVar.fill(P+1);
   }
   
@@ -263,7 +263,7 @@ public:
     SplitValue.resize(TreeLength);
     LeftNode.resize(TreeLength);
     RightNode.resize(TreeLength);
-    field_vec_resize(NodeSurv, TreeLength);
+    field_vec_resize(NodeHaz, TreeLength);
     NodeSize.resize(TreeLength);
   }
   
@@ -288,7 +288,7 @@ public:
     RightNode.resize(NewLength);
     RightNode(span(OldLength, NewLength-1)) = 0;
     
-    field_vec_resize(NodeSurv, NewLength);
+    field_vec_resize(NodeHaz, NewLength);
     
     NodeSize.resize(NewLength);
     NodeSize(span(OldLength, NewLength-1)) = 0;

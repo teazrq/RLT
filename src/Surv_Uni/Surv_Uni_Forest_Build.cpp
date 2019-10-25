@@ -27,7 +27,7 @@ void Surv_Uni_Forest_Build(const mat& X,
             						   uvec& var_id,
             						   std::vector<Surv_Uni_Tree_Class>& Forest,
             						   imat& ObsTrack,
-            						   mat& Pred,
+            						   cube& Pred,
             						   arma::field<arma::field<arma::uvec>>& NodeRegi,
             						   vec& VarImp,
             						   int seed,
@@ -44,6 +44,11 @@ void Surv_Uni_Forest_Build(const mat& X,
   size_t nmin = Param.nmin;
   bool kernel_ready = Param.kernel_ready;
 
+  uvec YFail = unique( Y(find(Censor == 1)) );
+  size_t NFail = YFail.n_elem;
+  
+  Pred.zeros(N, ntrees, NFail + 1);
+  
   // start parallel trees
 
   Rcout << std::endl << " --- survForestBuild " << std::endl;
@@ -66,6 +71,16 @@ void Surv_Uni_Forest_Build(const mat& X,
       uvec inbagObs, oobagObs;
       oob_samples(inbagObs, oobagObs, obs_id, size, replacement);
       
+      // sort inbagObs based on Y values
+
+      std::sort(inbagObs.begin(), inbagObs.end(), [&Y, &Censor](size_t i, size_t j)
+        {
+          if (Y(i) == Y(j))
+            return(Censor(i) > Censor(j));
+          else
+            return Y(i) < Y(j);
+        });
+      
       // record to the ObsTrack matrix
       for (size_t i = 0; i < size; i++)
         ObsTrack(inbagObs(i), nt)++;
@@ -77,18 +92,18 @@ void Surv_Uni_Forest_Build(const mat& X,
       Forest[nt].initiate(TreeLength, P);
       
       // define a temporary object to save node regi since field cannot be resized 
-      std::vector<uvec> OneNdeRegi;
+      std::vector<uvec> OneNodeRegi;
       
       if (kernel_ready)
-        OneNdeRegi.resize(TreeLength);
+        OneNodeRegi.resize(TreeLength);
       
       // start to fit a tree
       Forest[nt].NodeType(0) = 1; // 0: unused, 1: reserved; 2: internal node; 3: terminal node
       
       DEBUG_Rcout << "-- Build tree " << nt << std::endl;
       
-      Surv_Uni_Split_A_Node(0, Forest[nt], OneNdeRegi,
-                            X, Y, Censor, Ncat, Param, Param_RLT,
+      Surv_Uni_Split_A_Node(0, Forest[nt], OneNodeRegi,
+                            X, Y, Censor, NFail, Ncat, Param, Param_RLT,
                             obs_weight, inbagObs, var_weight, var_id);
       
       DEBUG_Rcout << "-- Record tree " << nt << std::endl;
@@ -104,7 +119,9 @@ void Surv_Uni_Forest_Build(const mat& X,
       
       Forest[nt].trim(TreeLength);
       
-      DEBUG_Rcout << "-- Forest[nt].NodeSurv " << Forest[nt].NodeSurv << std::endl;
+      DEBUG_Rcout << "-- Forest[nt].NodeHaz " << Forest[nt].NodeHaz << std::endl;
+      
+      DEBUG_Rcout << "-- this tree is \n" << join_rows(Forest[nt].NodeType, Forest[nt].SplitVar, Forest[nt].LeftNode, Forest[nt].RightNode) << std::endl;
       
       DEBUG_Rcout << "-- Record noderegi " << nt << std::endl;
       
@@ -115,7 +132,7 @@ void Surv_Uni_Forest_Build(const mat& X,
         
         for (size_t i=0; i < TreeLength; i++)
           if (Forest[nt].NodeType(i) == 3)
-            NodeRegi[nt][i] = uvec(&(OneNdeRegi[i][0]), OneNdeRegi[i].n_elem, false, true);
+            NodeRegi[nt][i] = uvec(&(OneNodeRegi[i][0]), OneNodeRegi[i].n_elem, false, true);
       }
       
       DEBUG_Rcout << "-- calcualte oob prediciton " << std::endl;
@@ -127,6 +144,10 @@ void Surv_Uni_Forest_Build(const mat& X,
       
       Uni_Find_Terminal_Node(0, Forest[nt], X, Ncat, proxy_id, obs_id, TermNode);
       
+      for (size_t i = 0; i < N; i++)
+      {
+        Pred.tube(i, nt) = Forest[nt].NodeHaz(TermNode(i));
+      }
       
       // Pred.col(nt) = Forest[nt].NodeAve(TermNode);
       

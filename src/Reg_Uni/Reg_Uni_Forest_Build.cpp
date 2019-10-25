@@ -43,6 +43,8 @@ void Reg_Uni_Forest_Build(const mat& X,
   size_t nmin = Param.nmin;
   bool kernel_ready = Param.kernel_ready;
 
+  Pred.zeros(N, ntrees);
+  
   // start parallel trees
 
   DEBUG_Rcout << "regForestBuild" << std::endl;

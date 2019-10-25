@@ -14,8 +14,22 @@ SurvForest <- function(x, y, censor,
                        ...)
 {
   # prepare y
-  storage.mode(y) <- "integer"
-
+  
+  timepoints = sort(unique(y[censor == 1]))
+  
+  y.point = rep(NA, length(y))
+  
+  for (i in 1:length(y))
+  {
+    if (censor[i] == 1)
+      y.point[i] = match(y[i], timepoints)
+    else
+      y.point[i] = sum(y[i] >= timepoints)
+  }
+  
+  storage.mode(y.point) <- "integer"
+  storage.mode(censor) <- "integer"
+  
   # check splitting rule 
   all.split.rule = c("var")
     
@@ -23,7 +37,7 @@ SurvForest <- function(x, y, censor,
   param$"split.rule" <- match(param$"split.rule", all.split.rule)
   
   # fit model
-  fit = SurvForestUniFit(x, y, censor, ncat,
+  fit = SurvForestUniFit(x, y.point, censor, ncat,
                          param, RLT.control,
                          obs.w,
                          var.w,

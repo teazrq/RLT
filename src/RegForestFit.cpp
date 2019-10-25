@@ -49,15 +49,14 @@ List RegForestUniFit(arma::mat& X,
 
   arma::field<arma::field<arma::uvec>> NodeRegi(ntrees);
   
-  vec VarImp(P);
-  VarImp.fill(0);
+  vec VarImp(P, fill::zeros);
 
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);
   uvec var_id = linspace<uvec>(0, P-1, P);
   
   // prediction matrix
-  mat Pred(N, ntrees, fill::zeros);
+  mat Pred;
   
   // start to fit the model
   Reg_Uni_Forest_Build((const arma::mat&) X,

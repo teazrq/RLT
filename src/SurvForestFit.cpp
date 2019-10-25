@@ -47,15 +47,14 @@ List SurvForestUniFit(arma::mat& X,
 
   arma::field<arma::field<arma::uvec>> NodeRegi(ntrees);
   
-  vec VarImp(P);
-  VarImp.fill(0);
+  vec VarImp(P, fill::zeros);
 
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);
   uvec var_id = linspace<uvec>(0, P-1, P);
   
   // prediction matrix
-  mat Pred(N, ntrees, fill::zeros);
+  cube Pred;
   
   // start to fit the model
   Surv_Uni_Forest_Build((const arma::mat&) X,
@@ -79,6 +78,8 @@ List SurvForestUniFit(arma::mat& X,
 
   DEBUG_Rcout << "  --- Finish fitting trees, start saving objects " << std::endl;
   
+  DEBUG_Rcout << "  --- prediction " << Pred.col(0) << std::endl;
+  
   // save tree structure to arma::field
   
   //List Forest_R = surv_uni_convert_forest_to_r(Forest);
@@ -100,7 +101,7 @@ List SurvForestUniFit(arma::mat& X,
   ReturnList["Prediction"] = mean(Pred, 1);
   
   umat inbag = (ObsTrack == 0);
-  ReturnList["OOBPrediction"] = sum(Pred % inbag, 1) / sum(inbag, 1);
+  // ReturnList["OOBPrediction"] = sum(Pred % inbag, 1) / sum(inbag, 1);
   
   return ReturnList;
 }

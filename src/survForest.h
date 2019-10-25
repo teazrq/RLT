@@ -39,7 +39,7 @@ void Surv_Uni_Forest_Build(const mat& X,
             						  uvec& var_id,
             						  std::vector<Surv_Uni_Tree_Class>& Forest,
             						  imat& ObsTrack,
-            						  mat& Pred,
+            						  cube& Pred,
             						  arma::field<arma::field<arma::uvec>>& NodeRegi,
             						  vec& VarImp,
             						  int seed,
@@ -52,6 +52,7 @@ void Surv_Uni_Split_A_Node(size_t Node,
                            const mat& X,
                            const uvec& Y,
                            const uvec& Censor,
+                           const size_t NFail, 
                            const uvec& Ncat,
                            const PARAM_GLOBAL& Param,
                            const PARAM_RLT& Param_RLT,
@@ -65,6 +66,7 @@ void Surv_Uni_Terminate_Node(size_t Node,
                              std::vector<arma::uvec>& OneNodeRegi,
                              const uvec& Y,
                              const uvec& Censor,
+                             const size_t NFail,
                              const PARAM_GLOBAL& Param,
                              vec& obs_weight,
                              uvec& obs_id,
@@ -94,7 +96,9 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          size_t nmin, 
                          double alpha,
                          vec& obs_weight,
-                         bool useobsweight);
+                         bool useobsweight,
+                         size_t nfail,
+                         int failforce);
     
 void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         uvec& obs_id,
@@ -111,5 +115,23 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         bool useobsweight,
                         size_t ncat);
 
+void collapse(const uvec& Y, 
+              const uvec& Censor, 
+              uvec& Y_collapse, 
+              uvec& Censor_collapse, 
+              uvec& obs_id,
+              size_t& NFail);
 
+// splitting score calculations
+
+double logrank(uvec& Left_Count_Fail,
+               uvec& Left_Count_Censor,
+               uvec& Right_Count_Fail,
+               uvec& Right_Count_Censor,
+               size_t LeftN,
+               size_t N,
+               size_t nfail);
+
+
+    
 #endif
