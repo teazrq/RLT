@@ -270,8 +270,12 @@ public:
   void extend()
   {
     // tree is not long enough, extend
+    
+
     size_t OldLength = NodeType.n_elem;
     size_t NewLength = (OldLength*1.5 > OldLength + 100)? (size_t) (OldLength*1.5):(OldLength + 100);
+    
+    Rcout << " trim tree from size " << OldLength << " to " << NewLength << std::endl;
     
     NodeType.resize(NewLength);
     NodeType(span(OldLength, NewLength-1)) = 0;

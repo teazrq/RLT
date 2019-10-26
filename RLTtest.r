@@ -72,20 +72,23 @@ getKernelWeight(RLTfit, X[1:2 + testn, ])
 # survival analysis
 
 set.seed(1)
-n = 50
-p = 10
+n = 200
+p = 100
 X = cbind(matrix(rnorm(n*p), n, p), matrix(as.integer(runif(n*p)*10), n, p))
 X = as.data.frame(X)
 for (j in (1:p + p)) X[,j] = as.factor(X[,j])
 
 y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
+
 censor = rbinom(n, 1, 0.5)
+
+y = 2 + X[, 2] * 3 + rnorm(n)
 
 trainn = n/2
 testn = n - trainn
-ntrees = 1
+ntrees = 10
 ncores = 1
-nmin = 5
+nmin = 15
 mtry = p
 sampleprob = 0.5
 rule = "random"
@@ -97,10 +100,12 @@ RLTfit <- RLT(X[1:trainn, ], y[1:trainn], censor[1:trainn], ntrees = ntrees, nco
 Sys.time() - start_time
 
 
+start_time <- Sys.time()
+RLTpred = predict(RLTfit, X[1:trainn + testn, ], kernel = FALSE, ncores = ncores)
+Sys.time() - start_time
 
-
-
-
+plot(RLTpred$Prediction, y[1:trainn + testn])
+mean((RLTpred$Prediction - y[1:trainn + testn])^2)
 
 
 

@@ -5,29 +5,31 @@
 
 // my header file
 # include "RLT.h"
-# include "regForest.h"
+# include "survForest.h"
 
 using namespace Rcpp;
 using namespace arma;
 
 // [[Rcpp::export()]]
-List RegForestUniPred(arma::field<arma::uvec>& NodeType,
+List SurvForestUniPred(arma::field<arma::uvec>& NodeType,
           					  arma::field<arma::uvec>& SplitVar,
           					  arma::field<arma::vec>& SplitValue,
           					  arma::field<arma::uvec>& LeftNode,
           					  arma::field<arma::uvec>& RightNode,
-          					  arma::field<arma::vec>& NodeAve,
+          					  arma::field<arma::field<arma::vec>>& NodeHaz,
           					  arma::field<arma::vec>& NodeSize,
           					  arma::mat& X,
-          					  arma::vec& Y,
+          					  arma::uvec& Y,
+          					  arma::uvec& Censor,
           					  arma::uvec& Ncat,
           					  List& param,
           					  arma::vec& obsweight,
+          					  int NFail,
           					  bool kernel,
           					  int usecores,
           					  int verbose)
 {
-  DEBUG_Rcout << "/// THIS IS A DEBUG MODE OF RLT REGRESSION PREDICTION///" << std::endl;
+  DEBUG_Rcout << "/// THIS IS A DEBUG MODE OF RLT SURVIVAL PREDICTION///" << std::endl;
 
   // check number of cores
   usecores = checkCores(usecores, verbose);
@@ -43,7 +45,7 @@ List RegForestUniPred(arma::field<arma::uvec>& NodeType,
   size_t ntrees = NodeType.size();
 
   // convert R object to Reg_Uni_Tree_Class
-  std::vector<Reg_Uni_Tree_Class> Forest(ntrees);
+  std::vector<Surv_Uni_Tree_Class> Forest(ntrees);
   
   #pragma omp parallel num_threads(usecores)
   {
@@ -55,21 +57,41 @@ List RegForestUniPred(arma::field<arma::uvec>& NodeType,
       Forest[nt].SplitValue = vec(SplitValue[nt].begin(), SplitValue[nt].size(), false, true);
       Forest[nt].LeftNode = uvec(LeftNode[nt].begin(), LeftNode[nt].size(), false, true);
       Forest[nt].RightNode = uvec(RightNode[nt].begin(), RightNode[nt].size(), false, true);
-      Forest[nt].NodeAve = vec(NodeAve[nt].begin(), NodeAve[nt].size(), false, true);
+      
+      Forest[nt].NodeHaz.copy_size(NodeHaz[nt]);
+      
+      for (size_t j = 0; j < Forest[nt].NodeHaz.n_elem; j++)
+        Forest[nt].NodeHaz[j] = vec(NodeHaz[nt][j].begin(), NodeHaz[nt][j].size(), false, true);
+      
       Forest[nt].NodeSize = vec(NodeSize[nt].begin(), NodeSize[nt].size(), false, true);
     }
   }
 
-  vec Pred = Reg_Uni_Forest_Pred(Forest,
+
+  mat Pred = Surv_Uni_Forest_Pred(Forest,
                 								 X,
                 								 Ncat,
+                								 NFail,
                 								 kernel,
                 								 usecores,
                 								 verbose);
+
   
   List ReturnList;
 
-  ReturnList["Prediction"] = Pred;
+  ReturnList["hazard"] = Pred;
+  
+  mat Surv(Pred);
+  vec surv(N, fill::ones);
+  vec Ones(N, fill::ones);
+  
+  for (size_t j=0; j < Surv.n_cols; j++)
+  {
+    surv = surv % (Ones - Surv.col(j)); //KM estimator
+    Surv.col(j) = surv;
+  }
+  
+  ReturnList["Survival"] = Surv;
   
   return ReturnList;
 }

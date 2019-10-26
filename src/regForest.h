@@ -188,4 +188,8 @@ vec Reg_Uni_Forest_Pred(const std::vector<Reg_Uni_Tree_Class>& Forest,
 						int usecores,
 						int verbose);
 
+// for coverting 
+
+List reg_uni_convert_forest_to_r(std::vector<Reg_Uni_Tree_Class>& Forest);
+
 #endif

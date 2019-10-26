@@ -17,3 +17,7 @@ SurvForestUniFit <- function(X, Y, Censor, Ncat, param, RLTparam, obsweight, var
     .Call(`_RLT_SurvForestUniFit`, X, Y, Censor, Ncat, param, RLTparam, obsweight, varweight, usecores, verbose)
 }
 
+SurvForestUniPred <- function(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeHaz, NodeSize, X, Y, Censor, Ncat, param, obsweight, NFail, kernel, usecores, verbose) {
+    .Call(`_RLT_SurvForestUniPred`, NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeHaz, NodeSize, X, Y, Censor, Ncat, param, obsweight, NFail, kernel, usecores, verbose)
+}
+

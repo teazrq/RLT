@@ -78,11 +78,11 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             }
 
             if (useobsweight){
-                Rcout << "      --- weighted survival not implemented yet " << std::endl;
+                DEBUG_Rcout << "      --- weighted survival not implemented yet " << std::endl;
             }else{
                 
                 temp_score = logrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftN, N, NFail);
-                Rcout << "      --- calculate logrank temp_score " << temp_score << std::endl;
+                DEBUG_Rcout << "      --- calculate logrank temp_score " << temp_score << std::endl;
             }
             
             if (temp_score > TempSplit.score)

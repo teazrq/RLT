@@ -11,9 +11,6 @@
 using namespace Rcpp;
 using namespace arma;
 
-// other functions 
-List reg_uni_convert_forest_to_r(std::vector<Reg_Uni_Tree_Class>& Forest);
-
 // [[Rcpp::export()]]
 List RegForestUniFit(arma::mat& X,
 					 arma::vec& Y,
@@ -99,8 +96,17 @@ List RegForestUniFit(arma::mat& X,
   
   ReturnList["Prediction"] = mean(Pred, 1);
   
-  umat inbag = (ObsTrack == 0);
-  ReturnList["OOBPrediction"] = sum(Pred % inbag, 1) / sum(inbag, 1);
+  vec OobPred(N);
+  
+  for (size_t i = 0; i < N; i++)
+      if ( sum(ObsTrack.row(i) == 0) > 0 )
+      {
+          rowvec OnePred = Pred.row(i);
+          OobPred(i) = mean( OnePred( find(ObsTrack.row(i) == 0) ) );
+      }else
+          OobPred(i) = NA_REAL;
+              
+  ReturnList["OOBPrediction"] = OobPred;
   
   return ReturnList;
 }

@@ -132,6 +132,18 @@ double logrank(uvec& Left_Count_Fail,
                size_t N,
                size_t nfail);
 
+// prediction 
 
+mat Surv_Uni_Forest_Pred(const std::vector<Surv_Uni_Tree_Class>& Forest,
+                         const mat& X,
+                         const uvec& Ncat,
+                         int NFail,
+                         bool kernel,
+                         int usecores,
+                         int verbose);
+
+// for converting 
+
+List surv_uni_convert_forest_to_r(std::vector<Surv_Uni_Tree_Class>& Forest);
     
 #endif

@@ -44,12 +44,14 @@ SurvForest <- function(x, y, censor,
                          ncores,
                          verbose)
 
+  fit[["timepoints"]] = timepoints
   fit[["ncat"]] = ncat
   fit[["parameters"]] = param
   fit[["RLT.control"]] = RLT.control
   fit[["obs.w"]] = obs.w
   fit[["var.w"]] = var.w
   fit[["y"]] = y
+  fit[["y.point"]] = y.point
   fit[["censor"]] = censor
   
   class(fit) <- c("RLT", "fit", "surv")

@@ -54,7 +54,11 @@ List SurvForestUniFit(arma::mat& X,
   uvec var_id = linspace<uvec>(0, P-1, P);
   
   // prediction matrix
-  cube Pred;
+
+  uvec YFail = unique( Y(find(Censor == 1)) );
+  size_t NFail = YFail.n_elem;
+  
+  cube Pred(NFail + 1, ntrees, N, fill::zeros);
   
   // start to fit the model
   Surv_Uni_Forest_Build((const arma::mat&) X,
@@ -78,17 +82,15 @@ List SurvForestUniFit(arma::mat& X,
 
   DEBUG_Rcout << "  --- Finish fitting trees, start saving objects " << std::endl;
   
-  DEBUG_Rcout << "  --- prediction " << Pred.col(0) << std::endl;
-  
   // save tree structure to arma::field
   
-  //List Forest_R = surv_uni_convert_forest_to_r(Forest);
-
+  List Forest_R = surv_uni_convert_forest_to_r(Forest);
+  
   // return subjects to R
   
   List ReturnList;
 
-  //ReturnList["FittedForest"] = Forest_R;
+  ReturnList["FittedForest"] = Forest_R;
   ReturnList["ObsTrack"] = ObsTrack;
   
   if (kernel_ready)
@@ -98,14 +100,69 @@ List SurvForestUniFit(arma::mat& X,
   
   ReturnList["VarImp"] = VarImp;
   
-  ReturnList["Prediction"] = mean(Pred, 1);
+  mat SurvPred(N, Pred.n_rows);
+  mat OobSurvPred(N, Pred.n_rows);
   
-  umat inbag = (ObsTrack == 0);
-  // ReturnList["OOBPrediction"] = sum(Pred % inbag, 1) / sum(inbag, 1);
+  for (size_t i=0; i < N; i++)
+  {
+    SurvPred.row(i) = mean( Pred.slice(i), 1 ).t();
+    
+    if ( sum(ObsTrack.row(i) == 0) > 0)
+      OobSurvPred.row(i) = mean(Pred.slice(i).cols(find(ObsTrack.row(i) == 0)), 1).t();
+    else{
+      DEBUG_Rcout << "  subject " << i + 1 << " na " << std::endl;
+      OobSurvPred.row(i).fill(NA_REAL);
+    }
+      
+  }
   
+  SurvPred.shed_col(0);
+  OobSurvPred.shed_col(0);
+  
+  ReturnList["Prediction"] = SurvPred;
+  ReturnList["OOBPrediction"] = OobSurvPred;
+
   return ReturnList;
 }
 
+
+
+List surv_uni_convert_forest_to_r(std::vector<Surv_Uni_Tree_Class>& Forest)
+{
+  size_t ntrees = Forest.size();
+  
+  arma::field<arma::uvec> NodeType_Field(ntrees);
+  arma::field<arma::uvec> SplitVar_Field(ntrees);
+  arma::field<arma::vec> SplitValue_Field(ntrees);
+  arma::field<arma::uvec> LeftNode_Field(ntrees);
+  arma::field<arma::uvec> RightNode_Field(ntrees);
+  arma::field<arma::field<arma::vec>> NodeHaz_Field(ntrees);
+  arma::field<arma::vec> NodeSize_Field(ntrees);
+  
+  for (size_t nt = 0; nt < ntrees; nt++)
+  {
+    NodeType_Field[nt] = uvec(Forest[nt].NodeType.begin(), Forest[nt].NodeType.size(), false, true);
+    SplitVar_Field[nt] = uvec(Forest[nt].SplitVar.begin(), Forest[nt].SplitVar.size(), false, true);
+    SplitValue_Field[nt] = vec(Forest[nt].SplitValue.begin(), Forest[nt].SplitValue.size(), false, true);
+    LeftNode_Field[nt] = uvec(Forest[nt].LeftNode.begin(), Forest[nt].LeftNode.size(), false, true);
+    RightNode_Field[nt] = uvec(Forest[nt].RightNode.begin(), Forest[nt].RightNode.size(), false, true);
+    
+    NodeHaz_Field[nt].copy_size(Forest[nt].NodeHaz);
+    
+    for (size_t j = 0; j < NodeHaz_Field[nt].n_elem; j++)
+      NodeHaz_Field[nt][j] = vec(Forest[nt].NodeHaz[j].begin(), Forest[nt].NodeHaz[j].size(), false, true);
+    
+    NodeSize_Field[nt] = vec(Forest[nt].NodeSize.begin(), Forest[nt].NodeSize.size(), false, true);
+  }
+  
+  return(List::create(Named("NodeType") = NodeType_Field,
+                      Named("SplitVar") = SplitVar_Field,
+                      Named("SplitValue") = SplitValue_Field,
+                      Named("LeftNode") = LeftNode_Field,
+                      Named("RightNode") = RightNode_Field,
+                      Named("NodeHaz") = NodeHaz_Field,
+                      Named("NodeSize") = NodeSize_Field));
+}
 
 
 

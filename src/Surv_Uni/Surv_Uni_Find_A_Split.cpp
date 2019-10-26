@@ -24,6 +24,7 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
 						  vec& var_weight,
 						  uvec& var_id)
 {
+  DEBUG_Rcout << "    --- Surv_Uni_Find_A_Split " << std::endl;
   
   size_t mtry = Param.mtry;
   size_t nmin = Param.nmin;
@@ -53,12 +54,13 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   uvec Y_collapse(N);
   uvec Censor_collapse(N);
   
-  // DEBUG_Rcout << "    --- Y before collapse \n" << join_rows(Y(obs_id), Censor(obs_id))  << std::endl;
-  
+  DEBUG_Rcout << "    --- Y before collapse \n" << join_rows(Y(obs_id), Censor(obs_id))  << std::endl;
+ 
   collapse(Y, Censor, Y_collapse, Censor_collapse, obs_id, NFail);
   
-  // DEBUG_Rcout << "    --- Y after collapse \n" << join_rows(Y_collapse, Censor_collapse) << std::endl;
-  // DEBUG_Rcout << "    --- number of failure " << NFail << std::endl;
+  DEBUG_Rcout << "    --- Y after collapse " << std::endl;
+  DEBUG_Rcout << join_rows(Y_collapse, Censor_collapse) << std::endl;
+  DEBUG_Rcout << "    --- number of failure " << NFail << std::endl;
   
   // start univariate search
 
@@ -124,12 +126,13 @@ void collapse(const uvec& Y, const uvec& Censor, uvec& Y_collapse, uvec& Censor_
         Censor_collapse[0] = 1;
         i = 1;
     }else{
-        while(Censor[obs_id[i]] == 0)
+        while(i < N and Censor[obs_id[i]] == 0)
         {
             Y_collapse[i] = timepoint;
             Censor_collapse[i] = 0;
             current_y = Y[obs_id[i]];
             i++;
+            
         }
     }
     

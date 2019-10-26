@@ -34,7 +34,7 @@ void Surv_Uni_Split_A_Node(size_t Node,
   bool kernel_ready = Param.kernel_ready;
     
   // calculate node information
-  DEBUG_Rcout << "  -- Reg_Split_A_Node on Node " << Node << " with sample size " << obs_id.size() << std::endl;
+  DEBUG_Rcout << "  -- Surv_Split_A_Node on Node " << Node << " with sample size " << obs_id.size() << std::endl;
   
   if (N < 2*nmin)
   {
@@ -108,6 +108,7 @@ TERMINATENODE:
     
     OneTree.NodeSize(Node) = left_id.n_elem + obs_id.n_elem;
     
+    DEBUG_Rcout << "  -- Surv_Split_A_Node goto Lef and Right " << std::endl;
 
     Surv_Uni_Split_A_Node(NextLeft, OneTree, OneNodeRegi,
                           X, Y, Censor, NFail, Ncat, Param, Param_RLT,
@@ -175,8 +176,8 @@ void Surv_Uni_Terminate_Node(size_t Node,
       OneTree.NodeHaz(Node)(j) = h;
     }
       
-    DEBUG_Rcout << "node Y" << join_rows(Y(obs_id), Censor(obs_id)) << std::endl;
-    DEBUG_Rcout << "node surv" << OneTree.NodeHaz(Node) << std::endl;
+    //DEBUG_Rcout << "node Y" << join_rows(Y(obs_id), Censor(obs_id)) << std::endl;
+    //DEBUG_Rcout << "node surv" << OneTree.NodeHaz(Node) << std::endl;
     
     
   }

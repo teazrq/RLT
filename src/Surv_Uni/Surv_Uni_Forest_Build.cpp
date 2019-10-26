@@ -43,12 +43,9 @@ void Surv_Uni_Forest_Build(const mat& X,
   size_t size = (size_t) obs_id.n_elem*resample_prob;
   size_t nmin = Param.nmin;
   bool kernel_ready = Param.kernel_ready;
-
-  uvec YFail = unique( Y(find(Censor == 1)) );
-  size_t NFail = YFail.n_elem;
   
-  Pred.zeros(N, ntrees, NFail + 1);
-  
+  size_t NFail = Pred.n_rows - 1;
+    
   // start parallel trees
 
   Rcout << std::endl << " --- survForestBuild " << std::endl;
@@ -88,7 +85,7 @@ void Surv_Uni_Forest_Build(const mat& X,
       DEBUG_Rcout << "-- Initiate tree " << nt << std::endl;
       
       // initialize a tree (univariate split)
-      size_t TreeLength = 1 + size/nmin*3;
+      size_t TreeLength = 3 + size/nmin*3;
       Forest[nt].initiate(TreeLength, P);
       
       // define a temporary object to save node regi since field cannot be resized 
@@ -119,7 +116,6 @@ void Surv_Uni_Forest_Build(const mat& X,
       
       Forest[nt].trim(TreeLength);
       
-      DEBUG_Rcout << "-- Forest[nt].NodeHaz " << Forest[nt].NodeHaz << std::endl;
       
       DEBUG_Rcout << "-- this tree is \n" << join_rows(Forest[nt].NodeType, Forest[nt].SplitVar, Forest[nt].LeftNode, Forest[nt].RightNode) << std::endl;
       
@@ -144,9 +140,11 @@ void Surv_Uni_Forest_Build(const mat& X,
       
       Uni_Find_Terminal_Node(0, Forest[nt], X, Ncat, proxy_id, obs_id, TermNode);
       
+      DEBUG_Rcout << "-- record prediciton " << std::endl;
+      
       for (size_t i = 0; i < N; i++)
       {
-        Pred.tube(i, nt) = Forest[nt].NodeHaz(TermNode(i));
+        Pred.slice(i).col(nt) = Forest[nt].NodeHaz(TermNode(i));
       }
       
       // Pred.col(nt) = Forest[nt].NodeAve(TermNode);

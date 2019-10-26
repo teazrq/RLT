@@ -93,12 +93,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// SurvForestUniPred
+List SurvForestUniPred(arma::field<arma::uvec>& NodeType, arma::field<arma::uvec>& SplitVar, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::field<arma::vec>>& NodeHaz, arma::field<arma::vec>& NodeSize, arma::mat& X, arma::uvec& Y, arma::uvec& Censor, arma::uvec& Ncat, List& param, arma::vec& obsweight, int NFail, bool kernel, int usecores, int verbose);
+RcppExport SEXP _RLT_SurvForestUniPred(SEXP NodeTypeSEXP, SEXP SplitVarSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeHazSEXP, SEXP NodeSizeSEXP, SEXP XSEXP, SEXP YSEXP, SEXP CensorSEXP, SEXP NcatSEXP, SEXP paramSEXP, SEXP obsweightSEXP, SEXP NFailSEXP, SEXP kernelSEXP, SEXP usecoresSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type NodeType(NodeTypeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type SplitVar(SplitVarSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::vec>& >::type SplitValue(SplitValueSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type LeftNode(LeftNodeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type RightNode(RightNodeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::field<arma::vec>>& >::type NodeHaz(NodeHazSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::vec>& >::type NodeSize(NodeSizeSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Censor(CensorSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Ncat(NcatSEXP);
+    Rcpp::traits::input_parameter< List& >::type param(paramSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type obsweight(obsweightSEXP);
+    Rcpp::traits::input_parameter< int >::type NFail(NFailSEXP);
+    Rcpp::traits::input_parameter< bool >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< int >::type usecores(usecoresSEXP);
+    Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(SurvForestUniPred(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeHaz, NodeSize, X, Y, Censor, Ncat, param, obsweight, NFail, kernel, usecores, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RLT_ForestKernelUni", (DL_FUNC) &_RLT_ForestKernelUni, 13},
     {"_RLT_RegForestUniFit", (DL_FUNC) &_RLT_RegForestUniFit, 9},
     {"_RLT_RegForestUniPred", (DL_FUNC) &_RLT_RegForestUniPred, 15},
     {"_RLT_SurvForestUniFit", (DL_FUNC) &_RLT_SurvForestUniFit, 10},
+    {"_RLT_SurvForestUniPred", (DL_FUNC) &_RLT_SurvForestUniPred, 17},
     {NULL, NULL, 0}
 };
 

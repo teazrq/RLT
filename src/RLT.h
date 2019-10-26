@@ -34,7 +34,7 @@
 
 // #define ARMA_USE_OPENMP
 // #define ARMA_NO_DEBUG
-#define RLT_DEBUG
+// #define RLT_DEBUG
 
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
