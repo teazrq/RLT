@@ -87,11 +87,11 @@ y = 2 + X[, 2] * 3 + rnorm(n)
 trainn = n/2
 testn = n - trainn
 ntrees = 10
-ncores = 1
+ncores = 10
 nmin = 15
 mtry = p
 sampleprob = 0.5
-rule = "random"
+rule = "best"
 nsplit = ifelse(rule == "best", 0, 3)
 
 start_time <- Sys.time()
@@ -99,6 +99,7 @@ RLTfit <- RLT(X[1:trainn, ], y[1:trainn], censor[1:trainn], ntrees = ntrees, nco
               split.gen = rule, nsplit = nsplit, replacement = FALSE, resample.prob = sampleprob, kernel.ready = TRUE)
 Sys.time() - start_time
 
+getOneTree(RLTfit, 1)
 
 start_time <- Sys.time()
 RLTpred = predict(RLTfit, X[1:trainn + testn, ], kernel = FALSE, ncores = ncores)

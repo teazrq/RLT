@@ -200,7 +200,7 @@ double reg_cont_score_at_index(uvec& indices,
   for (size_t i = a_random_ind+1; i < N; i++)  
     RightSum += Y(indices(i));
 
-  return LeftSum*LeftSum/a_random_ind + RightSum*RightSum/(N - a_random_ind);
+  return LeftSum*LeftSum/(a_random_ind + 1) + RightSum*RightSum/(N - a_random_ind - 1);
 }
 
 

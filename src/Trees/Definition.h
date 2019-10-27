@@ -197,25 +197,25 @@ public:
     size_t NewLength = (OldLength*1.5 > OldLength + 100)? (size_t) (OldLength*1.5):(OldLength + 100);
     
     NodeType.resize(NewLength);
-    NodeType(span(OldLength, NewLength-1)) = 0;
+    NodeType(span(OldLength, NewLength-1)).zeros();
     
     SplitVar.resize(NewLength);
-    SplitVar(span(OldLength, NewLength-1)) = SplitVar[0]; // this should be P+1 already because intitialization
+    SplitVar(span(OldLength, NewLength-1)).fill(SplitVar[0]); // this should be P+1 already because intitialization
     
     SplitValue.resize(NewLength);
-    SplitValue(span(OldLength, NewLength-1)) = 0;
+    SplitValue(span(OldLength, NewLength-1)).zeros();
       
     LeftNode.resize(NewLength);
-    LeftNode(span(OldLength, NewLength-1)) = 0;
+    LeftNode(span(OldLength, NewLength-1)).zeros();
     
     RightNode.resize(NewLength);
-    RightNode(span(OldLength, NewLength-1)) = 0;
+    RightNode(span(OldLength, NewLength-1)).zeros();
     
     NodeAve.resize(NewLength);
-    NodeAve(span(OldLength, NewLength-1)) = 0;
+    NodeAve(span(OldLength, NewLength-1)).zeros();
       
     NodeSize.resize(NewLength); // need to remove later 
-    NodeSize(span(OldLength, NewLength-1)) = 0;
+    NodeSize(span(OldLength, NewLength-1)).zeros();
   }
 };
 
@@ -271,31 +271,28 @@ public:
   {
     // tree is not long enough, extend
     
-
     size_t OldLength = NodeType.n_elem;
     size_t NewLength = (OldLength*1.5 > OldLength + 100)? (size_t) (OldLength*1.5):(OldLength + 100);
     
-    Rcout << " trim tree from size " << OldLength << " to " << NewLength << std::endl;
-    
     NodeType.resize(NewLength);
-    NodeType(span(OldLength, NewLength-1)) = 0;
-    
+    NodeType(span(OldLength, NewLength-1)).zeros();
+
     SplitVar.resize(NewLength);
-    SplitVar(span(OldLength, NewLength-1)) = SplitVar[0]; // this should be P+1 already because of intitialization
-    
+    SplitVar(span(OldLength, NewLength-1)).fill(SplitVar[0]); // this should be P+1 already because of intitialization
+
     SplitValue.resize(NewLength);
-    SplitValue(span(OldLength, NewLength-1)) = 0;
-    
+    SplitValue(span(OldLength, NewLength-1)).zeros();
+
     LeftNode.resize(NewLength);
-    LeftNode(span(OldLength, NewLength-1)) = 0;
+    LeftNode(span(OldLength, NewLength-1)).zeros();
     
     RightNode.resize(NewLength);
-    RightNode(span(OldLength, NewLength-1)) = 0;
+    RightNode(span(OldLength, NewLength-1)).zeros();
     
     field_vec_resize(NodeHaz, NewLength);
     
     NodeSize.resize(NewLength);
-    NodeSize(span(OldLength, NewLength-1)) = 0;
+    NodeSize(span(OldLength, NewLength-1)).zeros();
   }
 };
 

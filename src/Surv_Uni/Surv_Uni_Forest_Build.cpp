@@ -86,6 +86,7 @@ void Surv_Uni_Forest_Build(const mat& X,
       
       // initialize a tree (univariate split)
       size_t TreeLength = 3 + size/nmin*3;
+      
       Forest[nt].initiate(TreeLength, P);
       
       // define a temporary object to save node regi since field cannot be resized 

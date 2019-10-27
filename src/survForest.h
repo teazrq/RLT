@@ -124,13 +124,78 @@ void collapse(const uvec& Y,
 
 // splitting score calculations
 
+double surv_cont_score_at_cut(uvec& obs_id,
+                              const vec& x,
+                              const uvec& Y,
+                              const uvec& Censor,
+                              size_t NFail,
+                              double a_random_cut,
+                              int split_rule);
+
+double surv_cont_score_at_cut_w(uvec& obs_id,
+                                const vec& x,
+                                const uvec& Y,
+                                const uvec& Censor,
+                                size_t NFail,
+                                double a_random_cut,
+                                vec& obs_weight,
+                                int split_rule);
+
+double surv_cont_score_at_index(uvec& indices,
+                                const uvec& Y, 
+                                const uvec& Censor, 
+                                size_t NFail,
+                                size_t a_random_ind,
+                                int split_rule);
+
+double surv_cont_score_at_index_w(uvec& indices,
+                                  const uvec& Y, 
+                                  const uvec& Censor, 
+                                  size_t NFail,
+                                  size_t a_random_ind,
+                                  vec& obs_weight,
+                                  int split_rule);
+
+double surv_cont_score_best(uvec& indices, // for x, sorted
+                            const vec& x,
+                            uvec& obs_ranked, // for Y and censor, sorted
+                            const uvec& Y, 
+                            const uvec& Censor, 
+                            size_t NFail, 
+                            size_t lowindex, 
+                            size_t highindex, 
+                            double& temp_cut, 
+                            double& temp_score,
+                            int split_rule);
+
+double surv_cont_score_best_w(uvec& indices,
+                              const vec& x,
+                              uvec& obs_ranked,
+                              const uvec& Y, 
+                              const uvec& Censor, 
+                              size_t NFail, 
+                              size_t lowindex, 
+                              size_t highindex, 
+                              double& temp_cut, 
+                              double& temp_score,
+                              vec& obs_weight,
+                              int split_rule);
+    
 double logrank(uvec& Left_Count_Fail,
                uvec& Left_Count_Censor,
                uvec& Right_Count_Fail,
                uvec& Right_Count_Censor,
-               size_t LeftN,
-               size_t N,
-               size_t nfail);
+               double LeftN,
+               double N,
+               size_t NFail);
+
+double suplogrank(uvec& Left_Count_Fail,
+                  uvec& Left_Count_Censor,
+                  uvec& Right_Count_Fail,
+                  uvec& Right_Count_Censor,
+                  double LeftN,
+                  double N,
+                  size_t NFail);
 
 // prediction 
 

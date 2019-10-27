@@ -189,7 +189,7 @@ void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_
 
 void field_vec_resize(arma::field<arma::vec>& A, size_t size)
 {
-  DEBUG_Rcout << " trim tree from size " << A.n_elem << " to size " << size << std::endl;
+  DEBUG_Rcout << " resize tree from size " << A.n_elem << " to size " << size << std::endl;
   arma::field<arma::vec> B(size);
   
   size_t common_size = (A.n_elem > size) ? size : A.n_elem;
@@ -204,5 +204,5 @@ void field_vec_resize(arma::field<arma::vec>& A, size_t size)
   {
     A[i] = vec(B[i].begin(), B[i].size(), false, true);
   }
-  DEBUG_Rcout << " done triming " << std::endl;
+  DEBUG_Rcout << " done resize " << std::endl;
 }
