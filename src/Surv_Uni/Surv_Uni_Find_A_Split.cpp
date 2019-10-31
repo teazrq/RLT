@@ -62,6 +62,9 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   DEBUG_Rcout << join_rows(Y_collapse, Censor_collapse) << std::endl;
   DEBUG_Rcout << "    --- number of failure " << NFail << std::endl;
   
+  if (NFail == 0)
+    return; 
+  
   // start univariate search
 
   mtry = ( (mtry <= P) ? mtry:P ); // take minimum

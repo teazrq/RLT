@@ -31,6 +31,9 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
 {
     DEBUG_Rcout << "        --- Surv_One_Split_Cat with ncat = " << ncat << std::endl;
     
+    if (NFail == 0)
+      return; 
+    
     std::vector<Surv_Cat_Class> cat_reduced(ncat + 1);
     
     for (size_t j = 0; j < cat_reduced.size(); j++)
@@ -263,6 +266,9 @@ double logrank_w(vec& Left_Count_Fail,
   double numerator = 0;
   double denominator = 0;
   double tempscore = -1;
+  
+  if (NFail == 0)
+    return tempscore;
   
   double unbias;
     
