@@ -37,7 +37,7 @@ void Reg_Uni_Forest_Build(const mat& X,
   size_t ntrees = Param.ntrees;
   bool replacement = Param.replacement;
   double resample_prob = Param.resample_prob;
-  size_t P = var_id.n_elem;
+  size_t P = Param.P;
   size_t N = obs_id.n_elem;
   size_t size = (size_t) obs_id.n_elem*resample_prob;
   size_t nmin = Param.nmin;

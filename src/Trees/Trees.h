@@ -28,6 +28,15 @@ void Uni_Find_Terminal_Node(size_t Node,
 							uvec& real_id,
 							uvec& TermNode);
 
+void Uni_Find_Terminal_Node_ShuffleJ(size_t Node, 
+                                     const Uni_Tree_Class& OneTree,
+                                     const mat& X,
+                                     const uvec& Ncat,
+                                     uvec& proxy_id,
+                                     uvec& real_id,
+                                     uvec& TermNode,
+                                     const vec& tildex,
+                                     const size_t j);
 
 List ForestKernelUni(arma::field<arma::uvec>& NodeType,
                      arma::field<arma::uvec>& SplitVar,
@@ -67,6 +76,7 @@ void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_
 bool cat_reduced_compare(Cat_Class& a, Cat_Class& b);
 // bool cat_reduced_compare_score(Cat_Class& a, Cat_Class& b);
 
+
 void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Surv_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin);
 void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin);
 
@@ -79,6 +89,17 @@ double record_cat_split(std::vector<Reg_Cat_Class>& cat_reduced,
                         size_t best_cat, 
                         size_t true_cat,
                         size_t ncat);
+
+
+// other 
+
+double cindex_d(arma::vec& Y,
+              arma::uvec& Censor,
+              arma::vec& pred);
+
+double cindex_i(arma::uvec& Y,
+               arma::uvec& Censor,
+               arma::vec& pred);
 
 #endif
 

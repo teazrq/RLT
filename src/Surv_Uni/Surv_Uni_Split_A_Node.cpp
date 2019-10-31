@@ -32,7 +32,8 @@ void Surv_Uni_Split_A_Node(size_t Node,
   bool useobsweight = Param.useobsweight;
   size_t N = obs_id.n_elem;
   bool kernel_ready = Param.kernel_ready;
-    
+  size_t P = Param.P;
+  
   // calculate node information
   DEBUG_Rcout << "  -- Surv_Split_A_Node on Node " << Node << " with sample size " << obs_id.size() << std::endl;
   
@@ -83,7 +84,7 @@ TERMINATENODE:
       DEBUG_Rcout << "  ------------- extend tree length: this shouldn't happen ----------- " << std::endl;
       
       // extend tree structure
-      OneTree.extend();
+      OneTree.extend(P);
       
       // extend noderegi
       if ( kernel_ready and (OneTree.NodeType.n_elem > OneNodeRegi.size()) )

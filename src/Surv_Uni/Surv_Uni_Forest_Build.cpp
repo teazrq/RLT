@@ -38,14 +38,21 @@ void Surv_Uni_Forest_Build(const mat& X,
   size_t ntrees = Param.ntrees;
   bool replacement = Param.replacement;
   double resample_prob = Param.resample_prob;
-  size_t P = var_id.n_elem;
+  size_t P = Param.P;
   size_t N = obs_id.n_elem;
   size_t size = (size_t) obs_id.n_elem*resample_prob;
   size_t nmin = Param.nmin;
   bool kernel_ready = Param.kernel_ready;
   
   size_t NFail = Pred.n_rows - 1;
-    
+  
+  int importance = Param.importance;
+  
+  mat AllImp; 
+  
+  if (importance)
+    AllImp = mat(ntrees, P, fill::zeros);
+  
   // start parallel trees
 
   Rcout << std::endl << " --- survForestBuild " << std::endl;
@@ -134,7 +141,7 @@ void Surv_Uni_Forest_Build(const mat& X,
       
       DEBUG_Rcout << "-- calcualte oob prediciton " << std::endl;
       
-      // predictions 
+      // predictions for all subjects
       
       uvec proxy_id = linspace<uvec>(0, N-1, N);
       uvec TermNode(N, fill::zeros);
@@ -150,6 +157,59 @@ void Surv_Uni_Forest_Build(const mat& X,
       
       // Pred.col(nt) = Forest[nt].NodeAve(TermNode);
       
+      if (importance == 1 and oobagObs.n_elem > 1)
+      {
+        
+        uvec AllVar = unique( Forest[nt].SplitVar( find( Forest[nt].NodeType == 2 ) ) );
+        
+        size_t NTest = oobagObs.n_elem;
+
+        DEBUG_Rcout << "-- calculate variable importance on " << AllVar.n_elem << " variables " << std::endl;
+
+        uvec oobY = Y(oobagObs);
+        uvec oobC = Censor(oobagObs);
+        
+        uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
+        uvec TermNode(NTest, fill::zeros);         
+        
+        Uni_Find_Terminal_Node(0, Forest[nt], X, Ncat, proxy_id, oobagObs, TermNode);
+        
+        vec oobpred(NTest, fill::zeros);
+        
+        for (size_t i =0; i < NTest; i++)
+        {
+            oobpred(i) = sum( cumsum( Forest[nt].NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+        }
+        
+        double baseImp = cindex_i( oobY, oobC, oobpred );
+        
+        for (auto j : AllVar)
+        {
+
+          DEBUG_Rcout << "-- variable " << j << std::endl;
+
+          uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
+          uvec TermNode(NTest, fill::zeros);          
+          
+          vec tildex = shuffle( X.unsafe_col(j).elem( oobagObs ) );
+          
+          Uni_Find_Terminal_Node_ShuffleJ(0, Forest[nt], X, Ncat, proxy_id, oobagObs, TermNode, tildex, j);
+          
+          DEBUG_Rcout << "-- get terminal nodes " << TermNode.t() << std::endl;
+          
+          // get prediction
+          for (size_t i =0; i < NTest; i++)
+          {
+            oobpred(i) = sum( cumsum( Forest[nt].NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+          }
+          
+          DEBUG_Rcout << "-- get oobpred " << oobpred << std::endl;
+          
+          // record 
+          
+          AllImp(nt, j) = cindex_i( oobY, oobC, oobpred ) / baseImp;
+        }
+      }
     }
     
   #pragma omp barrier
@@ -161,5 +221,8 @@ void Surv_Uni_Forest_Build(const mat& X,
     }
     
   }
+  
+  VarImp = mean(AllImp, 0).t();
+  VarImp -= 1;
 
 }

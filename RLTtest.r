@@ -79,16 +79,77 @@ X = as.data.frame(X)
 for (j in (1:p + p)) X[,j] = as.factor(X[,j])
 
 # y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
+# y = 2 + X[, 2] * 3 + rnorm(n) + 10
 
 censor = rbinom(n, 1, 0.5)
+y = 10 + rnorm(n)
 
-y = 2 + X[, 2] * 3 + rnorm(n)
 
 trainn = n/2
 testn = n - trainn
-ntrees = 100
-ncores = 1
-nmin = 2
+ntrees = 300
+ncores = 5
+nmin = 5
+mtry = ncol(X)
+sampleprob = 0.8
+rule = "best"
+nsplit = ifelse(rule == "best", 0, 3)
+importance = TRUE
+
+start_time <- Sys.time()
+RLTfit <- RLT(X[1:trainn, ], y[1:trainn], censor[1:trainn], ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, # obs.w = runif(trainn), 
+              split.gen = rule, nsplit = nsplit, replacement = FALSE, resample.prob = sampleprob, kernel.ready = TRUE, importance = importance)
+Sys.time() - start_time
+
+library(randomForestSRC)
+library(survival)
+
+rsffit <- rfsrc(Surv(Y, Censor) ~ ., data = data.frame("x" = X[1:trainn, ], "Y" = y[1:trainn], "Censor" = censor[1:trainn]), 
+                ntree = ntrees, nodesize = nmin, mtry = mtry, nsplit = nsplit, sampsize = trainn*sampleprob)
+
+RLTpred = predict(RLTfit, X[1:trainn + testn, ], kernel = FALSE, ncores = ncores)
+rsfpred = predict(rsffit, data = data.frame("x" = X[1:trainn + testn, ]))
+apply(abs(rsfpred$survival - RLTpred$Survival), 2, median)
+apply(abs(rsfpred$survival - RLTpred$Survival), 2, mean)
+
+for (i in 1:15)
+{
+    plot(rsfpred$time.interest, rsfpred$survival[i,], type = "s", col = "red", xlim = c(min(y), max(y)), ylim = c(0, 1))
+    points(RLTfit$timepoints, RLTpred$Survival[i,], type = "s", col = "blue")
+    abline(h = 0.5)
+}
+
+
+############################
+
+set.seed(1)
+n = 500
+p = 100
+
+#X <- data.frame(as.factor(sample(10,n,replace = TRUE)))
+#for(i in 2:p) X <- cbind(X,as.factor(sample(10,n,replace = TRUE)))
+#X <- cbind(X, matrix(rnorm(n*p,c(1:p),5/c(1:p)),ncol=p))
+
+
+#X = cbind(matrix(rnorm(n*p), n, p), matrix(as.integer(runif(n*p)*10), n, p))
+#X = as.data.frame(X)
+#for (j in (1:p + p)) X[,j] = as.factor(X[,j])
+
+X = cbind( matrix(as.integer(runif(n*p)*3), n, p), matrix(rnorm(n*p), n, p))
+X = as.data.frame(X)
+for (j in (1:p)) X[,j] = as.factor(X[,j])
+
+
+# y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
+
+censor = sample(c(0,1),n,replace = TRUE,prob = c(0.5,0.5))
+y = 10 + rnorm(n)
+
+trainn = n/2
+testn = n - trainn
+ntrees = 500
+ncores = 5
+nmin = 10
 mtry = ncol(X)
 sampleprob = 0.85
 rule = "random"
@@ -96,8 +157,46 @@ nsplit = ifelse(rule == "best", 0, 3)
 
 start_time <- Sys.time()
 RLTfit <- RLT(X[1:trainn, ], y[1:trainn], censor[1:trainn], ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, # obs.w = runif(trainn), 
-              split.gen = rule, nsplit = nsplit, replacement = FALSE, resample.prob = sampleprob, kernel.ready = TRUE)
+              split.gen = rule, nsplit = nsplit, replacement = FALSE, resample.prob = sampleprob, kernel.ready = TRUE, importance = importance)
 Sys.time() - start_time
+
+rsffit <- rfsrc(Surv(Y, Censor) ~ ., data = data.frame("x" = X[1:trainn, ], "Y" = y[1:trainn], "Censor" = censor[1:trainn]), 
+                ntree = ntrees, nodesize = nmin, mtry = mtry, nsplit = nsplit, sampsize = trainn*sampleprob)
+
+
+RLTpred = predict(RLTfit, X[1:trainn + testn, ], kernel = FALSE, ncores = ncores)
+rsfpred = predict(rsffit, data = data.frame("x" = X[1:trainn + testn, ]))
+apply(abs(rsfpred$survival - RLTpred$Survival), 2, median)
+apply(abs(rsfpred$survival - RLTpred$Survival), 2, mean)
+
+RLTfit$cindex
+max(rsffit$err.rate, na.rm = TRUE)
+
+for (i in 101:115)
+{
+    plot(rsfpred$time.interest, rsfpred$survival[i,], type = "s", col = "red", xlim = c(min(y), max(y)), ylim = c(0, 1))
+    points(RLTfit$timepoints, RLTpred$Survival[i,], type = "s", col = "blue")
+    abline(h = 0.5)
+    abline(v = 10)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+barplot(t(RLTfit$VarImp))
+
 
 getOneTree(RLTfit, 1)
 
@@ -106,20 +205,39 @@ start_time <- Sys.time()
 RLTpred = predict(RLTfit, X[1:trainn + testn, ], kernel = FALSE, ncores = ncores)
 Sys.time() - start_time
 
-plot(RLTpred$Survival[, 60], y[1:trainn + testn])
+# plot(RLTpred$Survival[, 60], y[1:trainn + testn])
+
+
+rsfpred = predict(rsffit, data = data.frame("x" = X[1:trainn + testn, ]))
+
+
+RLTpred = predict(RLTfit, X[1:trainn + testn, ], kernel = FALSE, ncores = ncores)
+rsfpred = predict(rsffit, data = data.frame("x" = X[1:trainn + testn, ]))
+apply(abs(rsfpred$survival - RLTpred$Survival), 2, median)
+apply(abs(rsfpred$survival - RLTpred$Survival), 2, mean)
+
+
+rsffit$forest$nativeArray[rsffit$forest$nativeArray$treeID == 1, ]
+getOneTree(RLTfit, 1)
+
+
+par(mfrow=c(5, 3))
+par(mar = c(0,0,0,0))
+
+for (i in 101:115)
+{
+    plot(rsfpred$time.interest, rsfpred$survival[i,], type = "s", col = "red", xlim = c(min(y), max(y)), ylim = c(0, 1))
+    points(RLTfit$timepoints, RLTpred$Survival[i,], type = "s", col = "blue")
+    abline(h = 0.5)
+}
+
+
+abline(v = 2 + X[trainn + i, 2] * 3 + 10)
 
 
 
 
-
-
-
-
-
-
-
-
-
+plot(Surv( y[1:trainn], censor[1:trainn]))
 
 
 

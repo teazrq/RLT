@@ -21,3 +21,7 @@ SurvForestUniPred <- function(NodeType, SplitVar, SplitValue, LeftNode, RightNod
     .Call(`_RLT_SurvForestUniPred`, NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeHaz, NodeSize, X, Y, Censor, Ncat, param, obsweight, NFail, kernel, usecores, verbose)
 }
 
+cindex_d <- function(Y, Censor, pred) {
+    .Call(`_RLT_cindex_d`, Y, Censor, pred)
+}
+

@@ -13,6 +13,9 @@ SurvForest <- function(x, y, censor,
                        verbose,
                        ...)
 {
+  if ( any( ! (censor %in% c(0, 1)) ) )
+      stop("censoring indicator must be 0 or 1")    
+    
   # prepare y
   
   timepoints = sort(unique(y[censor == 1]))
@@ -29,6 +32,8 @@ SurvForest <- function(x, y, censor,
   
   storage.mode(y.point) <- "integer"
   storage.mode(censor) <- "integer"
+  
+
   
   # check splitting rule 
   all.split.rule = c("var")

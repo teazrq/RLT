@@ -120,6 +120,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cindex_d
+double cindex_d(arma::vec& Y, arma::uvec& Censor, arma::vec& pred);
+RcppExport SEXP _RLT_cindex_d(SEXP YSEXP, SEXP CensorSEXP, SEXP predSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Censor(CensorSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type pred(predSEXP);
+    rcpp_result_gen = Rcpp::wrap(cindex_d(Y, Censor, pred));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RLT_ForestKernelUni", (DL_FUNC) &_RLT_ForestKernelUni, 13},
@@ -127,6 +140,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RLT_RegForestUniPred", (DL_FUNC) &_RLT_RegForestUniPred, 15},
     {"_RLT_SurvForestUniFit", (DL_FUNC) &_RLT_SurvForestUniFit, 10},
     {"_RLT_SurvForestUniPred", (DL_FUNC) &_RLT_SurvForestUniPred, 17},
+    {"_RLT_cindex_d", (DL_FUNC) &_RLT_cindex_d, 3},
     {NULL, NULL, 0}
 };
 

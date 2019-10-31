@@ -111,7 +111,7 @@ List SurvForestUniFit(arma::mat& X,
       OobSurvPred.row(i) = mean(Pred.slice(i).cols(find(ObsTrack.row(i) == 0)), 1).t();
     else{
       DEBUG_Rcout << "  subject " << i + 1 << " na " << std::endl;
-      OobSurvPred.row(i).fill(NA_REAL);
+      OobSurvPred.row(i).fill(datum::nan);
     }
       
   }
@@ -121,6 +121,28 @@ List SurvForestUniFit(arma::mat& X,
   
   ReturnList["Prediction"] = SurvPred;
   ReturnList["OOBPrediction"] = OobSurvPred;
+
+  // c index for model fitting 
+  
+  uvec nonNAs = find_finite(OobSurvPred.col(0));
+  
+  ReturnList["cindex"] = datum::nan;
+  
+  if (nonNAs.n_elem > 2)
+  {
+      vec oobpred(N, fill::zeros);
+      
+      for (auto i : nonNAs)
+      {
+          oobpred(i) = sum( cumsum( OobSurvPred.row(i) ) ); // sum of cumulative hazard as prediction
+      }
+      
+      uvec oobY = Y(nonNAs);
+      uvec oobC = Censor(nonNAs);
+      vec oobP = oobpred(nonNAs);
+      
+      ReturnList["cindex"] =  1- cindex_i( oobY, oobC, oobP );
+  }
 
   return ReturnList;
 }

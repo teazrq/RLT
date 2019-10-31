@@ -185,7 +185,7 @@ public:
     NodeSize.resize(TreeLength);
   }
 
-  void extend()
+  void extend(size_t P)
   {
     // tree is not long enough, extend
     size_t OldLength = NodeType.n_elem;
@@ -195,7 +195,7 @@ public:
     NodeType(span(OldLength, NewLength-1)).zeros();
     
     SplitVar.resize(NewLength);
-    SplitVar(span(OldLength, NewLength-1)).fill(SplitVar[0]); // this should be P+1 already because intitialization
+    SplitVar(span(OldLength, NewLength-1)).fill(P+1); // this should be P+1 already because intitialization
     
     SplitValue.resize(NewLength);
     SplitValue(span(OldLength, NewLength-1)).zeros();
@@ -336,7 +336,7 @@ public:
     NodeSize.resize(TreeLength);
   }
   
-  void extend()
+  void extend(size_t P)
   {
     // tree is not long enough, extend
     
@@ -347,7 +347,7 @@ public:
     NodeType(span(OldLength, NewLength-1)).zeros();
 
     SplitVar.resize(NewLength);
-    SplitVar(span(OldLength, NewLength-1)).fill(SplitVar[0]); // this should be P+1 already because of intitialization
+    SplitVar(span(OldLength, NewLength-1)).fill(P+1); // this should be P+1 already because of intitialization
 
     SplitValue.resize(NewLength);
     SplitValue(span(OldLength, NewLength-1)).zeros();
