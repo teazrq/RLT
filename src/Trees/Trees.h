@@ -63,6 +63,23 @@ void move_cont_index(size_t& lowindex, size_t& highindex, const vec& x, const uv
 void split_id(const vec& x, double value, uvec& left_id, uvec& obs_id);
 void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_t ncat);
 
+
+bool cat_reduced_compare(Cat_Class& a, Cat_Class& b);
+// bool cat_reduced_compare_score(Cat_Class& a, Cat_Class& b);
+
+void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Surv_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin);
+void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin);
+
+double record_cat_split(std::vector<Surv_Cat_Class>& cat_reduced,
+                        size_t best_cat, 
+                        size_t true_cat,
+                        size_t ncat);
+
+double record_cat_split(std::vector<Reg_Cat_Class>& cat_reduced,
+                        size_t best_cat, 
+                        size_t true_cat,
+                        size_t ncat);
+
 #endif
 
 

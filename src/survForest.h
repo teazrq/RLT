@@ -103,8 +103,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
 void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         uvec& obs_id,
                         const vec& x,
-                        const uvec& Y,
-                        const uvec& Censor,
+                        const uvec& Y, // Y is collapsed
+                        const uvec& Censor, // Censor is collapsed
                         double penalty,
                         int split_gen,
                         int split_rule,
@@ -113,6 +113,8 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         double alpha,
                         vec& obs_weight,
                         bool useobsweight,
+                        size_t NFail,
+                        int failforce,
                         size_t ncat);
 
 void collapse(const uvec& Y, 
@@ -180,7 +182,24 @@ double surv_cont_score_best_w(uvec& indices,
                               double& temp_score,
                               vec& obs_weight,
                               int split_rule);
+
+double surv_cat_score(std::vector<Surv_Cat_Class>& cat_reduced, 
+                      size_t temp_cat, 
+                      size_t true_cat,
+                      size_t NFail, 
+                      int split_rule,
+                      bool useobsweight);
     
+void surv_cat_score_best(std::vector<Surv_Cat_Class>& cat_reduced,
+                         size_t lowindex,
+                         size_t highindex,
+                         size_t true_cat,
+                         size_t& temp_cat,
+                         double& temp_score,
+                         size_t NFail,
+                         int split_rule,
+                         bool useobsweight);
+
 double logrank(uvec& Left_Count_Fail,
                uvec& Left_Count_Censor,
                uvec& Right_Count_Fail,
@@ -196,6 +215,27 @@ double suplogrank(uvec& Left_Count_Fail,
                   double LeftN,
                   double N,
                   size_t NFail);
+
+double logrank_w(vec& Left_Count_Fail,
+                 vec& Left_Count_Censor,
+                 vec& Right_Count_Fail,
+                 vec& Right_Count_Censor,
+                 double LeftW,
+                 double W,
+                 size_t NFail, 
+                 bool useobsweight);
+
+double suplogrank_w(vec& Left_Count_Fail,
+                    vec& Left_Count_Censor,
+                    vec& Right_Count_Fail,
+                    vec& Right_Count_Censor,
+                    double LeftW,
+                    double W,
+                    size_t NFail,
+                    bool useobsweight);
+
+// utility functions 
+
 
 // prediction 
 

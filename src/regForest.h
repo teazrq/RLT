@@ -169,7 +169,7 @@ void reg_cat_score_best_w(std::vector<Reg_Cat_Class>& cat_reduced,
                           double& best_score);
 
 // other utilities functions for regression 
-
+/*
 void reg_move_cat_index(size_t& lowindex, 
 						size_t& highindex, 
 						std::vector<Reg_Cat_Class>& cat_reduced, 
@@ -178,7 +178,7 @@ void reg_move_cat_index(size_t& lowindex,
 
 bool reg_cat_reduced_compare(Reg_Cat_Class& a, 
                              Reg_Cat_Class& b);
-
+*/
 // for prediction 
 
 vec Reg_Uni_Forest_Pred(const std::vector<Reg_Uni_Tree_Class>& Forest,

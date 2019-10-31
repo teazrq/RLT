@@ -51,7 +51,6 @@ predict.RLT<- function(object,
                              object$ncat,
                              object$parameters,
                              object$obs.w,
-                             length(object$timepoints),
                              kernel,
                              ncores,
                              verbose)

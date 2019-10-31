@@ -5,17 +5,17 @@ X = cbind(matrix(rnorm(n*p), n, p), matrix(as.integer(runif(n*p)*10), n, p))
 X = as.data.frame(X)
 for (j in (1:p + p)) X[,j] = as.factor(X[,j])
 
-y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
+# y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
 # y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rnorm(n)
-# y = 2 + X[, 1] * 1 + X[, 2] * 1 + X[, 3] * 1 + rnorm(n)
+ y = 2 + X[, 1] * 1 + X[, 2] * 1 + X[, 3] * 1 + rnorm(n)
 
 trainn = n/2
 testn = n - trainn
 ntrees = 100
-ncores = 10
-nmin = 5
+ncores = 3
+nmin = 2
 mtry = p
-sampleprob = 0.5
+sampleprob = 0.85
 rule = "best"
 nsplit = ifelse(rule == "best", 0, 3)
 
@@ -72,13 +72,13 @@ getKernelWeight(RLTfit, X[1:2 + testn, ])
 # survival analysis
 
 set.seed(1)
-n = 200
+n = 500
 p = 100
 X = cbind(matrix(rnorm(n*p), n, p), matrix(as.integer(runif(n*p)*10), n, p))
 X = as.data.frame(X)
 for (j in (1:p + p)) X[,j] = as.factor(X[,j])
 
-y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
+# y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
 
 censor = rbinom(n, 1, 0.5)
 
@@ -86,12 +86,12 @@ y = 2 + X[, 2] * 3 + rnorm(n)
 
 trainn = n/2
 testn = n - trainn
-ntrees = 10
+ntrees = 100
 ncores = 10
-nmin = 15
-mtry = p
-sampleprob = 0.5
-rule = "best"
+nmin = 10
+mtry = ncol(X)
+sampleprob = 0.85
+rule = "random"
 nsplit = ifelse(rule == "best", 0, 3)
 
 start_time <- Sys.time()
@@ -101,12 +101,13 @@ Sys.time() - start_time
 
 getOneTree(RLTfit, 1)
 
+
 start_time <- Sys.time()
 RLTpred = predict(RLTfit, X[1:trainn + testn, ], kernel = FALSE, ncores = ncores)
 Sys.time() - start_time
 
-plot(RLTpred$Prediction, y[1:trainn + testn])
-mean((RLTpred$Prediction - y[1:trainn + testn])^2)
+plot(RLTpred$Survival[, 60], y[1:trainn + testn])
+
 
 
 
@@ -126,7 +127,7 @@ mean((RLTpred$Prediction - y[1:trainn + testn])^2)
 
 # compare with other models 
 
-library(rbenchmark)
+
 library(randomForest)
 library(randomForestSRC)
 
@@ -137,8 +138,8 @@ X = cbind(matrix(rnorm(n*p), n, p), matrix(as.integer(runif(n*p)*3), n, p))
 for (j in (1:p + p)) X[,j] = as.factor(X[,j])
 X = as.data.frame(X)
 
-y = 2 + as.numeric(rowSums(X[, 1:10])) * 1 + as.numeric(rowSums(X[,1:10 + p]))*0.25 + rnorm(n, 0, 1)
-# y = 2 + X[, 1] * 2 + X[, 2] * 2 + rnorm(n)
+#y = 2 + as.numeric(rowSums(X[, 1:10])) * 1 + as.numeric(rowSums(X[,1:10 + p]))*0.25 + rnorm(n, 0, 1)
+ y = 2 + X[, 1] * 2 + X[, 2] * 2 + rnorm(n)
 # y = 2 + as.numeric(rowSums(X[, 1:10])) * 1 + rnorm(n, 0, 1)
 
 trainn = n/2
@@ -151,7 +152,7 @@ testY = y[1:trainn + testn]
 
 ntrees = 1000
 ncores = 1
-nmin = 5
+nmin = 1
 mtry = 2
 sampleprob = 1
 rule = "best"

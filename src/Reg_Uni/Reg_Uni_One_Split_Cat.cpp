@@ -49,21 +49,28 @@ void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit,
       size_t temp_cat = (size_t) x(obs_id(i));
       cat_reduced[temp_cat].y += Y(obs_id(i));
       cat_reduced[temp_cat].count ++;
+	  cat_reduced[temp_cat].weight ++;
     }
   }
-  
-  sort(cat_reduced.begin(), cat_reduced.end(), reg_cat_reduced_compare);
   
   size_t true_cat = 0;
   for (size_t j = 0; j < cat_reduced.size(); j++)
     if (cat_reduced[j].count) true_cat++;
   
   if (true_cat <= 1)
-    return;
+    return;  
   
-  // for (size_t j = 0; j < cat_reduced.size(); j++)
-      // cat_reduced[j].print();
+  for (size_t j = 0; j < cat_reduced.size(); j++)
+      cat_reduced[j].calculate_score();
   
+  sort(cat_reduced.begin(), cat_reduced.end(), cat_reduced_compare);
+  
+  /*
+  sort(cat_reduced.begin(), cat_reduced.begin()+true_cat, cat_reduced_compare_score);
+  */
+  //for (size_t j = 0; j < cat_reduced.size(); j++)
+//       cat_reduced[j].print();
+
   DEBUG_Rcout << "        --- true_cat " << true_cat << std::endl;
   
   double temp_score = 0;
@@ -74,7 +81,7 @@ void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit,
   
   if ( split_gen == 2 or split_gen == 3 )
   {
-    reg_move_cat_index(lowindex, highindex, cat_reduced, true_cat, nmin);
+    move_cat_index(lowindex, highindex, cat_reduced, true_cat, nmin);
   }else{
     lowindex = 0;
     highindex = true_cat - 2;
@@ -118,42 +125,13 @@ void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit,
     
     DEBUG_Rcout << "        --- record best split with score " << best_score << " best cut at " << best_cat << " true_cat is " << true_cat << std::endl;
     
-    uvec goright(ncat + 1, fill::zeros); // the first element (category) of goright will always be set to 0 --- go left, but this category does not exist.
- 
-    for (size_t i = 0; i <= best_cat; i++)
-      goright[cat_reduced[i].cat] = 0;
-    
-    for (size_t i = best_cat + 1; i < true_cat; i++)
-      goright[cat_reduced[i].cat] = 1;
-      
-    for (size_t i = true_cat + 1; i < ncat + 1; i++)
-      goright[cat_reduced[i].cat] = 0; //intRand(0, 1); // for empty category, assign randomly
-  
-    DEBUG_Rcout << "        --- goright is " << goright << std::endl;  
-    
-    TempSplit.value = pack(ncat + 1, goright);
+    TempSplit.value = record_cat_split(cat_reduced, best_cat, true_cat, ncat);
     
     DEBUG_Rcout << "        --- value is " << TempSplit.value << std::endl;  
     
     TempSplit.score = best_score;
     
-    
-
   }
-}
-
-bool reg_cat_reduced_compare(Reg_Cat_Class& a, Reg_Cat_Class& b)
-{
-  if (a.count == 0 and b.count == 0)
-    return 0;
-  
-  if (a.count > 0 and b.count == 0)
-    return 1;
-  
-  if (a.count == 0 and b.count > 0)
-    return 0;
-  
-  return (a.y < b.y);
 }
 
 double reg_cat_score(std::vector<Reg_Cat_Class>& cat_reduced, size_t temp_cat, size_t true_cat)
@@ -290,98 +268,6 @@ void reg_cat_score_best_w(std::vector<Reg_Cat_Class>& cat_reduced, size_t lowind
   }
 }
 
-
-
-void reg_move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin)
-{
-  // in this case, we will not be able to control for nmin
-  // but extreamly small nmin should not have a high splitting score
-  lowindex = 0;
-  highindex = true_cat - 2;
-  
-  if (true_cat == 2) //nothing we can do
-    return; 
-  
-  DEBUG_Rcout << "        --- start moving index with lowindex " << lowindex << " highindex " << highindex << std::endl;
-  
-  lowindex = 0;
-  highindex = true_cat-2;
-  size_t lowcount = cat_reduced[0].count;
-  size_t highcount = cat_reduced[true_cat-1].count;
-  
-  // now both low and high index are not tied with the end
-  if ( lowcount >= nmin and highcount >= nmin ) // everything is good
-    return;
-  
-  if ( lowcount < nmin and highcount >= nmin ) // only need to fix lowindex
-  {
-    while( lowcount < nmin and lowindex <= highindex ){
-      lowindex++;
-      lowcount += cat_reduced[lowindex].count;
-    }
-    
-    if ( lowindex > highindex ) lowindex = highindex;
-    
-    return;
-    DEBUG_Rcout << "        --- case 1 with lowindex " << lowindex << " highindex " << highindex << std::endl;
-  }
-  
-  if ( lowcount >= nmin and highcount < nmin ) // only need to fix highindex
-  {
-    while( highcount < nmin and lowindex <= highindex ){
-      DEBUG_Rcout << "        --- adding " << cat_reduced[highindex].count << " count to highcount " << highcount << std::endl;
-      highcount += cat_reduced[highindex].count;
-      highindex--;
-    }
-    
-    if (highindex < lowindex or highindex > true_cat - 2 ) highindex = lowindex; // sometimes highindex will be negative and turned into very large number 
-    
-    DEBUG_Rcout << "        --- case 2 with lowindex " << lowindex << " highindex " << highindex << std::endl;    
-    
-    return;
-  }
-  
-  if ( lowcount < nmin and highcount < nmin ) // if both need to be fixed, start with one randomly
-  {
-    if ( intRand(0, 1) )
-    { // fix lowindex first
-      while( lowcount < nmin and lowindex <= highindex ){
-        lowindex++;
-        lowcount += cat_reduced[lowindex].count;
-      }
-      
-      if (lowindex > highindex ) lowindex = highindex;
-      
-      while( highcount < nmin and lowindex <= highindex ){
-        highcount += cat_reduced[highindex].count;
-        highindex--;
-      }
-      
-      if (highindex < lowindex or highindex > true_cat - 2 ) highindex = lowindex;
-      
-      DEBUG_Rcout << "        --- case 3 with lowindex " << lowindex << " highindex " << highindex << std::endl;
-      return;
-      
-    }else{ // fix highindex first
-      while( highcount < nmin and lowindex <= highindex ){
-        highcount += cat_reduced[highindex].count;
-        highindex--;
-      }
-      
-      if (highindex < lowindex or highindex > true_cat - 2 ) highindex = lowindex;
-      
-      while( lowcount < nmin and lowindex <= highindex ){
-        lowindex++;
-        lowcount += cat_reduced[lowindex].count;
-      }
-      
-      if (lowindex > highindex) lowindex = highindex;
-      
-      DEBUG_Rcout << "        --- case 4 with lowindex " << lowindex << " highindex " << highindex << std::endl;
-      return;
-    }
-  }
-}
 
 
 

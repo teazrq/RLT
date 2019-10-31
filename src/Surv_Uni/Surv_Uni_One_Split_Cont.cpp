@@ -403,3 +403,5 @@ double suplogrank(uvec& Left_Count_Fail,
     Rcout << "      --- suplogrank not implemented yet " << std::endl;
 
 }
+
+

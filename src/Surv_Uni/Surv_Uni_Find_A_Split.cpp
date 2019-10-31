@@ -82,16 +82,16 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
     if (Ncat(temp_var) > 1) // categorical variable 
     {
       Surv_Uni_Split_Cat(TempSplit, obs_id, X.unsafe_col(temp_var), Y_collapse, Censor_collapse, 0.0, 
-                         split_gen, split_rule, nsplit, nmin, alpha, obs_weight, useobsweight, Ncat(temp_var));
+                         split_gen, split_rule, nsplit, nmin, alpha, obs_weight, useobsweight, NFail, 0, Ncat(temp_var));
         
-      DEBUG_Rcout << "      --- try var " << temp_var << " at cut " << TempSplit.value << " (categorical) with score " << TempSplit.score << std::endl;
+        DEBUG_Rcout << "      --- try var " << temp_var << " at cut " << TempSplit.value << " (categorical) with score " << TempSplit.score << std::endl;
       
     }else{ // continuous variable
       
       Surv_Uni_Split_Cont(TempSplit, obs_id, X.unsafe_col(temp_var), Y_collapse, Censor_collapse, 0.0, 
                           split_gen, split_rule, nsplit, nmin, alpha, obs_weight, useobsweight, NFail, 0);
         
-      DEBUG_Rcout << "      --- try var " << temp_var << " at cut " << TempSplit.value << " (continuous) with score " << TempSplit.score << std::endl;
+        DEBUG_Rcout << "      --- try var " << temp_var << " at cut " << TempSplit.value << " (continuous) with score " << TempSplit.score << std::endl;
     }
     
     if (TempSplit.score > OneSplit.score)

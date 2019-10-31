@@ -71,7 +71,7 @@ mat Surv_Uni_Forest_Pred(const std::vector<Surv_Uni_Tree_Class>& Forest,
   
   Pred.shed_col(0);
 
-  Rcout << " sub 1 \n" << Pred << std::endl;
+  DEBUG_Rcout << " sub 1 \n" << Pred << std::endl;
   
   return(Pred);
   /*

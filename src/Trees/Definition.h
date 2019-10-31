@@ -11,6 +11,8 @@
 using namespace Rcpp;
 using namespace arma;
 
+#define SurvWeightTH 1e-10
+
 #ifndef RLT_DEFINITION
 #define RLT_DEFINITION
 
@@ -132,13 +134,6 @@ public:
   }
 };
 
-class Base_Cat_Class{ // class variable reduced data
-public:
-  size_t cat = 0;
-  size_t count = 0;
-  double weight = 0;
-};
-
 
 // *********************//
 // class for regression //
@@ -219,21 +214,95 @@ public:
   }
 };
 
-// for classification 
+// for categorical variable  
 
-class Reg_Cat_Class: public Base_Cat_Class{
+class Cat_Class{
+public:
+    size_t cat = 0;
+    size_t count = 0; // count is used for setting nmin
+    double weight = 0; // weight is used for calculation
+    double score = 0; // for sorting
+    
+    void print() {
+        Rcout << "Category is " << cat << " count is " << count << " weight is " << weight << " score is " << score << std::endl;
+    }
+};
+
+class Reg_Cat_Class: public Cat_Class{
 public:
   double y = 0;
   
+  void calculate_score()
+  {
+      if (weight > 0)
+        score = y / weight;
+  }
+  
   void print(void) {
-    Rcout << "Category is " << cat << " count is " << count << " weight is " << weight << " y sum is " << y << std::endl;
+    Rcout << "Category is " << cat << " count is " << count << " weight is " << weight << " y sum is " << y << " score is " << score << std::endl;
   }
 };
 
 
-// *******************//
-// class for survival //
-// *******************//
+class Surv_Cat_Class: public Cat_Class{
+public:
+  arma::vec FailCount;
+  arma::vec CensorCount;
+  arma::vec cHaz;
+  
+  void initiate(size_t j, size_t NFail)
+  {
+	  cat = j;
+	  FailCount.zeros(NFail+1);
+	  CensorCount.zeros(NFail+1);
+	  cHaz.zeros(NFail+1);
+  }
+  
+  void calculate_cHaz(size_t NFail)
+  {
+      if (NFail == 0)
+          return;
+      
+      double AtRisk = weight;
+      double haz;
+      
+      AtRisk -= FailCount(0) + CensorCount(0);
+      
+      for (size_t k=1; k < NFail + 1; k++)
+      {
+          if (AtRisk > SurvWeightTH)
+          {
+            haz = FailCount(k) / AtRisk;
+          }else{
+            haz = 0;
+          }
+          
+          cHaz[k] = cHaz[k-1] + haz;
+          
+          AtRisk -= FailCount(k) + CensorCount(k); 
+      }
+  }
+  
+  void set_score(size_t j)
+  {
+        score = cHaz(j);
+  }
+  
+  void set_score_ccHaz()
+  {
+      score = sum(cHaz);
+  }  
+  
+  void print() {
+      Rcout << "Category is " << cat << " weight is " << weight << " count is " << count << " data is\n" << 
+               join_rows(FailCount, CensorCount, cHaz) << std::endl;
+  }  
+  
+};
+
+// ************************//
+// tree class for survival //
+// ************************//
 
 
 class Surv_Uni_Tree_Class: public Uni_Tree_Class{
