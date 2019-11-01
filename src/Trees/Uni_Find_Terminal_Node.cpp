@@ -194,14 +194,14 @@ void Uni_Find_Terminal_Node_ShuffleJ(size_t Node,
         if (LeftN > 0)
         {
             left_proxy.resize(LeftN);
-            Uni_Find_Terminal_Node(OneTree.LeftNode[Node], OneTree, X, Ncat, left_proxy, real_id, TermNode);
+            Uni_Find_Terminal_Node_ShuffleJ(OneTree.LeftNode[Node], OneTree, X, Ncat, left_proxy, real_id, TermNode, tildex, j);
         }
         
         // right node
         if (RightN > 0)
         {
             proxy_id.resize(RightN);
-            Uni_Find_Terminal_Node(OneTree.RightNode[Node], OneTree, X, Ncat, proxy_id, real_id, TermNode);      
+            Uni_Find_Terminal_Node_ShuffleJ(OneTree.RightNode[Node], OneTree, X, Ncat, proxy_id, real_id, TermNode, tildex, j);      
         }
         
     }

@@ -1,89 +1,15 @@
-set.seed(1)
-n = 500
-p = 100
-X = cbind(matrix(rnorm(n*p), n, p), matrix(as.integer(runif(n*p)*10), n, p))
-X = as.data.frame(X)
-for (j in (1:p + p)) X[,j] = as.factor(X[,j])
-
-# y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
-# y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rnorm(n)
- y = 2 + X[, 1] * 1 + X[, 2] * 1 + X[, 3] * 1 + rnorm(n)
-
-trainn = n/2
-testn = n - trainn
-ntrees = 100
-ncores = 3
-nmin = 2
-mtry = p
-sampleprob = 0.85
-rule = "best"
-nsplit = ifelse(rule == "best", 0, 3)
-
-start_time <- Sys.time()
-RLTfit <- RLT(X[1:trainn, ], y[1:trainn], ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, # obs.w = runif(trainn), 
-           split.gen = rule, nsplit = nsplit, replacement = FALSE, resample.prob = sampleprob, kernel.ready = TRUE)
-Sys.time() - start_time
-
-
-RLTkernel = getKernelWeight(RLTfit, X[1:trainn + testn, ])
-heatmap(RLTkernel$Kernel[[1]], Rowv = NA, Colv = NA)
-sum(RLTkernel$Kernel[[1]])/ntrees
-
-plot(RLTfit$Prediction, y[1:trainn])
-plot(RLTfit$OOBPrediction, y[1:trainn])
-mean((RLTfit$OOBPrediction - y[1:trainn])^2)
-
-start_time <- Sys.time()
-RLTpred = predict(RLTfit, X[1:trainn + testn, ], ncores = ncores)
-Sys.time() - start_time
-
-plot(RLTpred$Prediction, y[1:trainn + testn])
-mean((RLTpred$Prediction - y[1:trainn + testn])^2)
-
-
-start_time <- Sys.time()
-RLTpred = predict(RLTfit, X[1:trainn + testn, ], kernel = TRUE, ncores = ncores)
-Sys.time() - start_time
-plot(RLTpred$Prediction, y[1:trainn + testn])
-mean((RLTpred$Prediction - y[1:trainn + testn])^2)
-
-
-
-for (i in 1:ntrees)
-{
-  if ( any(sort(unlist(RLTfit$NodeRegi[[1]])) != 1:trainn -1) )
-    cat("NodeRegi does not match \n")
-}
-
-getOneTree(RLTfit, 1)
-getOneTree(RLTfit, 100)$NodeType
-
-
-getKernelWeight(RLTfit, X[1:2 + testn, ])
-
-
-
-
-
-
-
-
 
 # survival analysis
 
 set.seed(1)
 n = 500
-p = 100
+p = 10
 X = cbind(matrix(rnorm(n*p), n, p), matrix(as.integer(runif(n*p)*10), n, p))
 X = as.data.frame(X)
 for (j in (1:p + p)) X[,j] = as.factor(X[,j])
 
-# y = 2 + rowSums(data.matrix(X[, 1:5])) * 2 + rowSums(data.matrix(X[,1:5 + p]))*0.5 + rnorm(n)
-# y = 2 + X[, 2] * 3 + rnorm(n) + 10
-
 censor = rbinom(n, 1, 0.5)
-y = 10 + rnorm(n)
-
+y = 10 + X[, 2] * 3 + rnorm(n)
 
 trainn = n/2
 testn = n - trainn
@@ -98,8 +24,27 @@ importance = TRUE
 
 start_time <- Sys.time()
 RLTfit <- RLT(X[1:trainn, ], y[1:trainn], censor[1:trainn], ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, # obs.w = runif(trainn), 
-              split.gen = rule, nsplit = nsplit, replacement = FALSE, resample.prob = sampleprob, kernel.ready = TRUE, importance = importance)
+              split.gen = rule, nsplit = nsplit, replacement = FALSE, resample.prob = sampleprob, kernel.ready = FALSE, importance = importance)
 Sys.time() - start_time
+
+
+RLTfit$cindex
+
+
+barplot(t(RLTfit$VarImp))
+
+
+getOneTree(RLTfit, 1)
+
+
+
+
+
+
+
+
+
+
 
 library(randomForestSRC)
 library(survival)

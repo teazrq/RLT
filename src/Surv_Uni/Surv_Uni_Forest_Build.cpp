@@ -178,7 +178,7 @@ void Surv_Uni_Forest_Build(const mat& X,
         
         for (size_t i =0; i < NTest; i++)
         {
-            oobpred(i) = sum( cumsum( Forest[nt].NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+            oobpred(i) = - sum( cumsum( Forest[nt].NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
         }
         
         double baseImp = cindex_i( oobY, oobC, oobpred );
@@ -200,14 +200,14 @@ void Surv_Uni_Forest_Build(const mat& X,
           // get prediction
           for (size_t i =0; i < NTest; i++)
           {
-            oobpred(i) = sum( cumsum( Forest[nt].NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+            oobpred(i) = - sum( cumsum( Forest[nt].NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
           }
           
           DEBUG_Rcout << "-- get oobpred " << oobpred << std::endl;
           
           // record 
           
-          AllImp(nt, j) =  ( 1 - cindex_i( oobY, oobC, oobpred ) ) / ( 1 - baseImp );
+          AllImp(nt, j) =  ( 1 - cindex_i( oobY, oobC, oobpred ) ) / ( 1 - baseImp ) - 1;
         }
       }
     }
@@ -223,5 +223,6 @@ void Surv_Uni_Forest_Build(const mat& X,
   }
   
   VarImp = mean(AllImp, 0).t();
-  VarImp -= 1;
+  
+  
 }
