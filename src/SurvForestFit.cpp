@@ -141,7 +141,7 @@ List SurvForestUniFit(arma::mat& X,
       uvec oobC = Censor(nonNAs);
       vec oobP = oobpred(nonNAs);
       
-      ReturnList["cindex"] =  1 - cindex_i( oobY, oobC, oobP );
+      ReturnList["cindex"] =  cindex_i( oobY, oobC, oobP );
   }
 
   return ReturnList;
