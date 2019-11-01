@@ -170,7 +170,7 @@ void Surv_Uni_Forest_Build(const mat& X,
         uvec oobC = Censor(oobagObs);
         
         uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
-        uvec TermNode(NTest, fill::zeros);         
+        uvec TermNode(NTest, fill::zeros);
         
         Uni_Find_Terminal_Node(0, Forest[nt], X, Ncat, proxy_id, oobagObs, TermNode);
         
@@ -181,7 +181,7 @@ void Surv_Uni_Forest_Build(const mat& X,
             oobpred(i) = - sum( cumsum( Forest[nt].NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
         }
         
-        double baseImp = 1-cindex_i( oobY, oobC, oobpred );
+        double baseImp = cindex_i( oobY, oobC, oobpred );
         
         for (auto j : AllVar)
         {
@@ -207,7 +207,7 @@ void Surv_Uni_Forest_Build(const mat& X,
           
           // record 
           
-          AllImp(nt, j) =  (1- cindex_i( oobY, oobC, oobpred )) / baseImp;
+          AllImp(nt, j) =  baseImp - cindex_i( oobY, oobC, oobpred );
         }
       }
     }
@@ -223,6 +223,5 @@ void Surv_Uni_Forest_Build(const mat& X,
   }
   
   VarImp = mean(AllImp, 0).t();
-  VarImp -= 1;
 
 }
