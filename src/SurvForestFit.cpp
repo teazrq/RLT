@@ -134,14 +134,14 @@ List SurvForestUniFit(arma::mat& X,
       
       for (auto i : nonNAs)
       {
-          oobpred(i) = - sum( cumsum( OobSurvPred.row(i) ) ); // sum of cumulative hazard as prediction
+          oobpred(i) = sum( cumsum( OobSurvPred.row(i) ) ); // sum of cumulative hazard as prediction
       }
       
       uvec oobY = Y(nonNAs);
       uvec oobC = Censor(nonNAs);
       vec oobP = oobpred(nonNAs);
       
-      ReturnList["cindex"] =  1- cindex_i( oobY, oobC, oobP );
+      ReturnList["cindex"] =  1 - cindex_i( oobY, oobC, oobP );
   }
 
   return ReturnList;
