@@ -25,7 +25,7 @@ void Reg_Uni_Forest_Build(const mat& X,
 						  vec& var_weight,
 						  uvec& var_id,
 						  std::vector<Reg_Uni_Tree_Class>& Forest,
-						  imat& ObsTrack,
+						  umat& ObsTrack,
 						  mat& Pred,
 						  arma::field<arma::field<arma::uvec>>& NodeRegi,
 						  vec& VarImp,
@@ -42,7 +42,8 @@ void Reg_Uni_Forest_Build(const mat& X,
   size_t size = (size_t) obs_id.n_elem*resample_prob;
   size_t nmin = Param.nmin;
   bool kernel_ready = Param.kernel_ready;
-
+  bool pre_obstrack = Param.pre_obstrack;
+      
   Pred.zeros(N, ntrees);
   
   // start parallel trees
@@ -61,18 +62,19 @@ void Reg_Uni_Forest_Build(const mat& X,
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
     {
       
-      DEBUG_Rcout << "-- Fitting tree " << nt << std::endl;       
+      DEBUG_Rcout << "-- Fitting tree " << nt << std::endl;
+    
       // get inbag and oobag samples
       uvec inbagObs, oobagObs;
-      oob_samples(inbagObs, oobagObs, obs_id, size, replacement);
       
-      // record to the ObsTrack matrix
-      for (size_t i = 0; i < size; i++)
-        ObsTrack(inbagObs(i), nt)++;
+      if (!pre_obstrack)
+          set_obstrack(ObsTrack, nt, size, replacement);
       
-      DEBUG_Rcout << "-- Initiate tree " << nt << std::endl;
+      get_samples(inbagObs, oobagObs, obs_id, ObsTrack.unsafe_col(nt));
       
       // initialize a tree (univariate split)
+      DEBUG_Rcout << "-- Initiate tree " << nt << std::endl;      
+      
       size_t TreeLength = 1 + size/nmin*3;
       Forest[nt].initiate(TreeLength, P);
   

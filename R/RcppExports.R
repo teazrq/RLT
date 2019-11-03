@@ -5,8 +5,8 @@ ForestKernelUni <- function(NodeType, SplitVar, SplitValue, LeftNode, RightNode,
     .Call(`_RLT_ForestKernelUni`, NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeRegi, ObsTrack, X, Ncat, obsweight, useobsweight, usecores, verbose)
 }
 
-RegForestUniFit <- function(X, Y, Ncat, param, RLTparam, obsweight, varweight, usecores, verbose) {
-    .Call(`_RLT_RegForestUniFit`, X, Y, Ncat, param, RLTparam, obsweight, varweight, usecores, verbose)
+RegForestUniFit <- function(X, Y, Ncat, param, RLTparam, obsweight, varweight, usecores, verbose, ObsTrackPre) {
+    .Call(`_RLT_RegForestUniFit`, X, Y, Ncat, param, RLTparam, obsweight, varweight, usecores, verbose, ObsTrackPre)
 }
 
 RegForestUniPred <- function(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeAve, NodeSize, X, Y, Ncat, param, obsweight, kernel, usecores, verbose) {

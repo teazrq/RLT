@@ -31,6 +31,8 @@ public:
   double resample_prob;
   bool useobsweight;
   bool usevarweight;
+  bool pre_obstrack;
+  size_t NFail;
   int importance;
   bool reinforcement;
   bool kernel_ready;
@@ -53,6 +55,8 @@ public:
     reinforcement = param["reinforcement"];
     useobsweight  = param["use.obs.w"];
     usevarweight  = param["use.var.w"];
+    pre_obstrack  = param["pre.obs.track"];
+    NFail         = param["nfail"];
     seed          = param["seed"];
   }
 };

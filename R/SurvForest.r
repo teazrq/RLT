@@ -33,7 +33,7 @@ SurvForest <- function(x, y, censor,
   storage.mode(y.point) <- "integer"
   storage.mode(censor) <- "integer"
   
-
+  param$'nfail' = length(timepoints)
   
   # check splitting rule 
   all.split.rule = c("var")

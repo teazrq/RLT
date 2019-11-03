@@ -13,7 +13,7 @@ X = cbind(X1, X2)
 y = 1 + X[, 1] + X[, p/2+1] %in% c(1, 3) + rnorm(n)
 
 ntrees = 200
-ncores = 8
+ncores = 5
 nmin = 10
 mtry = p
 sampleprob = 0.85
@@ -66,6 +66,15 @@ metric
 
 ################# other features of RLT ##########################
 
+ntrees = 10
+MySamples = matrix(sample(c(0, 1), ntrees*nrow(trainX), replace = TRUE), ncol = ntrees)
+
+RLTfit <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, 
+              ObsTrack = MySamples)
+
+RLTPred <- predict(RLTfit, testX, ncores = ncores)
+mean((RLTPred$Prediction - testY)^2)
 
 # oob predictions 
 

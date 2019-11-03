@@ -20,10 +20,12 @@ List RegForestUniFit(arma::mat& X,
 					 arma::vec& obsweight,
 					 arma::vec& varweight,
 					 int usecores,
-					 int verbose)
+					 int verbose,
+					 arma::umat& ObsTrackPre)
 {
 
   DEBUG_Rcout << "/// THIS IS A DEBUG MODE OF RLT ///" << std::endl;
+
   
   // check number of cores
   usecores = checkCores(usecores, verbose);
@@ -38,12 +40,17 @@ List RegForestUniFit(arma::mat& X,
   size_t ntrees = Param.ntrees;
   bool kernel_ready = Param.kernel_ready;
   int seed = Param.seed;
-    
+
   // initiate tree and other objects
   std::vector<Reg_Uni_Tree_Class> Forest(ntrees);
 
-  arma::imat ObsTrack(N, ntrees, fill::zeros);
-
+  arma::umat ObsTrack;
+  
+  if (Param.pre_obstrack and ObsTrackPre.n_rows == N and ObsTrackPre.n_cols == ntrees)
+      ObsTrack = umat(ObsTrackPre);
+  else
+      ObsTrack = umat(N, ntrees, fill::zeros);
+  
   arma::field<arma::field<arma::uvec>> NodeRegi(ntrees);
   
   vec VarImp(P, fill::zeros);

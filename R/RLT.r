@@ -23,6 +23,7 @@
 #' @param seed random seed using dqrng::xoshiro256plus generator 
 #' @param verbose Whether fitting should be printed
 #' @param ncores Number of cores
+#' @param ObsTrack Pre-specified matrix for in-bag data indicator matrix. It will not be used if it contains any negative value. This is an experimental feature, try at your own risk. 
 #' @param ... additional arguments
 #' @return A \code{RLT} object; a list consisting of
 #' \item{FittedForest}{Fitted tree structures}
@@ -52,6 +53,7 @@ RLT <- function(x, y, censor = NULL, model = NULL, reinforcement = FALSE,
         				seed = NA,
         				ncores = 1,
         				verbose = 0,
+        				ObsTrack = NaN,
         				...)
 {
   # check inputs
@@ -76,6 +78,21 @@ RLT <- function(x, y, censor = NULL, model = NULL, reinforcement = FALSE,
   if (reinforcement)
     RLT.control <- check_RLT_control(RLT.control)
   
+  # check ObsTrack
+  if ( !any(is.na(ObsTrack)) )
+  {
+      if (!is.matrix(ObsTrack))
+          stop("ObsTrack must be a matrix")
+      
+      if (nrow(ObsTrack) != n | ncol(ObsTrack) != ntrees)
+          stop("Number of rows in ObsTrack must be the same as x;\n Number of columns in ObsTrack must be the same as ntrees")      
+  
+      param$pre.obs.track = TRUE
+  }else{
+      ObsTrack = as.matrix(0);
+      param$pre.obs.track = FALSE
+  }
+      
   # check observation weights  
   if (is.null(obs.w))
   {
@@ -160,6 +177,7 @@ RLT <- function(x, y, censor = NULL, model = NULL, reinforcement = FALSE,
 	                      var.w,
 	                      ncores,
 	                      verbose,
+	                      ObsTrack,
 	                      ...)
 	}
   

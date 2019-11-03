@@ -57,7 +57,9 @@ check_param <- function(n, p,
                        "reinforcement" = reinforcement,
                        "kernel.ready" = kernel.ready,
                        "use.obs.w" = 0L,
-                       "use.var.w" = 0L))
+                       "use.var.w" = 0L,
+                       "pre.obs.track" = 0L, # will be overwrite later
+                       "nfail" = 0L)) # for survival, will be overwrite later
 }
 
 

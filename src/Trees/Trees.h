@@ -68,6 +68,17 @@ void oob_samples(arma::uvec& inbagObs,
                  const size_t size,
                  const bool replacement);
 
+void set_obstrack(arma::umat& ObsTrack,
+                  const size_t nt,
+                  const size_t size,
+                  const bool replacement);
+
+void get_samples(arma::uvec& inbagObs,
+                 arma::uvec& oobagObs,
+                 const arma::uvec& subj_id,
+                 const arma::uvec& ObsTrack_nt);
+
+
 void move_cont_index(size_t& lowindex, size_t& highindex, const vec& x, const uvec& indices, size_t nmin);
 void split_id(const vec& x, double value, uvec& left_id, uvec& obs_id);
 void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_t ncat);

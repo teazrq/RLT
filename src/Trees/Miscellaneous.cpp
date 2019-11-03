@@ -80,6 +80,67 @@ void oob_samples(arma::uvec& inbagObs,
   oobagObs = subj_id.elem( find(oob_indicate > 0.5) );
 }
 
+
+void set_obstrack(arma::umat& ObsTrack,
+                  const size_t nt,
+                  const size_t size,
+                  const bool replacement)
+{
+	size_t N = ObsTrack.n_rows;
+	
+	if (replacement)
+	{
+		arma::uvec loc = randi<uvec>(size, distr_param(0, N-1));
+		
+		for (size_t i; i < size; i++) // its prob unsafe to regenerate obstrack, so I just write on it
+			ObsTrack( loc(i), nt ) ++;
+		
+	}else{
+		
+		arma::uvec ind(N, fill::zeros);
+		ind.head(size) = 1;
+		ind = shuffle(ind);
+		
+		ObsTrack.col(nt) = ind;
+	}
+}
+
+
+// get inbag and oobag samples from ObsTrackPre
+
+void get_samples(arma::uvec& inbagObs,
+                 arma::uvec& oobagObs,
+                 const arma::uvec& subj_id,
+                 const arma::uvec& ObsTrack_nt)
+{
+	size_t N = sum(ObsTrack_nt);
+	
+	oobagObs = subj_id.elem( find(ObsTrack_nt == 0) );
+	
+	inbagObs.set_size(N);
+	
+	size_t mover = 0;
+	
+	for (size_t i = 0; i < N; i++)
+	{
+		if (ObsTrack_nt(i) > 0)
+		{
+			for (size_t k = 0; k < ObsTrack_nt(i); k++)
+			{
+				inbagObs(mover) = subj_id(i);
+				mover ++;
+			}
+		}
+	}
+	
+	inbagObs.resize(mover);
+}
+
+
+
+
+
+
 // moveindex (continuous varaible) so that both low and high are not at a tie location 
 // and has sufficient number of observations
 

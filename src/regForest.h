@@ -16,7 +16,7 @@ using namespace arma;
 
 // univariate tree split functions 
 
-List RegForestUniFit(DataFrame& X,
+List RegForestUniFit(mat& X,
 					 vec& Y,
 					 uvec& Ncat,
 					 List& param,
@@ -24,7 +24,8 @@ List RegForestUniFit(DataFrame& X,
 					 vec& obsweight,
 					 vec& varweight,
 					 int usecores,
-					 int verbose);
+					 int verbose,
+                     umat& ObsTrackPre);
 
 void Reg_Uni_Forest_Build(const mat& X,
 						  const vec& Y,
@@ -36,7 +37,7 @@ void Reg_Uni_Forest_Build(const mat& X,
 						  vec& var_weight,
 						  uvec& var_id,
 						  std::vector<Reg_Uni_Tree_Class>& Forest,
-						  imat& ObsTrack,
+						  umat& ObsTrack,
 						  mat& Pred,
 						  arma::field<arma::field<arma::uvec>>& NodeRegi,
 						  vec& VarImp,

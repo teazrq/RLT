@@ -11,6 +11,7 @@ RegForest <- function(x, y,
                       var.w,
                       ncores,
                       verbose,
+                      ObsTrack,
                       ...)
 {
   # prepare y
@@ -28,7 +29,8 @@ RegForest <- function(x, y,
                         obs.w,
                         var.w,
                         ncores,
-                        verbose)
+                        verbose,
+                        ObsTrack)
 
   fit[["ncat"]] = ncat
   fit[["parameters"]] = param
