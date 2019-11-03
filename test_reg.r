@@ -66,13 +66,14 @@ metric
 
 ################# other features of RLT ##########################
 
-ntrees = 1000
+ntrees = 2000
 mtry = p/2
 rule = "random"
 nsplit = 1
 
+MySamples = matrix(0, trainn, ntrees)
+for (j in 1:ntrees) MySamples[, j] = sample( c(rep(1, trainn*0.8), rep(0, trainn*0.2)) )
 
-MySamples = matrix(sample(c(0, 1), ntrees*nrow(trainX), replace = TRUE), ncol = ntrees)
 
 RLTfit <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
               split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, 
@@ -91,11 +92,10 @@ mean((RLTPred2$Prediction - testY)^2)
 
 
 
-subj = 2
+subj = 10
 
 # Var(Trees)
-var(RLTPred$PredictionAll[subj, ])
-var(RLTPred2$PredictionAll[subj, ])
+var(c(RLTPred$PredictionAll[subj, ], RLTPred2$PredictionAll[subj, ]))
 
 # E[Var[Trees | shared]]
 mean((RLTPred$PredictionAll[subj, ] - RLTPred2$PredictionAll[subj, ])^2/2)
