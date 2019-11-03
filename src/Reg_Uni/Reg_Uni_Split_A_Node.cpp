@@ -84,7 +84,7 @@ TERMINATENODE:
       DEBUG_Rcout << "  ------------- extend tree length: this shouldn't happen ----------- " << std::endl;
       
       // extend tree structure
-      OneTree.extend(P);
+      OneTree.extend();
     
       // extend noderegi
       if ( kernel_ready and (OneTree.NodeType.n_elem > OneNodeRegi.size()) )

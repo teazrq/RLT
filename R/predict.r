@@ -3,6 +3,7 @@
 #' @param object A fitted RLT object
 #' @param testx the testing samples, must have the same structure as the training samples
 #' @param kernel to use kernel prediction (take the terminal node size into account)
+#' @param keep.all whether to keep the prediction from all trees
 #' @param ncores number of cores
 #' @param ... ...
 #' @examples
@@ -10,6 +11,7 @@
 predict.RLT<- function(object, 
                        testx = NULL, 
                        kernel = FALSE, 
+                       keep.all = FALSE,
                        ncores = 1, 
                        verbose = 0,
                        ...)
@@ -52,6 +54,7 @@ predict.RLT<- function(object,
                              object$parameters,
                              object$obs.w,
                              kernel,
+                             keep.all,
                              ncores,
                              verbose)
     

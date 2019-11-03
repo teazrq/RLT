@@ -182,12 +182,14 @@ bool reg_cat_reduced_compare(Reg_Cat_Class& a,
 */
 // for prediction 
 
-vec Reg_Uni_Forest_Pred(const std::vector<Reg_Uni_Tree_Class>& Forest,
-						const mat& X,
-						const uvec& Ncat,
-						bool kernel,
-						int usecores,
-						int verbose);
+void Reg_Uni_Forest_Pred(mat& Pred,
+                         mat& W,
+                         const std::vector<Reg_Uni_Tree_Class>& Forest,
+						 const mat& X,
+						 const uvec& Ncat,
+						 bool kernel,
+						 int usecores,
+						 int verbose);
 
 // for coverting 
 

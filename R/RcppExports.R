@@ -9,8 +9,8 @@ RegForestUniFit <- function(X, Y, Ncat, param, RLTparam, obsweight, varweight, u
     .Call(`_RLT_RegForestUniFit`, X, Y, Ncat, param, RLTparam, obsweight, varweight, usecores, verbose, ObsTrackPre)
 }
 
-RegForestUniPred <- function(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeAve, NodeSize, X, Y, Ncat, param, obsweight, kernel, usecores, verbose) {
-    .Call(`_RLT_RegForestUniPred`, NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeAve, NodeSize, X, Y, Ncat, param, obsweight, kernel, usecores, verbose)
+RegForestUniPred <- function(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeAve, NodeSize, X, Y, Ncat, param, obsweight, kernel, keep_all, usecores, verbose) {
+    .Call(`_RLT_RegForestUniPred`, NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeAve, NodeSize, X, Y, Ncat, param, obsweight, kernel, keep_all, usecores, verbose)
 }
 
 SurvForestUniFit <- function(X, Y, Censor, Ncat, param, RLTparam, obsweight, varweight, usecores, verbose) {

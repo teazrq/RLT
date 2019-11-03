@@ -76,7 +76,8 @@ void Reg_Uni_Forest_Build(const mat& X,
       DEBUG_Rcout << "-- Initiate tree " << nt << std::endl;      
       
       size_t TreeLength = 1 + size/nmin*3;
-      Forest[nt].initiate(TreeLength, P);
+      
+      Forest[nt].initiate(TreeLength);
   
       // define a temporary object to save node regi since field cannot be resized 
       std::vector<uvec> OneNdeRegi;

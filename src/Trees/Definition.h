@@ -162,20 +162,20 @@ public:
   }
   
   // initiate tree
-  void initiate(size_t TreeLength, size_t P)
+  void initiate(size_t TreeLength)
   {
     if (TreeLength == 0) TreeLength = 1;
-    if (P == 0) P = 1;
     
     NodeType.zeros(TreeLength);
-    SplitVar.zeros(TreeLength);
+    
+    SplitVar.set_size(TreeLength);
+    SplitVar.fill(datum::nan);
+    
     SplitValue.zeros(TreeLength);
     LeftNode.zeros(TreeLength);
     RightNode.zeros(TreeLength);
     NodeAve.zeros(TreeLength);
     NodeSize.zeros(TreeLength);
-    
-    SplitVar.fill(P+1);
   }
 
   void trim(size_t TreeLength)
@@ -189,7 +189,7 @@ public:
     NodeSize.resize(TreeLength);
   }
 
-  void extend(size_t P)
+  void extend()
   {
     // tree is not long enough, extend
     size_t OldLength = NodeType.n_elem;
@@ -199,7 +199,7 @@ public:
     NodeType(span(OldLength, NewLength-1)).zeros();
     
     SplitVar.resize(NewLength);
-    SplitVar(span(OldLength, NewLength-1)).fill(P+1); // this should be P+1 already because intitialization
+    SplitVar(span(OldLength, NewLength-1)).fill(datum::nan);
     
     SplitValue.resize(NewLength);
     SplitValue(span(OldLength, NewLength-1)).zeros();
@@ -213,7 +213,7 @@ public:
     NodeAve.resize(NewLength);
     NodeAve(span(OldLength, NewLength-1)).zeros();
       
-    NodeSize.resize(NewLength); // need to remove later 
+    NodeSize.resize(NewLength);
     NodeSize(span(OldLength, NewLength-1)).zeros();
   }
 };

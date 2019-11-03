@@ -66,15 +66,43 @@ metric
 
 ################# other features of RLT ##########################
 
-ntrees = 10
+ntrees = 1000
+mtry = p/2
+rule = "random"
+nsplit = 1
+
+
 MySamples = matrix(sample(c(0, 1), ntrees*nrow(trainX), replace = TRUE), ncol = ntrees)
 
 RLTfit <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
               split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, 
               ObsTrack = MySamples)
 
-RLTPred <- predict(RLTfit, testX, ncores = ncores)
+RLTPred <- predict(RLTfit, testX, keep.all = TRUE, ncores = ncores)
 mean((RLTPred$Prediction - testY)^2)
+
+# fit another random forests with the same subsample index
+RLTfit2 <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, 
+              ObsTrack = MySamples)
+
+RLTPred2 <- predict(RLTfit2, testX, keep.all = TRUE, ncores = ncores)
+mean((RLTPred2$Prediction - testY)^2)
+
+
+
+subj = 2
+
+# Var(Trees)
+var(RLTPred$PredictionAll[subj, ])
+var(RLTPred2$PredictionAll[subj, ])
+
+# E[Var[Trees | shared]]
+mean((RLTPred$PredictionAll[subj, ] - RLTPred2$PredictionAll[subj, ])^2/2)
+
+
+
+
 
 # oob predictions 
 

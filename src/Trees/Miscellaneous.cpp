@@ -92,7 +92,7 @@ void set_obstrack(arma::umat& ObsTrack,
 	{
 		arma::uvec loc = randi<uvec>(size, distr_param(0, N-1));
 		
-		for (size_t i; i < size; i++) // its prob unsafe to regenerate obstrack, so I just write on it
+		for (size_t i = 0; i < size; i++) // its prob unsafe to regenerate obstrack, so I just write on it
 			ObsTrack( loc(i), nt ) ++;
 		
 	}else{

@@ -50,8 +50,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // RegForestUniPred
-List RegForestUniPred(arma::field<arma::uvec>& NodeType, arma::field<arma::uvec>& SplitVar, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeAve, arma::field<arma::vec>& NodeSize, arma::mat& X, arma::vec& Y, arma::uvec& Ncat, List& param, arma::vec& obsweight, bool kernel, int usecores, int verbose);
-RcppExport SEXP _RLT_RegForestUniPred(SEXP NodeTypeSEXP, SEXP SplitVarSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeAveSEXP, SEXP NodeSizeSEXP, SEXP XSEXP, SEXP YSEXP, SEXP NcatSEXP, SEXP paramSEXP, SEXP obsweightSEXP, SEXP kernelSEXP, SEXP usecoresSEXP, SEXP verboseSEXP) {
+List RegForestUniPred(arma::field<arma::uvec>& NodeType, arma::field<arma::uvec>& SplitVar, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeAve, arma::field<arma::vec>& NodeSize, arma::mat& X, arma::vec& Y, arma::uvec& Ncat, List& param, arma::vec& obsweight, bool kernel, bool keep_all, int usecores, int verbose);
+RcppExport SEXP _RLT_RegForestUniPred(SEXP NodeTypeSEXP, SEXP SplitVarSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeAveSEXP, SEXP NodeSizeSEXP, SEXP XSEXP, SEXP YSEXP, SEXP NcatSEXP, SEXP paramSEXP, SEXP obsweightSEXP, SEXP kernelSEXP, SEXP keep_allSEXP, SEXP usecoresSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -68,9 +68,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< List& >::type param(paramSEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type obsweight(obsweightSEXP);
     Rcpp::traits::input_parameter< bool >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< bool >::type keep_all(keep_allSEXP);
     Rcpp::traits::input_parameter< int >::type usecores(usecoresSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(RegForestUniPred(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeAve, NodeSize, X, Y, Ncat, param, obsweight, kernel, usecores, verbose));
+    rcpp_result_gen = Rcpp::wrap(RegForestUniPred(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeAve, NodeSize, X, Y, Ncat, param, obsweight, kernel, keep_all, usecores, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -138,7 +139,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_RLT_ForestKernelUni", (DL_FUNC) &_RLT_ForestKernelUni, 13},
     {"_RLT_RegForestUniFit", (DL_FUNC) &_RLT_RegForestUniFit, 10},
-    {"_RLT_RegForestUniPred", (DL_FUNC) &_RLT_RegForestUniPred, 15},
+    {"_RLT_RegForestUniPred", (DL_FUNC) &_RLT_RegForestUniPred, 16},
     {"_RLT_SurvForestUniFit", (DL_FUNC) &_RLT_SurvForestUniFit, 10},
     {"_RLT_SurvForestUniPred", (DL_FUNC) &_RLT_SurvForestUniPred, 17},
     {"_RLT_cindex_d", (DL_FUNC) &_RLT_cindex_d, 3},

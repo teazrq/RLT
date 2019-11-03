@@ -12,22 +12,23 @@
 using namespace Rcpp;
 using namespace arma;
 
-vec Reg_Uni_Forest_Pred(const std::vector<Reg_Uni_Tree_Class>& Forest,
-            						const mat& X,
-            						const uvec& Ncat,
-            						bool kernel,
-            						int usecores,
-            						int verbose)
+void Reg_Uni_Forest_Pred(mat& Pred,
+                         mat& W,
+                         const std::vector<Reg_Uni_Tree_Class>& Forest,
+            			 const mat& X,
+            			 const uvec& Ncat,
+            			 bool kernel,
+            			 int usecores,
+            			 int verbose)
 {
   DEBUG_Rcout << "/// Start prediction ///" << std::endl;
   
   size_t N = X.n_rows;
   size_t ntrees = Forest.size();
     
-  mat A(N, ntrees, fill::zeros);
-  
-  mat W;
-  
+  Pred.set_size(N, ntrees);
+  Pred.zeros();
+
   if (kernel)
   {
     W.set_size(N, ntrees);
@@ -47,22 +48,11 @@ vec Reg_Uni_Forest_Pred(const std::vector<Reg_Uni_Tree_Class>& Forest,
       
       Uni_Find_Terminal_Node(0, Forest[nt], X, Ncat, proxy_id, real_id, TermNode);
       
+      Pred.unsafe_col(nt).rows(real_id) = Forest[nt].NodeAve(TermNode);
+      
       if (kernel)
-      {
-        A.unsafe_col(nt).rows(real_id) = Forest[nt].NodeAve(TermNode) % Forest[nt].NodeSize(TermNode);
-        W.unsafe_col(nt).rows(real_id) = Forest[nt].NodeSize(TermNode);
-      }else{
-        A.unsafe_col(nt).rows(real_id) = Forest[nt].NodeAve(TermNode);
-      }
+          W.unsafe_col(nt).rows(real_id) = Forest[nt].NodeSize(TermNode);
     }
   }
-  
-  if (kernel)
-  {
-    return(sum(A, 1) / sum(W, 1));
-  }else{
-    return(mean(A, 1)); 
-  }
-
 }
 
