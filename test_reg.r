@@ -12,8 +12,8 @@ for (j in ncol(X2)) X2[,j] = as.factor(X2[,j])
 X = cbind(X1, X2)
 y = 1 + X[, 1] + X[, p/2+1] %in% c(1, 3) + rnorm(n)
 
-ntrees = 200
-ncores = 5
+ntrees = 100
+ncores = 10
 nmin = 10
 mtry = p
 sampleprob = 0.85
@@ -71,36 +71,72 @@ mtry = p/2
 rule = "random"
 nsplit = 1
 
-MySamples = matrix(0, trainn, ntrees)
-for (j in 1:ntrees) MySamples[, j] = sample( c(rep(1, trainn*0.8), rep(0, trainn*0.2)) )
+K = floor(trainn * 0.85)
+
+NP = K
+NQ = trainn - K
+
+ALLC = 0:K
+
+Den = dhyper(ALLC, NP, NQ, K, log = FALSE)
+plot(ALLC, Den)
+C = ALLC[which.max(Den)]
+C
+
+MySamples1 = rbind(matrix(1, C, ntrees), 
+                   matrix(1, K - C, ntrees), 
+                   matrix(0, trainn - K, ntrees))
+
+MySamples2 = rbind(matrix(1, C, ntrees), 
+                   matrix(0, trainn - K, ntrees),
+                   matrix(1, K - C, ntrees))
+
+for (j in 1:ntrees)
+{
+    shuffle = sample(1:trainn)
+    
+    MySamples1[, j] = MySamples1[shuffle, j]
+    MySamples2[, j] = MySamples2[shuffle, j]
+}
+
+table(colSums(MySamples1 * MySamples2))
 
 
-RLTfit <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
-              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, 
-              ObsTrack = MySamples)
 
-RLTPred <- predict(RLTfit, testX, keep.all = TRUE, ncores = ncores)
-mean((RLTPred$Prediction - testY)^2)
+
+
+RLTfit1 <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
+              split.gen = rule, nsplit = nsplit, ObsTrack = MySamples1)
+
+RLTPred1 <- predict(RLTfit1, testX, keep.all = TRUE, ncores = ncores)
+mean((RLTPred1$Prediction - testY)^2)
 
 # fit another random forests with the same subsample index
 RLTfit2 <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
-              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, 
-              ObsTrack = MySamples)
+              split.gen = rule, nsplit = nsplit, ObsTrack = MySamples2)
 
 RLTPred2 <- predict(RLTfit2, testX, keep.all = TRUE, ncores = ncores)
 mean((RLTPred2$Prediction - testY)^2)
 
 
-
-subj = 10
+subj = 2
 
 # Var(Trees)
-var(c(RLTPred$PredictionAll[subj, ], RLTPred2$PredictionAll[subj, ]))
+
+var(c(RLTPred1$PredictionAll[subj, ], RLTPred2$PredictionAll[subj, ]))
+var(RLTPred2$PredictionAll[subj, ])
+
 
 # E[Var[Trees | shared]]
-mean((RLTPred$PredictionAll[subj, ] - RLTPred2$PredictionAll[subj, ])^2/2)
+mean((RLTPred1$PredictionAll[subj, ] - RLTPred2$PredictionAll[subj, ])^2/2)
 
 
+
+RLTfit_bs <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
+               split.gen = rule, nsplit = nsplit, 
+               resample.prob = 0.85, replacement = TRUE)
+RLTPred_bs <- predict(RLTfit_bs, testX, keep.all = TRUE, ncores = ncores)
+var(RLTPred_bs$PredictionAll[subj, ])
 
 
 

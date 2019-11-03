@@ -98,10 +98,9 @@ void set_obstrack(arma::umat& ObsTrack,
 	}else{
 		
 		arma::uvec ind(N, fill::zeros);
-		ind.head(size) = 1;
-		ind = shuffle(ind);
+		ind.head(size) += 1;
 		
-		ObsTrack.col(nt) = ind;
+		ObsTrack.col(nt) = shuffle(ind);
 	}
 }
 
