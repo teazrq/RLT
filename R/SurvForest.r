@@ -36,7 +36,7 @@ SurvForest <- function(x, y, censor,
   param$'nfail' = length(timepoints)
   
   # check splitting rule 
-  all.split.rule = c("var")
+  all.split.rule = c("logrank", "suplogrank", "ll")
     
   param$"split.rule" <- match.arg(param$"split.rule", all.split.rule)
   param$"split.rule" <- match(param$"split.rule", all.split.rule)

@@ -46,9 +46,10 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             temp_cut = temp_cut_arma(0);
             
             if (useobsweight){
-                temp_score = surv_cont_score_at_cut_w(obs_id, x, Y, Censor, NFail, temp_cut, obs_weight, split_rule);
+                temp_score = surv_cont_score_at_cut_w(obs_id, x, Y, Censor, NFail, temp_cut, obs_weight, split_rule, penalty);
+                
             }else{
-                temp_score = surv_cont_score_at_cut(obs_id, x, Y, Censor, NFail, temp_cut, split_rule);
+                temp_score = surv_cont_score_at_cut(obs_id, x, Y, Censor, NFail, temp_cut, split_rule, penalty);
             }
             
             if (temp_score > TempSplit.score)
@@ -132,14 +133,15 @@ double surv_cont_score_at_cut(uvec& obs_id,
                               const uvec& Censor,
                               size_t NFail,
                               double a_random_cut,
-                              int split_rule)
+                              int split_rule,
+                              double penalty)
 {
     // x is of full length, Y is collapsed, length same as id
     
-    uvec Left_Count_Fail(NFail+1, fill::zeros);
-    uvec Left_Count_Censor(NFail+1, fill::zeros);
-    uvec Right_Count_Fail(NFail+1, fill::zeros);
-    uvec Right_Count_Censor(NFail+1, fill::zeros);
+    vec Left_Count_Fail(NFail+1, fill::zeros);
+    vec Left_Count_Censor(NFail+1, fill::zeros);
+    vec Right_Count_Fail(NFail+1, fill::zeros);
+    vec Right_Count_Censor(NFail+1, fill::zeros);
     
     size_t LeftN = 0;     
     size_t N = obs_id.n_elem;
@@ -169,7 +171,38 @@ double surv_cont_score_at_cut(uvec& obs_id,
     if (split_rule == 2)
         return suplogrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, (double) LeftN, (double) N, NFail);
     
+    if (split_rule == 3)
+    {
+        // calculate base
+        vec AllFail = Left_Count_Fail + Right_Count_Fail;
+        vec AllCensor = Left_Count_Censor + Right_Count_Censor;
+        
+        vec basehazard = hazard(AllFail, AllCensor);
+        vec lefthazard = hazard(Left_Count_Fail, Left_Count_Censor);
+        vec righthazard = hazard(Right_Count_Fail, Right_Count_Censor);
+        
+        return survloglike(basehazard, lefthazard, righthazard, Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, penalty);
+        // calculate score with penalty 
+        
+    }
+    
+    return 0;
     Rcout << "      --- splitting rule not implemented yet " << std::endl;
+}
+
+vec hazard(const vec& Fail, const vec& Censor)
+{
+    // return a vector of hazard
+
+}
+
+double survloglike(const vec& basehazard, const vec& lefthazard, const vec& righthazard, 
+                   const vec& Left_Count_Fail, const vec& Left_Count_Censor, const vec& Right_Count_Fail, const vec& Right_Count_Censor, 
+                   double penalty)
+{
+    // calculate penalized loglikelihood
+    
+    
 }
 
 
@@ -180,7 +213,8 @@ double surv_cont_score_at_cut_w(uvec& obs_id,
                                 size_t NFail,
                                 double a_random_cut,
                                 vec& obs_weight,
-                                int split_rule)
+                                int split_rule,
+                                double penalty)
 {
     Rcout << "      --- weighted surv split at random cut not implemented yet " << std::endl;
     
@@ -193,14 +227,15 @@ double surv_cont_score_at_index(uvec& obs_ranked,
                                 const uvec& Censor, 
                                 size_t NFail,
                                 size_t a_random_ind,
-                                int split_rule)
+                                int split_rule,
+                                double penalty)
 {
     // Y is collapsed, length same as obs_ranked
     
-    uvec Left_Count_Fail(NFail+1, fill::zeros);
-    uvec Left_Count_Censor(NFail+1, fill::zeros);
-    uvec Right_Count_Fail(NFail+1, fill::zeros);
-    uvec Right_Count_Censor(NFail+1, fill::zeros);
+    vec Left_Count_Fail(NFail+1, fill::zeros);
+    vec Left_Count_Censor(NFail+1, fill::zeros);
+    vec Right_Count_Fail(NFail+1, fill::zeros);
+    vec Right_Count_Censor(NFail+1, fill::zeros);
     
     size_t LeftN = 0;     
     size_t N = obs_ranked.n_elem;
@@ -230,8 +265,22 @@ double surv_cont_score_at_index(uvec& obs_ranked,
     if (split_rule == 2)
         return suplogrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, (double) LeftN, (double) N, NFail);
     
+    if (split_rule == 3)
+    {
+        // calculate base
+        vec AllFail = Left_Count_Fail + Right_Count_Fail;
+        vec AllCensor = Left_Count_Censor + Right_Count_Censor;
+        
+        vec basehazard = hazard(AllFail, AllCensor);
+        vec lefthazard = hazard(Left_Count_Fail, Left_Count_Censor);
+        vec righthazard = hazard(Right_Count_Fail, Right_Count_Censor);
+        
+        return loglike(basehazard, lefthazard, righthazard, Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, penalty);
+        // calculate score with penalty 
+        
+    }
+    
     Rcout << "      --- splitting rule not implemented yet " << std::endl;
-
 }
 
 double surv_cont_score_at_index_w(uvec& obs_ranked,
@@ -265,10 +314,10 @@ double surv_cont_score_best(uvec& indices, // for x, sorted
     
     // Y is collapsed, length same as indices
     
-    uvec Left_Count_Fail(NFail+1, fill::zeros);
-    uvec Left_Count_Censor(NFail+1, fill::zeros);
-    uvec Right_Count_Fail(NFail+1, fill::zeros);
-    uvec Right_Count_Censor(NFail+1, fill::zeros);
+    vec Left_Count_Fail(NFail+1, fill::zeros);
+    vec Left_Count_Censor(NFail+1, fill::zeros);
+    vec Right_Count_Fail(NFail+1, fill::zeros);
+    vec Right_Count_Censor(NFail+1, fill::zeros);
     
     size_t N = indices.n_elem;
     
@@ -334,6 +383,8 @@ double surv_cont_score_best(uvec& indices, // for x, sorted
                 Right_Count_Censor(Y(obs_ranked(i+1)))--;
         }
     }
+    
+    return score; 
 }
 
 
@@ -361,10 +412,10 @@ double surv_cont_score_best_w(uvec& indices,
 
 
 
-double logrank(uvec& Left_Count_Fail,
-               uvec& Left_Count_Censor,
-               uvec& Right_Count_Fail,
-               uvec& Right_Count_Censor,
+double logrank(vec& Left_Count_Fail,
+               vec& Left_Count_Censor,
+               vec& Right_Count_Fail,
+               vec& Right_Count_Censor,
                double LeftN,
                double N,
                size_t NFail)
@@ -392,10 +443,10 @@ double logrank(uvec& Left_Count_Fail,
     return tempscore;
 }
 
-double suplogrank(uvec& Left_Count_Fail,
-                  uvec& Left_Count_Censor,
-                  uvec& Right_Count_Fail,
-                  uvec& Right_Count_Censor,
+double suplogrank(vec& Left_Count_Fail,
+                  vec& Left_Count_Censor,
+                  vec& Right_Count_Fail,
+                  vec& Right_Count_Censor,
                   double LeftN,
                   double N,
                   size_t NFail)

@@ -132,7 +132,8 @@ double surv_cont_score_at_cut(uvec& obs_id,
                               const uvec& Censor,
                               size_t NFail,
                               double a_random_cut,
-                              int split_rule);
+                              int split_rule,
+                              double penalty);
 
 double surv_cont_score_at_cut_w(uvec& obs_id,
                                 const vec& x,
@@ -141,14 +142,16 @@ double surv_cont_score_at_cut_w(uvec& obs_id,
                                 size_t NFail,
                                 double a_random_cut,
                                 vec& obs_weight,
-                                int split_rule);
+                                int split_rule, 
+                                double penalty);
 
 double surv_cont_score_at_index(uvec& indices,
                                 const uvec& Y, 
                                 const uvec& Censor, 
                                 size_t NFail,
                                 size_t a_random_ind,
-                                int split_rule);
+                                int split_rule,
+                                double penalty);
 
 double surv_cont_score_at_index_w(uvec& indices,
                                   const uvec& Y, 
@@ -200,18 +203,18 @@ void surv_cat_score_best(std::vector<Surv_Cat_Class>& cat_reduced,
                          int split_rule,
                          bool useobsweight);
 
-double logrank(uvec& Left_Count_Fail,
-               uvec& Left_Count_Censor,
-               uvec& Right_Count_Fail,
-               uvec& Right_Count_Censor,
+double logrank(vec& Left_Count_Fail,
+               vec& Left_Count_Censor,
+               vec& Right_Count_Fail,
+               vec& Right_Count_Censor,
                double LeftN,
                double N,
                size_t NFail);
 
-double suplogrank(uvec& Left_Count_Fail,
-                  uvec& Left_Count_Censor,
-                  uvec& Right_Count_Fail,
-                  uvec& Right_Count_Censor,
+double suplogrank(vec& Left_Count_Fail,
+                  vec& Left_Count_Censor,
+                  vec& Right_Count_Fail,
+                  vec& Right_Count_Censor,
                   double LeftN,
                   double N,
                   size_t NFail);
@@ -233,6 +236,13 @@ double suplogrank_w(vec& Left_Count_Fail,
                     double W,
                     size_t NFail,
                     bool useobsweight);
+
+vec hazard(const vec& Fail, const vec& Censor);
+
+double survloglike(const vec& basehazard, const vec& lefthazard, const vec& righthazard, 
+                   const vec& Left_Count_Fail, const vec& Left_Count_Censor, 
+                   const vec& Right_Count_Fail, const vec& Right_Count_Censor, 
+                   double penalty);
 
 // utility functions 
 
