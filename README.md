@@ -11,7 +11,7 @@ The goal of `RLT` is to provide new functionalities of random forest models. Thi
 
 ## Installation
 
-You can install the released version (currently < 3.2.2) of `RLT` from [CRAN](https://CRAN.R-project.org/package=RLT) with:
+You can install the released version (currently <= 3.2.2) of `RLT` from [CRAN](https://CRAN.R-project.org/package=RLT) with:
 
 ``` r
 install.packages("RLT")
