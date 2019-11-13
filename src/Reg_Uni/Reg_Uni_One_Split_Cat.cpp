@@ -15,16 +15,16 @@ using namespace arma;
 void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                        uvec& obs_id,
                        const vec& x,
+                       const size_t ncat,
                        const vec& Y,
+                       const vec& obs_weight,
                        double penalty,
                        int split_gen,
                        int split_rule,
                        int nsplit,
                        size_t nmin,
                        double alpha,
-                       vec& obs_weight,
-                       bool useobsweight,
-                       size_t ncat)
+                       bool useobsweight)
 {
   DEBUG_Rcout << "        --- Reg_One_Split_Cat with ncat = " << ncat << std::endl;
   
@@ -49,7 +49,7 @@ void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit,
       size_t temp_cat = (size_t) x(obs_id(i));
       cat_reduced[temp_cat].y += Y(obs_id(i));
       cat_reduced[temp_cat].count ++;
-	  cat_reduced[temp_cat].weight ++;
+	    cat_reduced[temp_cat].weight ++;
     }
   }
   
@@ -63,34 +63,37 @@ void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit,
   for (size_t j = 0; j < cat_reduced.size(); j++)
       cat_reduced[j].calculate_score();
   
+  // this will move the 0 categories to the tail
   sort(cat_reduced.begin(), cat_reduced.end(), cat_reduced_compare);
   
   /*
   sort(cat_reduced.begin(), cat_reduced.begin()+true_cat, cat_reduced_compare_score);
+  
+  for (size_t j = 0; j < cat_reduced.size(); j++)
+      cat_reduced[j].print();
   */
-  //for (size_t j = 0; j < cat_reduced.size(); j++)
-//       cat_reduced[j].print();
-
-  DEBUG_Rcout << "        --- true_cat " << true_cat << std::endl;
-  
-  double temp_score = 0;
-  
-  // rank split, figure out low and high index
-  size_t lowindex;
-  size_t highindex;
-  
-  if ( split_gen == 2 or split_gen == 3 )
-  {
-    move_cat_index(lowindex, highindex, cat_reduced, true_cat, nmin);
-  }else{
-    lowindex = 0;
-    highindex = true_cat - 2;
-  }
   
   size_t best_cat;
-  double best_score = -1;
+  double temp_score = 0;  
+  double best_score = -1;  
+
   
-  DEBUG_Rcout << "        --- start split with lowindex " << lowindex << " highindex " << highindex << std::endl;
+  // rank split, figure out low and high index
+  size_t lowindex = 0;
+  size_t highindex = true_cat - 2;  
+  
+  // alpha is only effective when x can be sorted
+  // this will force nmin for each child node
+  if (alpha > 0)
+  {
+    size_t N = obs_id.n_elem;
+    
+    if (N*alpha > nmin) nmin = (size_t) N*alpha;
+    
+    move_cat_index(lowindex, highindex, cat_reduced, true_cat, nmin);
+  }
+
+  // start split 
   
   if ( split_gen == 1 or split_gen == 2 )
   {

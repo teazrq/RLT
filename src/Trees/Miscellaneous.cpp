@@ -267,6 +267,26 @@ void field_vec_resize(arma::field<arma::vec>& A, size_t size)
   DEBUG_Rcout << " done resize " << std::endl;
 }
 
+void field_vec_resize(arma::field<arma::uvec>& A, size_t size)
+{
+  DEBUG_Rcout << " resize tree from size " << A.n_elem << " to size " << size << std::endl;
+  arma::field<arma::uvec> B(size);
+  
+  size_t common_size = (A.n_elem > size) ? size : A.n_elem;
+  
+  for (size_t i = 0; i < common_size; i++)
+  {
+    B[i] = uvec(A[i].begin(), A[i].size(), false, true);
+  }
+  
+  A.set_size(size);
+  for (size_t i = 0; i < common_size; i++)
+  {
+    A[i] = uvec(B[i].begin(), B[i].size(), false, true);
+  }
+  DEBUG_Rcout << " done resize " << std::endl;
+}
+
 // for categorical variables
 
 
@@ -384,8 +404,6 @@ void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Surv_Cat_Cl
 
 void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin)
 {
-    // in this case, we will not be able to control for nmin
-    // but extreamly small nmin should not have a high splitting score
     lowindex = 0;
     highindex = true_cat - 2;
     
@@ -393,9 +411,7 @@ void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Cla
         return; 
     
     DEBUG_Rcout << "        --- start moving index with lowindex " << lowindex << " highindex " << highindex << std::endl;
-    
-    lowindex = 0;
-    highindex = true_cat-2;
+
     size_t lowcount = cat_reduced[0].count;
     size_t highcount = cat_reduced[true_cat-1].count;
     

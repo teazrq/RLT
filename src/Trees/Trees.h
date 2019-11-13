@@ -21,12 +21,12 @@ using namespace arma;
 #define RLT_ARRANGE
 
 void Uni_Find_Terminal_Node(size_t Node, 
-							const Uni_Tree_Class& OneTree,
-							const mat& X,
-							const uvec& Ncat,
-							uvec& proxy_id,
-							uvec& real_id,
-							uvec& TermNode);
+              							const Uni_Tree_Class& OneTree,
+              							const mat& X,
+              							const uvec& Ncat,
+              							uvec& proxy_id,
+              							uvec& real_id,
+              							uvec& TermNode);
 
 void Uni_Find_Terminal_Node_ShuffleJ(size_t Node, 
                                      const Uni_Tree_Class& OneTree,

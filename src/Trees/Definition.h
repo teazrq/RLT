@@ -11,7 +11,7 @@
 using namespace Rcpp;
 using namespace arma;
 
-#define SurvWeightTH 1e-10
+#define SurvWeightTH 1e-20
 
 #ifndef RLT_DEFINITION
 #define RLT_DEFINITION
@@ -30,13 +30,13 @@ public:
   bool replacement;
   double resample_prob;
   bool useobsweight;
-  bool usevarweight;
-  bool pre_obstrack;
-  size_t NFail;
-  int importance;
+  bool usevarweight;  
+  int importance;  
   bool reinforcement;
+  bool obs_track;
   bool kernel_ready;
-  int seed;
+  bool pre_obstrack;
+  size_t seed;
   
   PARAM_GLOBAL(List& param){
     N             = param["n"];
@@ -49,14 +49,14 @@ public:
     split_rule    = param["split.rule"];
     nsplit        = param["nsplit"];
     replacement   = param["replacement"];
-    kernel_ready  = param["kernel.ready"];
-    resample_prob = param["resample.prob"];
-    importance    = param["importance"];
-    reinforcement = param["reinforcement"];
+    resample_prob = param["resample.prob"];  
     useobsweight  = param["use.obs.w"];
-    usevarweight  = param["use.var.w"];
+    usevarweight  = param["use.var.w"];    
+    importance    = param["importance"];
+    reinforcement = param["reinforcement"];   
+    obs_track     = param["track.obs"];   
+    kernel_ready  = param["kernel.ready"];
     pre_obstrack  = param["pre.obs.track"];
-    NFail         = param["nfail"];
     seed          = param["seed"];
   }
 };
@@ -66,29 +66,86 @@ public:
   bool reinforcement = 0;
 };
 
-// ****************//
+// *************** //
 // field functions //
-// ****************//
+// *************** //
 
 void field_vec_resize(arma::field<arma::vec>& A, size_t size);
+void field_vec_resize(arma::field<arma::uvec>& A, size_t size);
 
-// **************************//
-// class for tree and splits //
-// **************************//
 
-class Base_Tree_Class{
+// ************ //
+//  data class  //
+// ************ //
+
+class RLT_REG_DATA{
 public:
-  arma::uvec NodeType;
-  arma::uvec LeftNode;
-  arma::uvec RightNode;
-  arma::vec NodeSize;
+  arma::mat& X;
+  arma::vec& Y;
+  arma::uvec& Ncat;
+  arma::vec& obsweight;
+  arma::vec& varweight;
+
+  RLT_REG_DATA(arma::mat& X, 
+               arma::vec& Y,
+               arma::uvec& Ncat,
+               arma::vec& obsweight,
+               arma::vec& varweight) : X(X), 
+                                       Y(Y), 
+                                       Ncat(Ncat), 
+                                       obsweight(obsweight), 
+                                       varweight(varweight) {}
+};
+
+class RLT_SURV_DATA{
+public:
+  arma::mat& X;
+  arma::uvec& Y;
+  arma::uvec& Censor;
+  arma::uvec& Ncat;
+  size_t NFail;
+  arma::vec& obsweight;
+  arma::vec& varweight;
   
-  // get tree length
-  size_t get_tree_length() {
-    size_t i = 0;
-    while (i < NodeType.n_elem and NodeType(i) != 0) i++;
-    return( (i < NodeType.n_elem) ? i:NodeType.n_elem );
-  }
+  RLT_SURV_DATA(arma::mat& X, 
+                arma::uvec& Y,
+                arma::uvec& Censor,
+                arma::uvec& Ncat,
+                size_t NFail,
+                arma::vec& obsweight,
+                arma::vec& varweight) : X(X), 
+                                        Y(Y), 
+                                        Censor(Censor),
+                                        Ncat(Ncat),
+                                        NFail(NFail),
+                                        obsweight(obsweight), 
+                                        varweight(varweight) {}
+};
+
+// *********************** //
+//  Tree and forest class  //
+// *********************** //
+
+class Uni_Tree_Class{ // univariate split trees
+public:
+  arma::uvec& NodeType;
+  arma::uvec& SplitVar;
+  arma::vec& SplitValue;
+  arma::uvec& LeftNode;
+  arma::uvec& RightNode;
+  arma::vec& NodeSize;
+  
+  Uni_Tree_Class(arma::uvec& NodeType,
+                 arma::uvec& SplitVar,
+                 arma::vec& SplitValue,
+                 arma::uvec& LeftNode,
+                 arma::uvec& RightNode,
+                 arma::vec& NodeSize) : NodeType(NodeType),
+                                        SplitVar(SplitVar),
+                                        SplitValue(SplitValue),
+                                        LeftNode(LeftNode),
+                                        RightNode(RightNode),
+                                        NodeSize(NodeSize) {}
   
   // find the next left and right nodes 
   void find_next_nodes(size_t& NextLeft, size_t& NextRight)
@@ -102,64 +159,60 @@ public:
     // 0: unused, 1: reserved; 2: internal node; 3: terminal node
     NodeType(NextRight) = 1;
   }
-};
-
-class Uni_Tree_Class: public Base_Tree_Class{ // univariate split trees
-public:
-  arma::uvec SplitVar;
-  arma::vec SplitValue;
   
-  void readin(arma::uvec& NodeType_R, arma::uvec& SplitVar_R, arma::vec& SplitValue_R,
-              arma::uvec& LeftNode_R, arma::uvec& RightNode_R)
-  {
-    NodeType = uvec(NodeType_R.begin(), NodeType_R.size(), false, true);
-    SplitVar = uvec(SplitVar_R.begin(), SplitVar_R.size(), false, true);
-    SplitValue = vec(SplitValue_R.begin(), SplitValue_R.size(), false, true);
-    LeftNode = uvec(LeftNode_R.begin(), LeftNode_R.size(), false, true);
-    RightNode = uvec(RightNode_R.begin(), RightNode_R.size(), false, true);
-  }
-};
-
-class Multi_Tree_Class: public Base_Tree_Class{ // multivariate split trees
-public:
-  arma::field<arma::uvec> SplitVar;
-  arma::field<arma::vec> SplitLoad;
-  arma::vec SplitValue;
-};
-
-class Uni_Split_Class{ // univariate splits
-public:
-  size_t var = 0;  
-  double value = 0;
-  double score = -1;
-  
-  void print(void) {
-    Rcout << "Splitting varible is " << var << " value is " << value << " score is " << score << std::endl;
+  // get tree length
+  size_t get_tree_length() {
+    size_t i = 0;
+    while (i < NodeType.n_elem and NodeType(i) != 0) i++;
+    return( (i < NodeType.n_elem) ? i:NodeType.n_elem );
   }
 };
 
 
-// *********************//
-// class for regression //
-// *********************//
+// for regression 
 
-class Reg_Uni_Tree_Class: public Uni_Tree_Class{
+class Reg_Uni_Forest_Class{
 public:
-  arma::vec NodeAve;
+  arma::field<arma::uvec>& NodeTypeList;
+  arma::field<arma::uvec>& SplitVarList;
+  arma::field<arma::vec>& SplitValueList;
+  arma::field<arma::uvec>& LeftNodeList;
+  arma::field<arma::uvec>& RightNodeList;
+  arma::field<arma::vec>& NodeSizeList;  
+  arma::field<arma::vec>& NodeAveList;
+
+  Reg_Uni_Forest_Class(arma::field<arma::uvec>& NodeTypeList,
+                       arma::field<arma::uvec>& SplitVarList,
+                       arma::field<arma::vec>& SplitValueList,
+                       arma::field<arma::uvec>& LeftNodeList,
+                       arma::field<arma::uvec>& RightNodeList,
+                       arma::field<arma::vec>& NodeSizeList,
+                       arma::field<arma::vec>& NodeAveList) : NodeTypeList(NodeTypeList), 
+                                                               SplitVarList(SplitVarList), 
+                                                               SplitValueList(SplitValueList),
+                                                               LeftNodeList(LeftNodeList),
+                                                               RightNodeList(RightNodeList),
+                                                               NodeSizeList(NodeSizeList),
+                                                               NodeAveList(NodeAveList) {}
+};
+
+class Reg_Uni_Tree_Class : public Uni_Tree_Class{
+public:
+  arma::vec& NodeAve;
   
-  // readin from R 
-  void readin(arma::uvec& NodeType_R, arma::uvec& SplitVar_R, arma::vec& SplitValue_R,
-              arma::uvec& LeftNode_R, arma::uvec& RightNode_R, arma::vec& NodeAve_R, 
-              arma::vec& NodeSize_R)
-  {
-    NodeType = uvec(NodeType_R.begin(), NodeType_R.size(), false, true);
-    SplitVar = uvec(SplitVar_R.begin(), SplitVar_R.size(), false, true);
-    SplitValue = vec(SplitValue_R.begin(), SplitValue_R.size(), false, true);
-    LeftNode = uvec(LeftNode_R.begin(), LeftNode_R.size(), false, true);
-    RightNode = uvec(RightNode_R.begin(), RightNode_R.size(), false, true);
-    NodeAve = vec(NodeAve_R.begin(), NodeAve_R.size(), false, true);
-    NodeSize = vec(NodeSize_R.begin(), NodeSize_R.size(), false, true);
-  }
+  Reg_Uni_Tree_Class(arma::uvec& NodeType,
+                     arma::uvec& SplitVar,
+                     arma::vec& SplitValue,
+                     arma::uvec& LeftNode,
+                     arma::uvec& RightNode,
+                     arma::vec& NodeSize,
+                     arma::vec& NodeAve) : Uni_Tree_Class(NodeType, 
+                                                          SplitVar,
+                                                          SplitValue,
+                                                          LeftNode, 
+                                                          RightNode,
+                                                          NodeSize),
+                                           NodeAve(NodeAve) {}
   
   // initiate tree
   void initiate(size_t TreeLength)
@@ -174,10 +227,11 @@ public:
     SplitValue.zeros(TreeLength);
     LeftNode.zeros(TreeLength);
     RightNode.zeros(TreeLength);
+    NodeSize.zeros(TreeLength);    
     NodeAve.zeros(TreeLength);
-    NodeSize.zeros(TreeLength);
   }
-
+  
+  // trim tree 
   void trim(size_t TreeLength)
   {
     NodeType.resize(TreeLength);
@@ -185,10 +239,11 @@ public:
     SplitValue.resize(TreeLength);
     LeftNode.resize(TreeLength);
     RightNode.resize(TreeLength);
+    NodeSize.resize(TreeLength);    
     NodeAve.resize(TreeLength);
-    NodeSize.resize(TreeLength);
   }
-
+  
+  // extend tree 
   void extend()
   {
     // tree is not long enough, extend
@@ -203,22 +258,155 @@ public:
     
     SplitValue.resize(NewLength);
     SplitValue(span(OldLength, NewLength-1)).zeros();
-      
+    
     LeftNode.resize(NewLength);
     LeftNode(span(OldLength, NewLength-1)).zeros();
     
     RightNode.resize(NewLength);
     RightNode(span(OldLength, NewLength-1)).zeros();
     
+    NodeSize.resize(NewLength);
+    NodeSize(span(OldLength, NewLength-1)).zeros();    
+    
     NodeAve.resize(NewLength);
     NodeAve(span(OldLength, NewLength-1)).zeros();
-      
-    NodeSize.resize(NewLength);
-    NodeSize(span(OldLength, NewLength-1)).zeros();
   }
 };
 
-// for categorical variable  
+// for survival
+
+class Surv_Uni_Forest_Class{
+public:
+  arma::field<arma::uvec>& NodeTypeList;
+  arma::field<arma::uvec>& SplitVarList;
+  arma::field<arma::vec>& SplitValueList;
+  arma::field<arma::uvec>& LeftNodeList;
+  arma::field<arma::uvec>& RightNodeList;
+  arma::field<arma::vec>& NodeSizeList;  
+  arma::field<arma::field<arma::vec>>& NodeHazList;
+  
+  Surv_Uni_Forest_Class(arma::field<arma::uvec>& NodeTypeList,
+                        arma::field<arma::uvec>& SplitVarList,
+                        arma::field<arma::vec>& SplitValueList,
+                        arma::field<arma::uvec>& LeftNodeList,
+                        arma::field<arma::uvec>& RightNodeList,
+                        arma::field<arma::vec>& NodeSizeList,
+                        arma::field<arma::field<arma::vec>>& NodeHazList) : NodeTypeList(NodeTypeList), 
+                                                                            SplitVarList(SplitVarList), 
+                                                                            SplitValueList(SplitValueList),
+                                                                            LeftNodeList(LeftNodeList),
+                                                                            RightNodeList(RightNodeList),
+                                                                            NodeSizeList(NodeSizeList),
+                                                                            NodeHazList(NodeHazList) {}
+};
+
+
+class Surv_Uni_Tree_Class : public Uni_Tree_Class{
+public:
+  arma::field<arma::vec>& NodeHaz;
+  
+  Surv_Uni_Tree_Class(arma::uvec& NodeType,
+                      arma::uvec& SplitVar,
+                      arma::vec& SplitValue,
+                      arma::uvec& LeftNode,
+                      arma::uvec& RightNode,
+                      arma::vec& NodeSize,
+                      arma::field<arma::vec>& NodeHaz) : Uni_Tree_Class(NodeType, 
+                                                                        SplitVar,
+                                                                        SplitValue,
+                                                                        LeftNode, 
+                                                                        RightNode,
+                                                                        NodeSize),
+                                                         NodeHaz(NodeHaz) {}
+  
+  
+  // initiate tree
+  void initiate(size_t TreeLength)
+  {
+    if (TreeLength == 0) TreeLength = 1;
+    
+    NodeType.zeros(TreeLength);
+    
+    SplitVar.set_size(TreeLength);
+    SplitVar.fill(datum::nan);
+    
+    SplitValue.zeros(TreeLength);
+    LeftNode.zeros(TreeLength);
+    RightNode.zeros(TreeLength);
+    NodeSize.zeros(TreeLength);    
+    NodeHaz.set_size(TreeLength);
+  }
+  
+  // trim tree 
+  void trim(size_t TreeLength)
+  {
+    NodeType.resize(TreeLength);
+    SplitVar.resize(TreeLength);
+    SplitValue.resize(TreeLength);
+    LeftNode.resize(TreeLength);
+    RightNode.resize(TreeLength);
+    NodeSize.resize(TreeLength);    
+    field_vec_resize(NodeHaz, TreeLength);
+  }
+  
+  // extend tree 
+  void extend()
+  {
+    // tree is not long enough, extend
+    size_t OldLength = NodeType.n_elem;
+    size_t NewLength = (OldLength*1.5 > OldLength + 100)? (size_t) (OldLength*1.5):(OldLength + 100);
+    
+    NodeType.resize(NewLength);
+    NodeType(span(OldLength, NewLength-1)).zeros();
+    
+    SplitVar.resize(NewLength);
+    SplitVar(span(OldLength, NewLength-1)).fill(datum::nan);
+    
+    SplitValue.resize(NewLength);
+    SplitValue(span(OldLength, NewLength-1)).zeros();
+    
+    LeftNode.resize(NewLength);
+    LeftNode(span(OldLength, NewLength-1)).zeros();
+    
+    RightNode.resize(NewLength);
+    RightNode(span(OldLength, NewLength-1)).zeros();
+    
+    NodeSize.resize(NewLength);
+    NodeSize(span(OldLength, NewLength-1)).zeros();    
+    
+    field_vec_resize(NodeHaz, NewLength);
+  }
+};
+
+
+
+
+
+
+
+
+
+
+// **************** //
+// class for splits //
+// **************** //
+
+class Uni_Split_Class{ // univariate splits
+public:
+  size_t var = 0;  
+  double value = 0;
+  double score = -1;
+  
+  void print(void) {
+    Rcout << "Splitting varible is " << var << " value is " << value << " score is " << score << std::endl;
+  }
+};
+
+
+// ************************ //
+// for categorical variable //
+// ************************ //
+
 
 class Cat_Class{
 public:
@@ -302,71 +490,6 @@ public:
                join_rows(FailCount, CensorCount, cHaz) << std::endl;
   }  
   
-};
-
-// ************************//
-// tree class for survival //
-// ************************//
-
-
-class Surv_Uni_Tree_Class: public Uni_Tree_Class{
-public:
-  arma::field<arma::vec> NodeHaz;
-  
-  // initiate tree
-  void initiate(size_t TreeLength, size_t P)
-  {
-    if (TreeLength == 0) TreeLength = 1;
-    if (P == 0) P = 1;
-    
-    NodeType.zeros(TreeLength);
-    SplitVar.zeros(TreeLength);
-    SplitValue.zeros(TreeLength);
-    LeftNode.zeros(TreeLength);
-    RightNode.zeros(TreeLength);
-    NodeSize.zeros(TreeLength);
-    NodeHaz.set_size(TreeLength);
-    SplitVar.fill(P+1);
-  }
-  
-  void trim(size_t TreeLength)
-  {
-    NodeType.resize(TreeLength);
-    SplitVar.resize(TreeLength);
-    SplitValue.resize(TreeLength);
-    LeftNode.resize(TreeLength);
-    RightNode.resize(TreeLength);
-    field_vec_resize(NodeHaz, TreeLength);
-    NodeSize.resize(TreeLength);
-  }
-  
-  void extend(size_t P)
-  {
-    // tree is not long enough, extend
-    
-    size_t OldLength = NodeType.n_elem;
-    size_t NewLength = (OldLength*1.5 > OldLength + 100)? (size_t) (OldLength*1.5):(OldLength + 100);
-    
-    NodeType.resize(NewLength);
-    NodeType(span(OldLength, NewLength-1)).zeros();
-
-    SplitVar.resize(NewLength);
-    SplitVar(span(OldLength, NewLength-1)).fill(P+1); // this should be P+1 already because of intitialization
-
-    SplitValue.resize(NewLength);
-    SplitValue(span(OldLength, NewLength-1)).zeros();
-
-    LeftNode.resize(NewLength);
-    LeftNode(span(OldLength, NewLength-1)).zeros();
-    
-    RightNode.resize(NewLength);
-    RightNode(span(OldLength, NewLength-1)).zeros();
-    
-    field_vec_resize(NodeHaz, NewLength);
-    
-    NodeSize.resize(NewLength);
-    NodeSize(span(OldLength, NewLength-1)).zeros();
-  }
 };
 
 #endif

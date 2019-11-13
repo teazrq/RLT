@@ -14,41 +14,34 @@ using namespace arma;
 
 void Surv_Uni_Split_A_Node(size_t Node,
                            Surv_Uni_Tree_Class& OneTree,
-                           std::vector<arma::uvec>& OneNodeRegi,
-                           const mat& X,
-                           const uvec& Y,
-                           const uvec& Censor,
-                           const size_t NFail,
-                           const uvec& Ncat,
+                           arma::field<arma::uvec>& OneNodeRegi,
+                           const RLT_SURV_DATA& SURV_DATA,
                            const PARAM_GLOBAL& Param,
                            const PARAM_RLT& Param_RLT,
-                           vec& obs_weight,
                            uvec& obs_id,
-                           vec& var_weight,
                            uvec& var_id)
 {
 
+  size_t N = obs_id.n_elem;
+  size_t P = Param.P;
   size_t nmin = Param.nmin;
   bool useobsweight = Param.useobsweight;
-  size_t N = obs_id.n_elem;
   bool kernel_ready = Param.kernel_ready;
-  size_t P = Param.P;
   
-  // calculate node information
-  DEBUG_Rcout << "  -- Surv_Split_A_Node on Node " << Node << " with sample size " << obs_id.size() << std::endl;
-  
-  if (N < 2*nmin)
+  if (N <= 2*nmin)
   {
 TERMINATENODE:
 
     DEBUG_Rcout << "  -- Terminate node " << Node << std::endl;
-    Surv_Uni_Terminate_Node(Node, OneTree, OneNodeRegi, Y, Censor, NFail, Param, obs_weight, obs_id, useobsweight);
+    Surv_Uni_Terminate_Node(Node, OneTree, OneNodeRegi, obs_id, 
+                            SURV_DATA.Y, SURV_DATA.Censor, SURV_DATA.NFail, SURV_DATA.obsweight, 
+                            Param, useobsweight);
     
   }else{
     
     Uni_Split_Class OneSplit;
     
-    Surv_Uni_Find_A_Split(OneSplit, X, Y, Censor, Ncat, Param, Param_RLT, obs_weight, obs_id, var_weight, var_id);
+    Surv_Uni_Find_A_Split(OneSplit, SURV_DATA, Param, Param_RLT, obs_id, var_id);
     
     DEBUG_Rcout << "  -- Found split on variable " << OneSplit.var << " cut " << OneSplit.value << " and score " << OneSplit.score << std::endl;
     
@@ -61,13 +54,13 @@ TERMINATENODE:
     
     uvec left_id(obs_id.n_elem);
     
-    if ( Ncat(OneSplit.var) == 1 )
+    if ( SURV_DATA.Ncat(OneSplit.var) == 1 )
     {
-      split_id(X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id);  
+      split_id(SURV_DATA.X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id);  
       
       DEBUG_Rcout << "  -- select cont variable " << OneSplit.var << " split at " << OneSplit.value << std::endl;
     }else{
-      split_id_cat(X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id, Ncat(OneSplit.var));
+      split_id_cat(SURV_DATA.X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id, SURV_DATA.Ncat(OneSplit.var));
       
       DEBUG_Rcout << "  -- select cat variable " << OneSplit.var << " split at " << OneSplit.value << std::endl;
     }    
@@ -84,12 +77,12 @@ TERMINATENODE:
       DEBUG_Rcout << "  ------------- extend tree length: this shouldn't happen ----------- " << std::endl;
       
       // extend tree structure
-      OneTree.extend(P);
+      OneTree.extend();
       
       // extend noderegi
       if ( kernel_ready and (OneTree.NodeType.n_elem > OneNodeRegi.size()) )
-        OneNodeRegi.resize( OneTree.NodeType.n_elem ); // I think this creates copy, we need a more efficent way to do it...    
-    }    
+        field_vec_resize( OneNodeRegi, OneTree.NodeType.n_elem );
+    }
     
     // find the locations of next left and right nodes     
     OneTree.NodeType(Node) = 2; // 0: unused, 1: reserved; 2: internal node; 3: terminal node	
@@ -111,29 +104,38 @@ TERMINATENODE:
     
     DEBUG_Rcout << "  -- Surv_Split_A_Node goto Lef and Right " << std::endl;
 
-    Surv_Uni_Split_A_Node(NextLeft, OneTree, OneNodeRegi,
-                          X, Y, Censor, NFail, Ncat, Param, Param_RLT,
-                          obs_weight, left_id, var_weight, var_id);
+    Surv_Uni_Split_A_Node(NextLeft, 
+                          OneTree, 
+                          OneNodeRegi,
+                          SURV_DATA,
+                          Param,
+                          Param_RLT,
+                          left_id,
+                          var_id);
     
-    
-    Surv_Uni_Split_A_Node(NextRight, OneTree, OneNodeRegi,
-                          X, Y, Censor, NFail, Ncat, Param, Param_RLT,
-                          obs_weight, obs_id, var_weight, var_id);
+    Surv_Uni_Split_A_Node(NextRight, 
+                          OneTree, 
+                          OneNodeRegi,
+                          SURV_DATA, 
+                          Param, 
+                          Param_RLT,
+                          obs_id, 
+                          var_id);
 
   }
 }
 
 // terminate and record a node
-
+  
 void Surv_Uni_Terminate_Node(size_t Node, 
                              Surv_Uni_Tree_Class& OneTree,
-                             std::vector<arma::uvec>& OneNodeRegi,
+                             arma::field<arma::uvec>& OneNodeRegi,
+                             uvec& obs_id,
                              const uvec& Y,
                              const uvec& Censor,
                              const size_t NFail,
+                             const vec& obs_weight,
                              const PARAM_GLOBAL& Param,
-                             vec& obs_weight,
-                             uvec& obs_id,
                              bool useobsweight)
 {
   
@@ -152,7 +154,9 @@ void Surv_Uni_Terminate_Node(size_t Node,
   }else{
     // DEBUG_Rcout << "terminate nonweighted" << std::endl;
     
-    OneTree.NodeHaz(Node).zeros(NFail + 1); // replace later 
+    
+    OneTree.NodeHaz(Node).set_size(NFail + 1);
+    OneTree.NodeHaz(Node).zeros(); // replace later 
     OneTree.NodeHaz(Node)(0) = Node; // this one is to backtrack node ID, there should not be any failure here
     
     uvec NodeCensor(NFail + 1, fill::zeros);

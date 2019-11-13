@@ -11,11 +11,12 @@ SurvForest <- function(x, y, censor,
                        var.w,
                        ncores,
                        verbose,
+                       ObsTrack,
                        ...)
 {
   if ( any( ! (censor %in% c(0, 1)) ) )
       stop("censoring indicator must be 0 or 1")    
-    
+
   # prepare y
   
   timepoints = sort(unique(y[censor == 1]))
@@ -36,18 +37,23 @@ SurvForest <- function(x, y, censor,
   param$'nfail' = length(timepoints)
   
   # check splitting rule 
-  all.split.rule = c("logrank", "suplogrank", "ll")
-    
+  if (is.null(param$"split.rule"))
+    param$"split.rule" = "logrank"
+  
+  if (param$"split.rule" == "penll" & param$use.obs.w == 0)
+    stop("must specify variable weights if penalized splitting rule is used.")
+  
+  all.split.rule = c("logrank", "suplogrank", "ll", "penll")
+
   param$"split.rule" <- match.arg(param$"split.rule", all.split.rule)
   param$"split.rule" <- match(param$"split.rule", all.split.rule)
   
   # fit model
   fit = SurvForestUniFit(x, y.point, censor, ncat,
                          param, RLT.control,
-                         obs.w,
-                         var.w,
-                         ncores,
-                         verbose)
+                         obs.w, var.w,
+                         ncores, verbose,
+                         ObsTrack)
 
   fit[["timepoints"]] = timepoints
   fit[["ncat"]] = ncat

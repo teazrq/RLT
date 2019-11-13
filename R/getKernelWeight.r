@@ -1,6 +1,8 @@
 #' @title Get kernel weight for a suject
-#' @description Get the kernel weights induced from a random forests for predicting test sujects
-#' @param x A fitted RLT object
+#' @description Get the kernel weights induced from a random forests for 
+#'              predicting test sujects
+#' @param object A fitted RLT object
+#' @param testx the testing data
 #' @param ... ...
 #' @examples
 
@@ -15,9 +17,12 @@ getKernelWeight <- function(object, testx, ncores = 1, verbose = FALSE, ...)
   if (!is.matrix(testx) & !is.data.frame(testx)) stop("testx must be a matrix or a data.frame")
   
   
-  if( class(object)[2] == "fit" &  class(object)[3] == "reg" )
+  if( class(object)[2] == "fit" )
   {
     # check test data 
+    
+    if (!RLTfit$parameters$kernel.ready)
+      stop("the fitted object is not kernel ready")
     
     if (is.null(colnames(testx)))
     {
@@ -37,6 +42,7 @@ getKernelWeight <- function(object, testx, ncores = 1, verbose = FALSE, ...)
                          object$FittedForest$SplitValue,
                          object$FittedForest$LeftNode,
                          object$FittedForest$RightNode,
+                         object$FittedForest$NodeSize,
                          object$NodeRegi,
                          object$ObsTrack,
                          testx,

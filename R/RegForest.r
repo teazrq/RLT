@@ -3,7 +3,7 @@
 #' @description Internal function for fitting regression forest
 #' @keywords internal
 
-RegForest <- function(x, y, 
+RegForest <- function(x, y,
                       ncat,
                       param,
                       RLT.control,
@@ -26,10 +26,8 @@ RegForest <- function(x, y,
   # fit model
   fit = RegForestUniFit(x, y, ncat,
                         param, RLT.control,
-                        obs.w,
-                        var.w,
-                        ncores,
-                        verbose,
+                        obs.w, var.w,
+                        ncores, verbose,
                         ObsTrack)
 
   fit[["ncat"]] = ncat

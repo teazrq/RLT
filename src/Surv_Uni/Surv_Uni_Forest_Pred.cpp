@@ -12,30 +12,31 @@
 using namespace Rcpp;
 using namespace arma;
 
-mat Surv_Uni_Forest_Pred(const std::vector<Surv_Uni_Tree_Class>& Forest,
-            						const mat& X,
-            						const uvec& Ncat,
-            						int NFail,
-            						bool kernel,
-            						int usecores,
-            						int verbose)
+void Surv_Uni_Forest_Pred(cube& Pred,
+                          mat& W,
+                          const Surv_Uni_Forest_Class& SURV_FOREST,
+                          const mat& X,
+                          const uvec& Ncat,
+                          size_t NFail,
+                          bool kernel,
+                          int usecores,
+                          int verbose)
 {
   DEBUG_Rcout << "/// Start prediction ///" << std::endl;
   
   size_t N = X.n_rows;
-  size_t ntrees = Forest.size();
+  size_t ntrees = SURV_FOREST.NodeTypeList.size();
 
-  cube A(NFail + 1, ntrees, N, fill::zeros);
-  
-  mat W(N, ntrees, fill::zeros);
+  Pred.set_size(NFail + 1, ntrees, N);
+  Pred.zeros();
   
   if (kernel)
   {
     W.set_size(N, ntrees);
     W.zeros();
   }
-  
-  mat Pred(N, NFail + 1);
+
+  //mat Pred(N, NFail + 1);
     
   #pragma omp parallel num_threads(usecores)
   {
@@ -48,39 +49,32 @@ mat Surv_Uni_Forest_Pred(const std::vector<Surv_Uni_Tree_Class>& Forest,
       uvec real_id = linspace<uvec>(0, N-1, N);
       uvec TermNode(N, fill::zeros);
       
-      Uni_Find_Terminal_Node(0, Forest[nt], X, Ncat, proxy_id, real_id, TermNode);
+      Surv_Uni_Tree_Class OneTree(SURV_FOREST.NodeTypeList(nt), 
+                                  SURV_FOREST.SplitVarList(nt),
+                                  SURV_FOREST.SplitValueList(nt),
+                                  SURV_FOREST.LeftNodeList(nt),
+                                  SURV_FOREST.RightNodeList(nt),
+                                  SURV_FOREST.NodeSizeList(nt),
+                                  SURV_FOREST.NodeHazList(nt));
+
+      Uni_Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
       
       if (kernel)
       {
-        //A.unsafe_col(nt).rows(real_id) = Forest[nt].NodeAve(TermNode) % Forest[nt].NodeSize(TermNode);
+        Rcout << " weighed prediction for survival not implemented yet " << std::endl;
+        //Pred.unsafe_col(nt).rows(real_id) = Forest[nt].NodeAve(TermNode) % Forest[nt].NodeSize(TermNode);
         //W.unsafe_col(nt).rows(real_id) = Forest[nt].NodeSize(TermNode);
       }else{
+
         for (size_t i = 0; i < N; i++)
         {
-          A.slice(i).col(nt) = Forest[nt].NodeHaz[TermNode(i)];
+          Pred.slice(i).col(nt) = OneTree.NodeHaz(TermNode(i));
         }
       }
     }
-    
-    #pragma omp barrier
-    for (size_t i = 0; i < N; i++)
-    {
-      Pred.row(i) = mean(A.slice(i), 1).t();
-    }
   }
   
-  Pred.shed_col(0);
-
-  DEBUG_Rcout << " sub 1 \n" << Pred << std::endl;
+  Pred.shed_row(0);
   
-  return(Pred);
-  /*
-  if (kernel)
-  {
-    return(sum(A, 1) / sum(W, 1));
-  }else{
-    return(mean(A, 1)); 
-  }
-  */
 }
 

@@ -17,94 +17,83 @@ using namespace arma;
 // univariate tree split functions 
 
 List RegForestUniFit(mat& X,
-					 vec& Y,
-					 uvec& Ncat,
-					 List& param,
-					 List& RLTparam,
-					 vec& obsweight,
-					 vec& varweight,
-					 int usecores,
-					 int verbose,
+          					 vec& Y,
+          					 uvec& Ncat,
+          					 List& param,
+          					 List& RLTparam,
+          					 vec& obsweight,
+          					 vec& varweight,
+          					 int usecores,
+          					 int verbose,
                      umat& ObsTrackPre);
 
-void Reg_Uni_Forest_Build(const mat& X,
-						  const vec& Y,
-						  const uvec& Ncat,
-						  const PARAM_GLOBAL& Param,
-						  const PARAM_RLT& Param_RLT,
-						  vec& obs_weight,
-						  uvec& obs_id,
-						  vec& var_weight,
-						  uvec& var_id,
-						  std::vector<Reg_Uni_Tree_Class>& Forest,
-						  umat& ObsTrack,
-						  mat& Pred,
-						  arma::field<arma::field<arma::uvec>>& NodeRegi,
-						  vec& VarImp,
-						  int seed,
-						  int usecores,
-						  int verbose);
+void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
+                          Reg_Uni_Forest_Class& REG_FOREST,
+                          const PARAM_GLOBAL& Param,
+                          const PARAM_RLT& Param_RLT,
+                          uvec& obs_id,
+                          uvec& var_id,
+                          umat& ObsTrack,
+                          vec& Prediction,
+                          vec& OOBPrediction,
+                          arma::field<arma::field<arma::uvec>>& NodeRegi,
+                          vec& VarImp,
+                          size_t seed,
+                          int usecores,
+                          int verbose);
 
 void Reg_Uni_Split_A_Node(size_t Node,
-						  Reg_Uni_Tree_Class& OneTree,
-						  std::vector<uvec>& OneNodeRegi,
-						  const mat& X,
-						  const vec& Y,
-						  const uvec& Ncat,
-						  const PARAM_GLOBAL& Param,
-						  const PARAM_RLT& Param_RLT,
-						  vec& obs_weight,
-						  uvec& obs_id,
-						  vec& var_weight,
-						  uvec& var_id);
+                          Reg_Uni_Tree_Class& OneTree,
+                          arma::field<arma::uvec>& OneNodeRegi,
+                          const RLT_REG_DATA& REG_DATA,
+                          const PARAM_GLOBAL& Param,
+                          const PARAM_RLT& Param_RLT,
+                          uvec& obs_id,
+                          uvec& var_id);
 
-void Reg_Uni_Terminate_Node(size_t Node,
-						    Reg_Uni_Tree_Class& OneTree,
-						    std::vector<uvec>& OneNodeRegi,
-						    const vec& Y,
-						    const PARAM_GLOBAL& Param,
-						    vec& obs_weight,
-						    uvec& obs_id,
-						    bool usesubweight);
+void Reg_Uni_Terminate_Node(size_t Node, 
+                            Reg_Uni_Tree_Class& OneTree,
+                            arma::field<arma::uvec>& OneNodeRegi,
+                            uvec& obs_id,
+                            const vec& Y,
+                            const vec& obs_weight,
+                            const PARAM_GLOBAL& Param,
+                            bool useobsweight);
 
 
 void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
-						  const mat& X,
-						  const vec& Y,
-						  const uvec& Ncat,
-						  const PARAM_GLOBAL& Param,
-						  const PARAM_RLT& RLTParam,
-						  vec& obs_weight,
-						  uvec& obs_id,
-						  vec& var_weight,
-						  uvec& var_id);
+                          const RLT_REG_DATA& REG_DATA,
+                          const PARAM_GLOBAL& Param,
+                          const PARAM_RLT& RLTParam,
+                          uvec& obs_id,
+                          uvec& var_id);
 
-void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit, 
+void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                         uvec& obs_id,
                         const vec& x,
                         const vec& Y,
+                        const vec& obs_weight,
                         double penalty,
                         int split_gen,
                         int split_rule,
                         int nsplit,
-                        size_t nmin, 
+                        size_t nmin,
                         double alpha,
-                        vec& obs_weight,
                         bool useobsweight);
 
-void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit, 
+void Reg_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                        uvec& obs_id,
                        const vec& x,
+                       const size_t ncat,
                        const vec& Y,
+                       const vec& obs_weight,
                        double penalty,
                        int split_gen,
                        int split_rule,
                        int nsplit,
-                       size_t nmin, 
+                       size_t nmin,
                        double alpha,
-                       vec& obs_weight,
-                       bool useobsweight, 
-                       size_t x_cat);
+                       bool useobsweight);
 
 // splitting score calculations (continuous)
 
@@ -117,7 +106,7 @@ double reg_cont_score_at_cut_w(uvec& obs_id,
                               const vec& x,
                               const vec& Y,
                               double a_random_cut,
-                              vec& obs_weight);
+                              const vec& obs_weight);
 
 double reg_cont_score_at_index(uvec& indices,
                               const vec& Y,
@@ -126,7 +115,7 @@ double reg_cont_score_at_index(uvec& indices,
 double reg_cont_score_at_index_w(uvec& indices,
                                 const vec& Y,
                                 size_t a_random_ind,
-                                vec& obs_weight);
+                                const vec& obs_weight);
 
 void reg_cont_score_best(uvec& indices,
                         const vec& x,
@@ -143,7 +132,7 @@ void reg_cont_score_best_w(uvec& indices,
                           size_t highindex, 
                           double& temp_cut, 
                           double& temp_score,
-                          vec& obs_weight);
+                          const vec& obs_weight);
 
 // splitting score calculations (categorical)
 
@@ -184,15 +173,11 @@ bool reg_cat_reduced_compare(Reg_Cat_Class& a,
 
 void Reg_Uni_Forest_Pred(mat& Pred,
                          mat& W,
-                         const std::vector<Reg_Uni_Tree_Class>& Forest,
-						 const mat& X,
-						 const uvec& Ncat,
-						 bool kernel,
-						 int usecores,
-						 int verbose);
-
-// for coverting 
-
-List reg_uni_convert_forest_to_r(std::vector<Reg_Uni_Tree_Class>& Forest);
+                         const Reg_Uni_Forest_Class& REG_FOREST,
+                         const mat& X,
+                         const uvec& Ncat,
+                         bool kernel,
+                         int usecores,
+                         int verbose);
 
 #endif

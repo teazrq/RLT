@@ -15,15 +15,22 @@ getOneTree<- function(x, tree = 1, ...)
 
     cat(paste("Tree #", tree, " in the fitted regression forest: \n\n", sep = ""))
     
+    if (is.null(x$xnames))
+      newnames = paste("var ", 1:x$parameters$p)
+    else
+      newnames = x$xnames
+    
+    newnames = gsub("\\s", " ", format(newnames, width=max(nchar(newnames))))
+    
     OneTree = data.frame( "NodeType" = x$FittedForest$NodeType[[tree]],
-                          "SplitVar" = x$FittedForest$SplitVar[[tree]] + 1,
+                          "SplitVar" = newnames[x$FittedForest$SplitVar[[tree]] + 1],
                           "SplitValue" = x$FittedForest$SplitValue[[tree]],
                           "LeftNode" = x$FittedForest$LeftNode[[tree]] + 1,
                           "RightNode" = x$FittedForest$RightNode[[tree]] + 1,
-                          "NodeAve" = x$FittedForest$NodeAve[[tree]],
-                          "NodeSize" = x$FittedForest$NodeSize[[tree]])
+                          "NodeSize" = x$FittedForest$NodeSize[[tree]],
+                          "NodeAve" = x$FittedForest$NodeAve[[tree]])
     
-    OneTree[OneTree$NodeType == 2, 6] = NA
+    # OneTree[OneTree$NodeType == 2, ] = NA
     OneTree[OneTree$NodeType == 3, c(2,3,4,5)] = NA
 
     return(OneTree)
@@ -36,8 +43,16 @@ getOneTree<- function(x, tree = 1, ...)
     
     cat(paste("Tree #", tree, " in the fitted regression forest: \n\n", sep = ""))
     
+    
+    if (is.null(x$xnames))
+      newnames = paste("var ", 1:x$parameters$p)
+    else
+      newnames = x$xnames
+    
+    newnames = gsub("\\s", " ", format(newnames, width=max(nchar(newnames))))
+    
     OneTree = data.frame( "NodeType" = x$FittedForest$NodeType[[tree]],
-                          "SplitVar" = x$FittedForest$SplitVar[[tree]] + 1,
+                          "SplitVar" = newnames[x$FittedForest$SplitVar[[tree]] + 1],
                           "SplitValue" = x$FittedForest$SplitValue[[tree]],
                           "LeftNode" = x$FittedForest$LeftNode[[tree]] + 1,
                           "RightNode" = x$FittedForest$RightNode[[tree]] + 1,

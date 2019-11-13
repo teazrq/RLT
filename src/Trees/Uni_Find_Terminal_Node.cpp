@@ -12,12 +12,12 @@ using namespace Rcpp;
 using namespace arma;
 
 void Uni_Find_Terminal_Node(size_t Node, 
-							const Uni_Tree_Class& OneTree,
-							const mat& X,
-							const uvec& Ncat,
-							uvec& proxy_id,
-							uvec& real_id,
-							uvec& TermNode)
+              							const Uni_Tree_Class& OneTree,
+              							const mat& X,
+              							const uvec& Ncat,
+              							uvec& proxy_id,
+              							uvec& real_id,
+              							uvec& TermNode)
 {
  
   size_t size = proxy_id.n_elem;

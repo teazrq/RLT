@@ -13,14 +13,10 @@ using namespace Rcpp;
 using namespace arma;
 
 void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
-                          const mat& X,
-                          const vec& Y,
-                          const uvec& Ncat,
+                          const RLT_REG_DATA& REG_DATA,
                           const PARAM_GLOBAL& Param,
                           const PARAM_RLT& RLTParam,
-                          vec& obs_weight,
                           uvec& obs_id,
-                          vec& var_weight,
                           uvec& var_id)
 {
   
@@ -51,21 +47,38 @@ void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
     TempSplit.var = temp_var;
     TempSplit.value = 0;
     TempSplit.score = -1;
-    
-    DEBUG_Rcout << "    --- try var " << temp_var << std::endl;
       
-    if (Ncat(temp_var) > 1) // categorical variable 
+    if (REG_DATA.Ncat(temp_var) > 1) // categorical variable 
     {
       
-      Reg_Uni_Split_Cat(TempSplit, obs_id, X.unsafe_col(temp_var), Y, 0.0, 
-                        split_gen, split_rule, nsplit, nmin, alpha, obs_weight, useobsweight, Ncat(temp_var));
-      
-      DEBUG_Rcout << "    --- try var " << temp_var << " at cut " << TempSplit.value << " (categorical) with score " << TempSplit.score << std::endl;
-      
+      Reg_Uni_Split_Cat(TempSplit, 
+                        obs_id, 
+                        REG_DATA.X.unsafe_col(temp_var), 
+                        REG_DATA.Ncat(temp_var),
+                        REG_DATA.Y, 
+                        REG_DATA.obsweight, 
+                        0.0, // penalty
+                        split_gen, 
+                        split_rule, 
+                        nsplit, 
+                        nmin, 
+                        alpha, 
+                        useobsweight);
+
     }else{ // continuous variable
       
-      Reg_Uni_Split_Cont(TempSplit, obs_id, X.unsafe_col(temp_var), Y, 0.0, 
-                          split_gen, split_rule, nsplit, nmin, alpha, obs_weight, useobsweight);
+      Reg_Uni_Split_Cont(TempSplit,
+                         obs_id,
+                         REG_DATA.X.unsafe_col(temp_var), 
+                         REG_DATA.Y,
+                         REG_DATA.obsweight,
+                         0.0, // penalty
+                         split_gen,
+                         split_rule,
+                         nsplit,
+                         nmin,
+                         alpha,
+                         useobsweight);
       
       DEBUG_Rcout << "    --- try var " << temp_var << " at cut " << TempSplit.value << " (continuous) with score " << TempSplit.score << std::endl;
     }

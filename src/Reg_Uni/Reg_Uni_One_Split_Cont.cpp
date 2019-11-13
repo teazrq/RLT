@@ -12,17 +12,17 @@
 using namespace Rcpp;
 using namespace arma;
 
-void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit, 
+void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                         uvec& obs_id,
                         const vec& x,
                         const vec& Y,
+                        const vec& obs_weight,
                         double penalty,
                         int split_gen,
                         int split_rule,
                         int nsplit,
-                        size_t nmin, 
+                        size_t nmin,
                         double alpha,
-                        vec& obs_weight,
                         bool useobsweight)
 {
   size_t N = obs_id.n_elem;
@@ -34,14 +34,12 @@ void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit,
 
   if (split_gen == 1) // random split
   {
-    DEBUG_Rcout << "      --- Reg_One_Split_Cont with " << nsplit << " random split " << std::endl;
-    
     for (int k = 0; k < nsplit; k++)
     {
       // generate a random cut off
       temp_cut_arma = x(obs_id( (size_t) intRand(0, N-1) ));
       temp_cut = temp_cut_arma(0);
-      
+
       if (useobsweight)
         temp_score = reg_cont_score_at_cut_w(obs_id, x, Y, temp_cut, obs_weight);
       else
@@ -54,32 +52,39 @@ void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit,
       }
     }
     
-    DEBUG_Rcout << "      --- Best cut off at " << TempSplit.value << " with score " << TempSplit.score << std::endl;
     return;
   }
-    
-  // alpha is only effective when x can be sorted
-  if (N*alpha > nmin) nmin = (size_t) N*alpha;
   
-  uvec indices = obs_id(sort_index(x(obs_id))); // this is the sorted obs_id
-
+  uvec indices = obs_id(sort_index(x(obs_id))); // this is the sorted obs_id  
+  
   // check identical 
-  if ( x(indices(0)) == x(indices(N-1)) ) return;
+  if ( x(indices(0)) == x(indices(N-1)) ) return;  
   
   // set low and high index
-  size_t lowindex = nmin - 1; // less equal goes to left
-  size_t highindex = N - nmin - 1;
+  size_t lowindex = 1; // less equal goes to left
+  size_t highindex = N - 2;
   
-  // if there are ties, do further check
-  if ( (x(indices(lowindex)) == x(indices(lowindex + 1))) | (x(indices(highindex)) == x(indices(highindex + 1))) )
-    move_cont_index(lowindex, highindex, x, indices, nmin);
+  // alpha is only effective when x can be sorted
+  // this will force nmin for each child node
+  if (alpha > 0)
+  {
+    if (N*alpha > nmin) nmin = (size_t) N*alpha;
+    
+    // if there are ties, do further check
+    if ( (x(indices(lowindex)) == x(indices(lowindex + 1))) | (x(indices(highindex)) == x(indices(highindex + 1))) )
+      move_cont_index(lowindex, highindex, x, indices, nmin);
+    
+  }else{
+    // move index if ties
+    while( x(indices(lowindex)) == x(indices(lowindex + 1)) ) lowindex++;
+    while( x(indices(highindex)) == x(indices(highindex + 1)) ) highindex--;    
+    
+    if (lowindex > highindex) return;
+  }
   
-  DEBUG_Rcout << "      --- lowindex " << lowindex << " highindex " << highindex << std::endl;
   
   if (split_gen == 2) // rank split
   {
-    DEBUG_Rcout << "      --- Reg_One_Split_Cont with " << nsplit << " rank split " << std::endl;
-    
     for (int k = 0; k < nsplit; k++)
     {
       // generate a cut off
@@ -97,26 +102,20 @@ void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit,
       }
     }
     
-    DEBUG_Rcout << "      --- Rank cut off at " << TempSplit.value << " with score " << TempSplit.score << std::endl;
     return;
   }
   
-  
   if (split_gen == 3) // best split  
   {
-    DEBUG_Rcout << "      --- Reg_One_Split_Cont with best split, total sample " << x.size() << std::endl;
-    
+    // get score
     if (useobsweight)
       reg_cont_score_best_w(indices, x, Y, lowindex, highindex, TempSplit.value, TempSplit.score, obs_weight);
     else
       reg_cont_score_best(indices, x, Y, lowindex, highindex, TempSplit.value, TempSplit.score);
-
-      
-    DEBUG_Rcout << "      --- Best cut off at " << TempSplit.value << " with score " << TempSplit.score << std::endl;
     
     return;
-    
   }
+  
 }
 
 
@@ -153,7 +152,7 @@ double reg_cont_score_at_cut_w(uvec& obs_id,
                           const vec& x,
                           const vec& Y,
                           double a_random_cut,
-                          vec& obs_weight)
+                          const vec& obs_weight)
 {
   size_t N = obs_id.size();
   
@@ -186,8 +185,8 @@ double reg_cont_score_at_cut_w(uvec& obs_id,
 
 
 double reg_cont_score_at_index(uvec& indices,
-                          const vec& Y,
-                          size_t a_random_ind)
+                               const vec& Y,
+                               size_t a_random_ind)
 {
   size_t N = indices.size();
   
@@ -206,9 +205,9 @@ double reg_cont_score_at_index(uvec& indices,
 
 
 double reg_cont_score_at_index_w(uvec& indices,
-                            const vec& Y,
-                            size_t a_random_ind,
-                            vec& obs_weight)
+                                 const vec& Y,
+                                 size_t a_random_ind,
+                                 const vec& obs_weight)
 {
   size_t N = indices.size();
   
@@ -290,7 +289,7 @@ void reg_cont_score_best_w(uvec& indices,
                       size_t highindex, 
                       double& temp_cut, 
                       double& temp_score,
-                      vec& obs_weight)
+                      const vec& obs_weight)
 {
   DEBUG_Rcout << "      --- Best score with weights --- " << std::endl;
   double score = 0;

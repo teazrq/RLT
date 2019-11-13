@@ -12,78 +12,61 @@ using namespace arma;
 
 // [[Rcpp::export()]]
 List SurvForestUniPred(arma::field<arma::uvec>& NodeType,
-          					  arma::field<arma::uvec>& SplitVar,
-          					  arma::field<arma::vec>& SplitValue,
-          					  arma::field<arma::uvec>& LeftNode,
-          					  arma::field<arma::uvec>& RightNode,
-          					  arma::field<arma::field<arma::vec>>& NodeHaz,
-          					  arma::field<arma::vec>& NodeSize,
-          					  arma::mat& X,
-          					  arma::uvec& Y,
-          					  arma::uvec& Censor,
-          					  arma::uvec& Ncat,
-          					  List& param,
-          					  arma::vec& obsweight,
-          					  int NFail,
-          					  bool kernel,
-          					  int usecores,
-          					  int verbose)
+          					   arma::field<arma::uvec>& SplitVar,
+          					   arma::field<arma::vec>& SplitValue,
+          					   arma::field<arma::uvec>& LeftNode,
+          					   arma::field<arma::uvec>& RightNode,
+          					   arma::field<arma::vec>& NodeSize,
+          					   arma::field<arma::field<arma::vec>>& NodeHaz,
+          					   arma::mat& X,
+          					   arma::uvec& Ncat,
+          					   size_t NFail,
+          					   bool kernel,
+          					   bool keep_all,
+          					   int usecores,
+          					   int verbose)
 {
   DEBUG_Rcout << "/// THIS IS A DEBUG MODE OF RLT SURVIVAL PREDICTION///" << std::endl;
 
   // check number of cores
   usecores = checkCores(usecores, verbose);
   
-  // readin parameters 
-  PARAM_GLOBAL Param(param);
-  size_t P = Param.P;
-  
-  if (P != X.n_cols)
-    Rcpp::stop(" Dimension of testing data is different from training data ");
-  
-  size_t N = X.n_rows;
-  size_t ntrees = NodeType.size();
+  Surv_Uni_Forest_Class SURV_FOREST(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeSize, NodeHaz);
 
-  // convert R object to Reg_Uni_Tree_Class
-  std::vector<Surv_Uni_Tree_Class> Forest(ntrees);
+  cube Pred;
+  mat W;
   
-  #pragma omp parallel num_threads(usecores)
+  // predict 
+  
+  Surv_Uni_Forest_Pred(Pred,
+                       W,
+                       SURV_FOREST,
+      								 X,
+      								 Ncat,
+      								 NFail,
+      								 kernel,
+      								 usecores,
+      								 verbose);
+
+  // get hazard function by averaging all trees (not weighted, need to update)
+  // Pred is NFail by ntrees by N
+  
+  mat H(Pred.n_slices, Pred.n_rows);
+  
+#pragma omp parallel num_threads(usecores)
+#pragma omp for schedule(static)
+  for (size_t i = 0; i < Pred.n_slices; i++)
   {
-    #pragma omp for schedule(static)
-    for (size_t nt = 0; nt < ntrees; nt++)
-    {
-      Forest[nt].NodeType = uvec(NodeType[nt].begin(), NodeType[nt].size(), false, true);
-      Forest[nt].SplitVar = uvec(SplitVar[nt].begin(), SplitVar[nt].size(), false, true);
-      Forest[nt].SplitValue = vec(SplitValue[nt].begin(), SplitValue[nt].size(), false, true);
-      Forest[nt].LeftNode = uvec(LeftNode[nt].begin(), LeftNode[nt].size(), false, true);
-      Forest[nt].RightNode = uvec(RightNode[nt].begin(), RightNode[nt].size(), false, true);
-      
-      Forest[nt].NodeHaz.copy_size(NodeHaz[nt]);
-      
-      for (size_t j = 0; j < Forest[nt].NodeHaz.n_elem; j++)
-        Forest[nt].NodeHaz[j] = vec(NodeHaz[nt][j].begin(), NodeHaz[nt][j].size(), false, true);
-      
-      Forest[nt].NodeSize = vec(NodeSize[nt].begin(), NodeSize[nt].size(), false, true);
-    }
+    H.row(i) = mean(Pred.slice(i), 1).t();
   }
-
-
-  mat Pred = Surv_Uni_Forest_Pred(Forest,
-                								 X,
-                								 Ncat,
-                								 NFail,
-                								 kernel,
-                								 usecores,
-                								 verbose);
-
   
   List ReturnList;
 
-  ReturnList["hazard"] = Pred;
+  ReturnList["hazard"] = H;  
   
-  mat Surv(Pred);
-  vec surv(N, fill::ones);
-  vec Ones(N, fill::ones);
+  mat Surv(H);
+  vec surv(H.n_rows, fill::ones);
+  vec Ones(H.n_rows, fill::ones);
   
   for (size_t j=0; j < Surv.n_cols; j++)
   {
@@ -91,7 +74,10 @@ List SurvForestUniPred(arma::field<arma::uvec>& NodeType,
     Surv.col(j) = surv;
   }
   
-  ReturnList["Survival"] = Surv;
+  ReturnList["Survival"] = Surv;  
+  
+  if (keep_all)
+    ReturnList["Allhazard"] = Pred;
   
   return ReturnList;
 }

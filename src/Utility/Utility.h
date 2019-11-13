@@ -30,9 +30,6 @@ void printLog(const char*, const char*, const int, const double);
 #define DEBUG_Rcout 0 && Rcout
 #endif
 
-
-
-
 #ifndef RLT_UTILITY
 #define RLT_UTILITY
 

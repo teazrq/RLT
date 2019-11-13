@@ -3,11 +3,12 @@
 #' @description Check parameters
 #' @keywords internal
 
-check_param <- function(n, p,
-                        ntrees, mtry, nmin,
-                        alpha, split.gen, split.rule, nsplit,
+check_param <- function(n, p, ntrees, 
+                        mtry, nmin, alpha, 
+                        split.gen, split.rule, nsplit, 
                         replacement, resample.prob,
-                        importance, reinforcement, kernel.ready)
+                        importance, reinforcement, 
+                        track.obs, kernel.ready)
 {
   ntrees = max(ntrees, 1)
   storage.mode(ntrees) <- "integer"
@@ -39,6 +40,9 @@ check_param <- function(n, p,
   reinforcement = (reinforcement != 0)
   storage.mode(reinforcement) <- "integer"
   
+  track.obs = (track.obs != 0)
+  storage.mode(track.obs) <- "integer"  
+  
   kernel.ready = (kernel.ready != 0)
   storage.mode(kernel.ready) <- "integer"
   
@@ -49,23 +53,19 @@ check_param <- function(n, p,
                        "nmin" = nmin,
                        "alpha" = alpha,
                        "split.gen" = split.gen,
-                       "split.rule" = split.rule, # this need to be checked within the R fitting function
+                       "split.rule" = split.rule,
                        "nsplit" = nsplit,
                        "replacement" = replacement,
                        "resample.prob" = resample.prob,
                        "importance" = importance,
                        "reinforcement" = reinforcement,
-                       "kernel.ready" = kernel.ready,
-                       "use.obs.w" = 0L,
-                       "use.var.w" = 0L,
-                       "pre.obs.track" = 0L, # will be overwrite later
-                       "nfail" = 0L)) # for survival, will be overwrite later
+                       "track.obs" = track.obs,
+                       "kernel.ready" = kernel.ready))
 }
 
 
-
-#' @title check_param
-#' @name check_param
+#' @title check_RLT_param
+#' @name check_RLT_param
 #' @description Check parameters for RLT method
 #' @keywords internal
 
@@ -120,10 +120,10 @@ check_input <- function(x, y, censor, model)
       model = "survival"
     
     if (is.factor(y))
-      model = "classification"    
+      model = "classification"
     
-    if (is.numeric(y) & length(unique(y)) < 5 )
-      stop("Number of unique values in y is too small. Please check input data and/or change to classification.")
+    if ( is.numeric(y) & length(unique(y)) < 5 )
+      warning("Number of unique values in y is too small. Please check input data and/or consider changing to classification.")
   }
   
   return(model)

@@ -14,18 +14,18 @@ using namespace arma;
 
 void Reg_Uni_Forest_Pred(mat& Pred,
                          mat& W,
-                         const std::vector<Reg_Uni_Tree_Class>& Forest,
-            			 const mat& X,
-            			 const uvec& Ncat,
-            			 bool kernel,
-            			 int usecores,
-            			 int verbose)
+                         const Reg_Uni_Forest_Class& REG_FOREST,
+                  			 const mat& X,
+                  			 const uvec& Ncat,
+                  			 bool kernel,
+                  			 int usecores,
+                  			 int verbose)
 {
-  DEBUG_Rcout << "/// Start prediction ///" << std::endl;
   
   size_t N = X.n_rows;
-  size_t ntrees = Forest.size();
-    
+  size_t ntrees = REG_FOREST.NodeTypeList.size();
+  
+  
   Pred.set_size(N, ntrees);
   Pred.zeros();
 
@@ -34,7 +34,7 @@ void Reg_Uni_Forest_Pred(mat& Pred,
     W.set_size(N, ntrees);
     W.zeros();
   }
-    
+
   #pragma omp parallel num_threads(usecores)
   {
     #pragma omp for schedule(static)
@@ -46,12 +46,20 @@ void Reg_Uni_Forest_Pred(mat& Pred,
       uvec real_id = linspace<uvec>(0, N-1, N);
       uvec TermNode(N, fill::zeros);
       
-      Uni_Find_Terminal_Node(0, Forest[nt], X, Ncat, proxy_id, real_id, TermNode);
+      Reg_Uni_Tree_Class OneTree(REG_FOREST.NodeTypeList(nt), 
+                                 REG_FOREST.SplitVarList(nt),
+                                 REG_FOREST.SplitValueList(nt),
+                                 REG_FOREST.LeftNodeList(nt),
+                                 REG_FOREST.RightNodeList(nt),
+                                 REG_FOREST.NodeSizeList(nt),
+                                 REG_FOREST.NodeAveList(nt));
       
-      Pred.unsafe_col(nt).rows(real_id) = Forest[nt].NodeAve(TermNode);
+      Uni_Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
+      
+      Pred.unsafe_col(nt).rows(real_id) = OneTree.NodeAve(TermNode);
       
       if (kernel)
-          W.unsafe_col(nt).rows(real_id) = Forest[nt].NodeSize(TermNode);
+          W.unsafe_col(nt).rows(real_id) = OneTree.NodeSize(TermNode);
     }
   }
 }

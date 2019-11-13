@@ -13,13 +13,10 @@ using namespace arma;
 
 // [[Rcpp::export()]]
 double cindex_d(arma::vec& Y,
-                arma::uvec& Censor,
-                arma::vec& pred)
+               arma::uvec& Censor,
+               arma::vec& pred)
 {
-  
-  Rcout << "-- calculate cindex (double Y) " << std::endl;
-  
-  
+
   DEBUG_Rcout << "-- calculate cindex (int Y) " << std::endl;
   size_t P = 0;
   double C = 0;

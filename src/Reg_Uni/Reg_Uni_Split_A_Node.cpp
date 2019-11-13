@@ -14,33 +14,25 @@ using namespace arma;
 
 void Reg_Uni_Split_A_Node(size_t Node,
                           Reg_Uni_Tree_Class& OneTree,
-                          std::vector<arma::uvec>& OneNodeRegi,
-                          const mat& X,
-                          const vec& Y,
-                          const uvec& Ncat,
+                          arma::field<arma::uvec>& OneNodeRegi,
+                          const RLT_REG_DATA& REG_DATA,
                           const PARAM_GLOBAL& Param,
                           const PARAM_RLT& Param_RLT,
-                          vec& obs_weight,
                           uvec& obs_id,
-                          vec& var_weight,
                           uvec& var_id)
 {
-
+  size_t N = obs_id.n_elem;
+  size_t P = Param.P;
   size_t nmin = Param.nmin;
   bool useobsweight = Param.useobsweight;
-  size_t N = obs_id.n_elem;
   bool kernel_ready = Param.kernel_ready;
-  size_t P = Param.P;
-  
-  // calculate node information
-  DEBUG_Rcout << "  -- Reg_Split_A_Node on Node " << Node << " with sample size " << obs_id.size() << std::endl;
-  
-  if (N < 2*nmin)
+
+  if (N <= 2*nmin)
   {
 TERMINATENODE:
 
     DEBUG_Rcout << "  -- Terminate node " << Node << std::endl;
-    Reg_Uni_Terminate_Node(Node, OneTree, OneNodeRegi, Y, Param, obs_weight, obs_id, useobsweight);
+    Reg_Uni_Terminate_Node(Node, OneTree, OneNodeRegi, obs_id, REG_DATA.Y, REG_DATA.obsweight, Param, useobsweight);
     
   }else{
     
@@ -48,10 +40,11 @@ TERMINATENODE:
     
     Uni_Split_Class OneSplit;
     
-    Reg_Uni_Find_A_Split(OneSplit, X, Y, Ncat, Param, Param_RLT, obs_weight, obs_id, var_weight, var_id);
+    Reg_Uni_Find_A_Split(OneSplit, REG_DATA, Param, Param_RLT, obs_id, var_id);
 
     DEBUG_Rcout << "  -- Found split on variable " << OneSplit.var << " cut " << OneSplit.value << " and score " << OneSplit.score << std::endl;
     
+    OneTree.NodeAve(Node) = arma::mean(REG_DATA.Y(obs_id));
     // if did not find a good split, terminate
     if (OneSplit.score <= 0)
       goto TERMINATENODE;
@@ -61,13 +54,13 @@ TERMINATENODE:
     
     uvec left_id(obs_id.n_elem);
     
-    if ( Ncat(OneSplit.var) == 1 )
+    if ( REG_DATA.Ncat(OneSplit.var) == 1 )
     {
-      split_id(X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id);  
+      split_id(REG_DATA.X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id);  
       
       DEBUG_Rcout << "  -- select cont variable " << OneSplit.var << " split at " << OneSplit.value << std::endl;
     }else{
-      split_id_cat(X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id, Ncat(OneSplit.var));
+      split_id_cat(REG_DATA.X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id, REG_DATA.Ncat(OneSplit.var));
       
       DEBUG_Rcout << "  -- select cat variable " << OneSplit.var << " split at " << OneSplit.value << std::endl;
     }
@@ -75,7 +68,7 @@ TERMINATENODE:
     // if this happens something about the splitting rule is wrong
     if (left_id.n_elem == N or obs_id.n_elem == N)
       goto TERMINATENODE;
-
+    
     // check if the current tree is long enough to store two more nodes
     // if not, extend the current tree
     
@@ -88,13 +81,14 @@ TERMINATENODE:
     
       // extend noderegi
       if ( kernel_ready and (OneTree.NodeType.n_elem > OneNodeRegi.size()) )
-        OneNodeRegi.resize( OneTree.NodeType.n_elem ); // I think this creates copy, we need a more efficent way to do it...    
+        field_vec_resize( OneNodeRegi, OneTree.NodeType.n_elem );
     }
 
     // find the locations of next left and right nodes     
     OneTree.NodeType(Node) = 2; // 0: unused, 1: reserved; 2: internal node; 3: terminal node	
     size_t NextLeft = Node;
     size_t NextRight = Node;
+    
     OneTree.find_next_nodes(NextLeft, NextRight);
     
     DEBUG_Rcout << "  -- Next Left at " << NextLeft << std::endl;
@@ -105,34 +99,43 @@ TERMINATENODE:
     OneTree.SplitVar(Node) = OneSplit.var;
     OneTree.SplitValue(Node) = OneSplit.value;
     OneTree.LeftNode(Node) = NextLeft;
-    OneTree.RightNode(Node) = NextRight;
+    OneTree.RightNode(Node) = NextRight;    
     
     OneTree.NodeSize(Node) = left_id.n_elem + obs_id.n_elem;
     
     // split the left and right nodes 
 
-    Reg_Uni_Split_A_Node(NextLeft, OneTree, OneNodeRegi,
-						 X, Y, Ncat, Param, Param_RLT,
-						 obs_weight, left_id, var_weight, var_id);
+    Reg_Uni_Split_A_Node(NextLeft, 
+                         OneTree,
+                         OneNodeRegi,
+                         REG_DATA,
+                         Param,
+                         Param_RLT, 
+                         left_id, 
+                         var_id);
+
     
-    Reg_Uni_Split_A_Node(NextRight, OneTree, OneNodeRegi,
-						 X, Y, Ncat, Param, Param_RLT,
-						 obs_weight, obs_id, var_weight, var_id);
+    Reg_Uni_Split_A_Node(NextRight,                          
+                         OneTree,
+                         OneNodeRegi,
+                         REG_DATA,
+                         Param,
+                         Param_RLT, 
+                         obs_id, 
+                         var_id);
 
   }
-
-  return;
 }
 
 // terminate and record a node
 
 void Reg_Uni_Terminate_Node(size_t Node, 
                             Reg_Uni_Tree_Class& OneTree,
-                            std::vector<arma::uvec>& OneNodeRegi,
+                            arma::field<arma::uvec>& OneNodeRegi,
+                            uvec& obs_id,                            
                             const vec& Y,
+                            const vec& obs_weight,                            
                             const PARAM_GLOBAL& Param,
-                            vec& obs_weight,
-                            uvec& obs_id,
                             bool useobsweight)
 {
   

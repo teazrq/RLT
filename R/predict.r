@@ -31,8 +31,8 @@ predict.RLT<- function(object,
     if (is.null(colnames(testx)))
     {
       if (ncol(testx) != object$parameters$p) stop("test data dimension does not match training data, variable names are not supplied...")
-    }else if (any(colnames(testx) != object$variablenames))
-    {
+    }else if (any(colnames(testx) != object$variablenames)){
+      
       warning("test data variables names does not match training data...")
       varmatch = match(object$variablenames, colnames(testx))
       if (any(is.na(varmatch))) stop("test data missing some variables...")
@@ -46,13 +46,10 @@ predict.RLT<- function(object,
                              object$FittedForest$SplitValue,
                              object$FittedForest$LeftNode,
                              object$FittedForest$RightNode,
+                             object$FittedForest$NodeSize,                             
                              object$FittedForest$NodeAve,
-                             object$FittedForest$NodeSize,
                              testx,
-                             object$y,
                              object$ncat,
-                             object$parameters,
-                             object$obs.w,
                              kernel,
                              keep.all,
                              ncores,
@@ -69,10 +66,12 @@ predict.RLT<- function(object,
     if (is.null(colnames(testx)))
     {
       if (ncol(testx) != object$parameters$p) stop("test data dimension does not match training data, variable names are not supplied...")
-    }else if (any(colnames(testx) != object$variablenames))
-    {
+    }else if (any(colnames(testx) != object$variablenames)){
+      
       warning("test data variables names does not match training data...")
+      
       varmatch = match(object$variablenames, colnames(testx))
+      
       if (any(is.na(varmatch))) stop("test data missing some variables...")
       testx = testx[, varmatch]
     }
@@ -80,24 +79,21 @@ predict.RLT<- function(object,
     testx <- data.matrix(testx)
     
     pred <- SurvForestUniPred(object$FittedForest$NodeType,
-                             object$FittedForest$SplitVar,
-                             object$FittedForest$SplitValue,
-                             object$FittedForest$LeftNode,
-                             object$FittedForest$RightNode,
-                             object$FittedForest$NodeHaz,
-                             object$FittedForest$NodeSize,
-                             testx,
-                             object$y.point,
-                             object$censor,
-                             object$ncat,
-                             object$parameters,
-                             object$obs.w,
-                             length(object$timepoints),
-                             kernel,
-                             ncores,
-                             verbose)
+                              object$FittedForest$SplitVar,
+                              object$FittedForest$SplitValue,
+                              object$FittedForest$LeftNode,
+                              object$FittedForest$RightNode,
+                              object$FittedForest$NodeSize,
+                              object$FittedForest$NodeHaz,
+                              testx,
+                              object$ncat,
+                              length(object$timepoints),
+                              kernel,
+                              keep.all,
+                              ncores,
+                              verbose)
     
-    class(pred) <- c("RLT", "pred", "reg")
+    class(pred) <- c("RLT", "pred", "surv")
     return(pred)
   }
 }

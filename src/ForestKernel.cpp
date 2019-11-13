@@ -15,6 +15,7 @@ List ForestKernelUni(arma::field<arma::uvec>& NodeType,
           					 arma::field<arma::vec>& SplitValue,
           					 arma::field<arma::uvec>& LeftNode,
           					 arma::field<arma::uvec>& RightNode,
+          					 arma::field<arma::vec>& NodeSize,
           					 arma::field<arma::field<arma::uvec>>& NodeRegi,
           					 arma::imat& ObsTrack,
           					 arma::mat& X,
@@ -37,7 +38,7 @@ List ForestKernelUni(arma::field<arma::uvec>& NodeType,
   // initiate output kernel as a field
   // each element for one testing subject 
   
-  field<arma::mat> Kernel(Ntest);
+  arma::field<arma::mat> Kernel(Ntest);
   arma::mat blank(N, ntrees, fill::zeros);
   Kernel.fill(blank);
 
@@ -48,8 +49,8 @@ List ForestKernelUni(arma::field<arma::uvec>& NodeType,
     {
       DEBUG_Rcout << "--- on tree " << nt << std::endl;
       
-      Uni_Tree_Class OneTree;
-      OneTree.readin(NodeType[nt], SplitVar[nt], SplitValue[nt], LeftNode[nt], RightNode[nt]);
+      Uni_Tree_Class OneTree(NodeType(nt), SplitVar(nt), SplitValue(nt), 
+                             LeftNode(nt), RightNode(nt), NodeSize(nt));
 
       // initiate all observations
       uvec proxy_id = linspace<uvec>(0, Ntest-1, Ntest);

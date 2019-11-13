@@ -16,106 +16,92 @@ using namespace arma;
 
 // univariate tree split functions 
 
-List SurvForestUniFit(DataFrame& X,
-          					 uvec& Y,
-          					 uvec& Censor,
-          					 uvec& Ncat,
-          					 List& param,
-          					 List& RLTparam,
-          					 vec& obsweight,
-          					 vec& varweight,
-          					 int usecores,
-          					 int verbose);
+List SurvForestUniFit(arma::mat& X,
+                      arma::uvec& Y,
+                      arma::uvec& Censor,
+                      arma::uvec& Ncat,
+                      List& param,
+                      List& RLTparam,
+                      arma::vec& obsweight,
+                      arma::vec& varweight,
+                      int usecores,
+                      int verbose,
+                      arma::umat& ObsTrackPre);
 
-void Surv_Uni_Forest_Build(const mat& X,
-            						  const uvec& Y,
-            						  const uvec& Censor,
-            						  const uvec& Ncat,
-            						  const PARAM_GLOBAL& Param,
-            						  const PARAM_RLT& Param_RLT,
-            						  vec& obs_weight,
-            						  uvec& obs_id,
-            						  vec& var_weight,
-            						  uvec& var_id,
-            						  std::vector<Surv_Uni_Tree_Class>& Forest,
-            						  imat& ObsTrack,
-            						  cube& Pred,
-            						  arma::field<arma::field<arma::uvec>>& NodeRegi,
-            						  vec& VarImp,
-            						  int seed,
-            						  int usecores,
-            						  int verbose);
+void Surv_Uni_Forest_Build(const RLT_SURV_DATA& REG_DATA,
+                           Surv_Uni_Forest_Class& SURV_FOREST,
+                           const PARAM_GLOBAL& Param,
+                           const PARAM_RLT& Param_RLT,
+                           uvec& obs_id,
+                           uvec& var_id,
+                           umat& ObsTrack,
+                           mat& Prediction,
+                           mat& OOBPrediction,
+                           arma::field<arma::field<arma::uvec>>& NodeRegi,
+                           vec& VarImp,
+                           size_t seed,
+                           int usecores,
+                           int verbose);
 
 void Surv_Uni_Split_A_Node(size_t Node,
                            Surv_Uni_Tree_Class& OneTree,
-                           std::vector<arma::uvec>& OneNodeRegi,
-                           const mat& X,
-                           const uvec& Y,
-                           const uvec& Censor,
-                           const size_t NFail, 
-                           const uvec& Ncat,
+                           arma::field<arma::uvec>& OneNodeRegi,
+                           const RLT_SURV_DATA& SURV_DATA,
                            const PARAM_GLOBAL& Param,
                            const PARAM_RLT& Param_RLT,
-                           vec& obs_weight,
                            uvec& obs_id,
-                           vec& var_weight,
                            uvec& var_id);
 
 void Surv_Uni_Terminate_Node(size_t Node, 
                              Surv_Uni_Tree_Class& OneTree,
-                             std::vector<arma::uvec>& OneNodeRegi,
+                             arma::field<arma::uvec>& OneNodeRegi,
+                             uvec& obs_id,
                              const uvec& Y,
                              const uvec& Censor,
                              const size_t NFail,
+                             const vec& obs_weight,
                              const PARAM_GLOBAL& Param,
-                             vec& obs_weight,
-                             uvec& obs_id,
                              bool useobsweight);
 
 void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
-                           const mat& X,
-                           const uvec& Y,
-                           const uvec& Censor,
-                           const uvec& Ncat,
+                           const RLT_SURV_DATA& SURV_DATA,
                            const PARAM_GLOBAL& Param,
                            const PARAM_RLT& RLTParam,
-                           vec& obs_weight,
                            uvec& obs_id,
-                           vec& var_weight,
                            uvec& var_id);
 
 void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit, 
                          uvec& obs_id,
                          const vec& x,
-                         const uvec& Y,
-                         const uvec& Censor,
+                         const uvec& Y, // Y is collapsed
+                         const uvec& Censor, // Censor is collapsed
+                         vec& obs_weight,
+                         size_t NFail,
                          double penalty,
                          int split_gen,
                          int split_rule,
                          int nsplit,
                          size_t nmin, 
                          double alpha,
-                         vec& obs_weight,
                          bool useobsweight,
-                         size_t nfail,
-                         int failforce);
+                         bool failforce);
     
-void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
-                        uvec& obs_id,
-                        const vec& x,
-                        const uvec& Y, // Y is collapsed
-                        const uvec& Censor, // Censor is collapsed
-                        double penalty,
-                        int split_gen,
-                        int split_rule,
-                        int nsplit,
-                        size_t nmin,
-                        double alpha,
-                        vec& obs_weight,
-                        bool useobsweight,
-                        size_t NFail,
-                        int failforce,
-                        size_t ncat);
+void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit, 
+                         uvec& obs_id,
+                         const vec& x,
+                         const uvec& Y, // Y is collapsed
+                         const uvec& Censor, // Censor is collapsed
+                         vec& obs_weight,
+                         size_t NFail,
+                         double penalty,
+                         int split_gen,
+                         int split_rule,
+                         int nsplit,
+                         size_t nmin, 
+                         double alpha,
+                         bool useobsweight,
+                         bool failforce,
+                         size_t ncat);
 
 void collapse(const uvec& Y, 
               const uvec& Censor, 
@@ -128,38 +114,25 @@ void collapse(const uvec& Y,
 
 double surv_cont_score_at_cut(uvec& obs_id,
                               const vec& x,
-                              const uvec& Y,
-                              const uvec& Censor,
+                              const uvec& Y, // this is collapsed 
+                              const uvec& Censor, // this is collapsed 
+                              const vec& obs_weight,
                               size_t NFail,
                               double a_random_cut,
                               int split_rule,
-                              double penalty);
+                              double penalty,
+                              bool useobsweight);
 
-double surv_cont_score_at_cut_w(uvec& obs_id,
-                                const vec& x,
-                                const uvec& Y,
-                                const uvec& Censor,
-                                size_t NFail,
-                                double a_random_cut,
-                                vec& obs_weight,
-                                int split_rule, 
-                                double penalty);
-
-double surv_cont_score_at_index(uvec& indices,
-                                const uvec& Y, 
-                                const uvec& Censor, 
+double surv_cont_score_at_index(uvec& obs_ranked, // collapsed
+                                uvec& indices, // this is not collapsed, indicates original id
+                                const uvec& Y, //collapsed
+                                const uvec& Censor, //collapsed
+                                const vec& obs_weight,
                                 size_t NFail,
                                 size_t a_random_ind,
                                 int split_rule,
-                                double penalty);
-
-double surv_cont_score_at_index_w(uvec& indices,
-                                  const uvec& Y, 
-                                  const uvec& Censor, 
-                                  size_t NFail,
-                                  size_t a_random_ind,
-                                  vec& obs_weight,
-                                  int split_rule);
+                                double penalty, 
+                                bool useobsweight);
 
 double surv_cont_score_best(uvec& indices, // for x, sorted
                             const vec& x,
@@ -249,13 +222,15 @@ double survloglike(const vec& basehazard, const vec& lefthazard, const vec& righ
 
 // prediction 
 
-mat Surv_Uni_Forest_Pred(const std::vector<Surv_Uni_Tree_Class>& Forest,
-                         const mat& X,
-                         const uvec& Ncat,
-                         int NFail,
-                         bool kernel,
-                         int usecores,
-                         int verbose);
+void Surv_Uni_Forest_Pred(cube& Pred,
+                          mat& W,
+                          const Surv_Uni_Forest_Class& SURV_FOREST,
+                          const mat& X,
+                          const uvec& Ncat,
+                          size_t NFail,
+                          bool kernel,
+                          int usecores,
+                          int verbose);
 
 // for converting 
 

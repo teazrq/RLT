@@ -17,17 +17,18 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          const vec& x,
                          const uvec& Y, // Y is collapsed
                          const uvec& Censor, // Censor is collapsed
+                         vec& obs_weight,
+                         size_t NFail,
                          double penalty,
                          int split_gen,
                          int split_rule,
                          int nsplit,
                          size_t nmin, 
                          double alpha,
-                         vec& obs_weight,
                          bool useobsweight,
-                         size_t NFail,
-                         int failforce)
+                         bool failforce)
 {
+    
     size_t N = obs_id.n_elem;
     
     arma::vec temp_cut_arma;
@@ -45,12 +46,7 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             temp_cut_arma = x(obs_id( (size_t) intRand(0, N-1) ));
             temp_cut = temp_cut_arma(0);
             
-            if (useobsweight){
-                temp_score = surv_cont_score_at_cut_w(obs_id, x, Y, Censor, NFail, temp_cut, obs_weight, split_rule, penalty);
-                
-            }else{
-                temp_score = surv_cont_score_at_cut(obs_id, x, Y, Censor, NFail, temp_cut, split_rule, penalty);
-            }
+            temp_score = surv_cont_score_at_cut(obs_id, x, Y, Censor, obs_weight, NFail, temp_cut, split_rule, penalty, useobsweight);
             
             if (temp_score > TempSplit.score)
             {
@@ -62,6 +58,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
         DEBUG_Rcout << "      --- Best cut off at " << TempSplit.value << " with score " << TempSplit.score << std::endl;
         return;
     }
+    
+    DEBUG_Rcout << "      --- rank or best splits " << std::endl;
     
     
     // alpha is only effective when x can be sorted
@@ -91,12 +89,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
         {
             // generate a cut off
             temp_ind = intRand(lowindex, highindex);
-            
-            if (useobsweight)
-                temp_score = surv_cont_score_at_index_w(obs_ranked, Y, Censor, NFail, temp_ind, obs_weight, split_rule);
-            else
-                temp_score = surv_cont_score_at_index(obs_ranked, Y, Censor, NFail, temp_ind, split_rule);
-            
+            temp_score = surv_cont_score_at_index(obs_ranked, indices, Y, Censor, obs_weight, NFail, temp_ind, split_rule, penalty, useobsweight);
+
             if (temp_score > TempSplit.score)
             {
                 TempSplit.value = (x(indices(temp_ind)) + x(indices(temp_ind+1)))/2 ;
@@ -107,7 +101,6 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
         DEBUG_Rcout << "      --- Rank cut off at " << TempSplit.value << " with score " << TempSplit.score << std::endl;
         return;
     }
-    
     
     if (split_gen == 3) // best split  
     {
@@ -129,12 +122,14 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
 
 double surv_cont_score_at_cut(uvec& obs_id,
                               const vec& x,
-                              const uvec& Y,
-                              const uvec& Censor,
+                              const uvec& Y, // this is collapsed 
+                              const uvec& Censor, // this is collapsed 
+                              const vec& obs_weight,
                               size_t NFail,
                               double a_random_cut,
                               int split_rule,
-                              double penalty)
+                              double penalty,
+                              bool useobsweight)
 {
     // x is of full length, Y is collapsed, length same as id
     
@@ -143,33 +138,60 @@ double surv_cont_score_at_cut(uvec& obs_id,
     vec Right_Count_Fail(NFail+1, fill::zeros);
     vec Right_Count_Censor(NFail+1, fill::zeros);
     
-    size_t LeftN = 0;     
-    size_t N = obs_id.n_elem;
-    
-    // initiate the failure and censoring counts
-    for (size_t i = 0; i<obs_id.n_elem; i++)
+    double LeftN = 0;     
+    double RightN = 0;
+    double N = (double) obs_id.n_elem;
+        
+    if (useobsweight)
     {
-        if (x[obs_id[i]] <= a_random_cut) // go left
+        // initiate the failure and censoring counts
+        for (size_t i = 0; i<obs_id.n_elem; i++)
         {
-            if (Censor[i] == 1)
-                Left_Count_Fail[Y[i]]++;
-            else
-                Left_Count_Censor[Y[i]]++;
-            
-            LeftN++;
-        }else{  // go right
-            if (Censor[i] == 1)
-                Right_Count_Fail[Y[i]]++;
-            else
-                Right_Count_Censor[Y[i]]++;
+            if (x(obs_id(i)) <= a_random_cut) // go left
+            {
+                if (Censor(i) == 1)
+                    Left_Count_Fail(Y(i)) += obs_weight(obs_id(i));
+                else
+                    Left_Count_Censor(Y(i)) += obs_weight(obs_id(i));
+                
+                LeftN += obs_weight(obs_id(i));
+            }else{  // go right
+                if (Censor(i) == 1)
+                    Right_Count_Fail(Y(i)) += obs_weight(obs_id(i));
+                else
+                    Right_Count_Censor(Y(i)) += obs_weight(obs_id(i));
+                
+                RightN += obs_weight(obs_id(i));
+            }
+        }
+        
+        N = LeftN + RightN;
+    }else{
+        // initiate the failure and censoring counts
+        for (size_t i = 0; i<obs_id.n_elem; i++)
+        {
+            if (x[obs_id[i]] <= a_random_cut) // go left
+            {
+                if (Censor[i] == 1)
+                    Left_Count_Fail[Y[i]]++;
+                else
+                    Left_Count_Censor[Y[i]]++;
+                
+                LeftN++;
+            }else{  // go right
+                if (Censor[i] == 1)
+                    Right_Count_Fail[Y[i]]++;
+                else
+                    Right_Count_Censor[Y[i]]++;
+            }
         }
     }
     
     if (split_rule == 1)
-        return logrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, (double) LeftN, (double) N, NFail);
+        return logrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftN, N, NFail);
     
     if (split_rule == 2)
-        return suplogrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, (double) LeftN, (double) N, NFail);
+        return suplogrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftN, N, NFail);
     
     if (split_rule == 3)
     {
@@ -190,6 +212,102 @@ double surv_cont_score_at_cut(uvec& obs_id,
     Rcout << "      --- splitting rule not implemented yet " << std::endl;
 }
 
+
+
+double surv_cont_score_at_index(uvec& obs_ranked, // collapsed
+                                uvec& indices, // this is not collapsed, indicates original id
+                                const uvec& Y, //collapsed
+                                const uvec& Censor, //collapsed
+                                const vec& obs_weight,
+                                size_t NFail,
+                                size_t a_random_ind,
+                                int split_rule,
+                                double penalty, 
+                                bool useobsweight)
+{
+    // Y is collapsed, length same as obs_ranked
+    
+    vec Left_Count_Fail(NFail+1, fill::zeros);
+    vec Left_Count_Censor(NFail+1, fill::zeros);
+    vec Right_Count_Fail(NFail+1, fill::zeros);
+    vec Right_Count_Censor(NFail+1, fill::zeros);
+    
+    double LeftN = 0;     
+    double RightN = 0;
+    double N = (double) obs_ranked.n_elem;
+    
+    if (useobsweight)
+    {
+        // initiate the failure and censoring counts
+        for (size_t i = 0; i<= a_random_ind; i++)
+        {
+            if (Censor(obs_ranked(i)) == 1)
+                Left_Count_Fail(Y(obs_ranked(i))) += obs_weight(indices(i)) ;
+            else
+                Left_Count_Censor(Y(obs_ranked(i))) += obs_weight(indices(i)) ;
+            
+            LeftN++;
+        }
+        
+        for (size_t i = a_random_ind+1; i < N; i++) 
+        {
+            if (Censor(obs_ranked(i)) == 1)
+                Right_Count_Fail(Y(obs_ranked(i))) += obs_weight(indices(i)) ;
+            else
+                Right_Count_Censor(Y(obs_ranked(i))) += obs_weight(indices(i)) ;
+            
+            RightN++;
+        }
+        
+        N = LeftN + RightN;
+    }else{
+        
+        // initiate the failure and censoring counts
+        for (size_t i = 0; i<= a_random_ind; i++)
+        {
+            if (Censor(obs_ranked(i)) == 1)
+                Left_Count_Fail(Y(obs_ranked(i)))++;
+            else
+                Left_Count_Censor(Y(obs_ranked(i)))++;
+            
+            LeftN++;
+        }
+        
+        for (size_t i = a_random_ind+1; i < N; i++) 
+        {
+            if (Censor(obs_ranked(i)) == 1)
+                Right_Count_Fail(Y(obs_ranked(i)))++;
+            else
+                Right_Count_Censor(Y(obs_ranked(i)))++;
+        }
+    }
+    
+
+    if (split_rule == 1)
+        return logrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftN, N, NFail);
+    
+    if (split_rule == 2)
+        return suplogrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftN, N, NFail);
+    
+    if (split_rule == 3)
+    {
+        // calculate base
+        vec AllFail = Left_Count_Fail + Right_Count_Fail;
+        vec AllCensor = Left_Count_Censor + Right_Count_Censor;
+        
+        vec basehazard = hazard(AllFail, AllCensor);
+        vec lefthazard = hazard(Left_Count_Fail, Left_Count_Censor);
+        vec righthazard = hazard(Right_Count_Fail, Right_Count_Censor);
+        
+        return survloglike(basehazard, lefthazard, righthazard, Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, penalty);
+        // calculate score with penalty 
+        
+    }
+    
+    Rcout << "      --- splitting rule not implemented yet " << std::endl;
+}
+
+
 vec hazard(const vec& Fail, const vec& Censor)
 {
     // return a vector of hazard
@@ -205,97 +323,6 @@ double survloglike(const vec& basehazard, const vec& lefthazard, const vec& righ
     
 }
 
-
-double surv_cont_score_at_cut_w(uvec& obs_id,
-                                const vec& x,
-                                const uvec& Y,
-                                const uvec& Censor,
-                                size_t NFail,
-                                double a_random_cut,
-                                vec& obs_weight,
-                                int split_rule,
-                                double penalty)
-{
-    Rcout << "      --- weighted surv split at random cut not implemented yet " << std::endl;
-    
-    return -1;
-}
-
-
-double surv_cont_score_at_index(uvec& obs_ranked,
-                                const uvec& Y, 
-                                const uvec& Censor, 
-                                size_t NFail,
-                                size_t a_random_ind,
-                                int split_rule,
-                                double penalty)
-{
-    // Y is collapsed, length same as obs_ranked
-    
-    vec Left_Count_Fail(NFail+1, fill::zeros);
-    vec Left_Count_Censor(NFail+1, fill::zeros);
-    vec Right_Count_Fail(NFail+1, fill::zeros);
-    vec Right_Count_Censor(NFail+1, fill::zeros);
-    
-    size_t LeftN = 0;     
-    size_t N = obs_ranked.n_elem;
-    
-    // initiate the failure and censoring counts
-    for (size_t i = 0; i<= a_random_ind; i++)
-    {
-        if (Censor(obs_ranked(i)) == 1)
-            Left_Count_Fail(Y(obs_ranked(i)))++;
-        else
-            Left_Count_Censor(Y(obs_ranked(i)))++;
-        
-        LeftN++;
-    }
-    
-    for (size_t i = a_random_ind+1; i < N; i++) 
-    {
-        if (Censor(obs_ranked(i)) == 1)
-            Right_Count_Fail(Y(obs_ranked(i)))++;
-        else
-            Right_Count_Censor(Y(obs_ranked(i)))++;
-    }
-    
-    if (split_rule == 1)
-        return logrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, (double) LeftN, (double) N, NFail);
-    
-    if (split_rule == 2)
-        return suplogrank(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, (double) LeftN, (double) N, NFail);
-    
-    if (split_rule == 3)
-    {
-        // calculate base
-        vec AllFail = Left_Count_Fail + Right_Count_Fail;
-        vec AllCensor = Left_Count_Censor + Right_Count_Censor;
-        
-        vec basehazard = hazard(AllFail, AllCensor);
-        vec lefthazard = hazard(Left_Count_Fail, Left_Count_Censor);
-        vec righthazard = hazard(Right_Count_Fail, Right_Count_Censor);
-        
-        return loglike(basehazard, lefthazard, righthazard, Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, penalty);
-        // calculate score with penalty 
-        
-    }
-    
-    Rcout << "      --- splitting rule not implemented yet " << std::endl;
-}
-
-double surv_cont_score_at_index_w(uvec& obs_ranked,
-                                  const uvec& Y, 
-                                  const uvec& Censor, 
-                                  size_t NFail,
-                                  size_t a_random_ind,
-                                  vec& obs_weight,
-                                  int split_rule)
-{
-    Rcout << "      --- weighted surv split at index cut not implemented yet " << std::endl;
-    
-    return -1;
-
-}
 
 
 double surv_cont_score_best(uvec& indices, // for x, sorted

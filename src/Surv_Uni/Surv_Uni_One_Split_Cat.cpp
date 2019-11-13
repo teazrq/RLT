@@ -12,22 +12,22 @@
 using namespace Rcpp;
 using namespace arma;
 
-void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
-                       uvec& obs_id,
-                       const vec& x,
-                       const uvec& Y, // Y is collapsed
-                       const uvec& Censor, // Censor is collapsed
-                       double penalty,
-                       int split_gen,
-                       int split_rule,
-                       int nsplit,
-                       size_t nmin,
-                       double alpha,
-                       vec& obs_weight,
-                       bool useobsweight,
-                       size_t NFail,
-                       int failforce,
-                       size_t ncat)
+void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit, 
+                        uvec& obs_id,
+                        const vec& x,
+                        const uvec& Y, // Y is collapsed
+                        const uvec& Censor, // Censor is collapsed
+                        vec& obs_weight,
+                        size_t NFail,
+                        double penalty,
+                        int split_gen,
+                        int split_rule,
+                        int nsplit,
+                        size_t nmin, 
+                        double alpha,
+                        bool useobsweight,
+                        bool failforce,
+                        size_t ncat)
 {
     DEBUG_Rcout << "        --- Surv_One_Split_Cat with ncat = " << ncat << std::endl;
     
