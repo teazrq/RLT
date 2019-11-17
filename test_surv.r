@@ -8,7 +8,7 @@ library(survival)
 # generate data 
 set.seed(1)
 
-trainn = 200
+trainn = 600
 testn = 1000
 n = trainn + testn
 p = 20
@@ -27,9 +27,9 @@ colnames(X) = NULL
 
 ntrees = 1000
 ncores = 10
-nmin = 30
+nmin = 20
 mtry = ncol(X)
-sampleprob = 0.5
+sampleprob = 0.75
 rule = "random"
 nsplit = ifelse(rule == "best", 0, 1)
 importance = TRUE
@@ -42,17 +42,12 @@ testY = y[1:testn + trainn]
 trainCensor = censor[1:trainn]
 testCensor = censor[1:testn + trainn]
 
+# get true survival function 
 timepoints = sort(unique(trainY[trainCensor==1]))
 SurvMat = matrix(NA, testn, length(timepoints))
 
 for (j in 1:length(timepoints))
     SurvMat[, j] = 1 - pexp(timepoints[j], rate = exp(testX[, 1] + 3*as.numeric(testX[, p/2 + 1] %in% c(1, 3)) ) )
-
-# logrank = survdiff(Surv(y, c) ~ x, data = data.frame("x" = trainX[, 2] %in% c(1, 3), "y" = trainY, "c" = trainCensor))
-# logrank$chisq
-
-plot(Surv(trainY, trainCensor))
-lines(timepoints, SurvMat[1, ], col = "red")
 
 # fit models 
 
@@ -62,7 +57,7 @@ colnames(metric) = c("fit.time", "pred.time", "pred.error", "L1", "obj.size")
 
 start_time <- Sys.time()
 RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores, nmin = nmin/2, mtry = mtry, replacement = FALSE, 
-              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = importance, track.obs = FALSE)
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = importance)
 metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
 start_time <- Sys.time()
 
