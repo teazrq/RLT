@@ -44,10 +44,11 @@ getOneTree<- function(x, tree = 1, ...)
     cat(paste("Tree #", tree, " in the fitted regression forest: \n\n", sep = ""))
     
     
-    if (is.null(x$xnames))
-      newnames = paste("var ", 1:x$parameters$p)
-    else
+    if (is.null(x$xnames)){
+      newnames = paste("var", 1:x$parameters$p)
+    }else{
       newnames = x$xnames
+    }
     
     newnames = gsub("\\s", " ", format(newnames, width=max(nchar(newnames))))
     

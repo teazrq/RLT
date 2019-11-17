@@ -16,83 +16,64 @@ void Uni_Find_Terminal_Node(size_t Node,
               							const mat& X,
               							const uvec& Ncat,
               							uvec& proxy_id,
-              							uvec& real_id,
+              							const uvec& real_id,
               							uvec& TermNode)
 {
  
-  size_t size = proxy_id.n_elem;
+ size_t size = proxy_id.n_elem;
   
   DEBUG_Rcout << "/// Start at node ///" << Node << " n is " << size << std::endl;
-   
+  
   if (OneTree.NodeType[Node] == 3)
   {
     for ( size_t i=0; i < size; i++ )
-      TermNode[proxy_id[i]] = Node;
+      TermNode(proxy_id(i)) = Node;
   }else{
     
-    uvec left_proxy(proxy_id.n_elem);
-    size_t RightN = size;
-    size_t LeftN = 0;
-    size_t SplitVar = OneTree.SplitVar[Node];
-    double SplitValue = OneTree.SplitValue[Node];    
+    uvec id_goright(proxy_id.n_elem, fill::zeros);
+    
+    size_t SplitVar = OneTree.SplitVar(Node);
+    double SplitValue = OneTree.SplitValue(Node);
+    double xtemp = 0;
     
     if ( Ncat(SplitVar) > 1 ) // categorical var 
     {
-      size_t i = 0;
       
-      uvec goright(Ncat[SplitVar] + 1);
-      unpack(SplitValue, Ncat[SplitVar] + 1, goright); // from Andy's rf package
+      uvec goright(Ncat(SplitVar) + 1);
+      unpack(SplitValue, Ncat(SplitVar) + 1, goright); // from Andy's rf package
       
-      while( i < RightN ){
-//Rcout << " i is " << i << " left " << LeftN << " right " << RightN << std::endl;
-        if ( goright(X(real_id[proxy_id[i]], SplitVar)) == 0 )
-        {
-          // move subject to left 
-          left_proxy[LeftN++] = proxy_id[i];
-          
-          // remove subject from right 
-          proxy_id[i] = proxy_id[RightN - 1];
-          RightN--;
-        }else{
-          i++;
-        }
+      for (size_t i = 0; i < size ; i++)
+      {
+        xtemp = X( real_id( proxy_id(i) ), SplitVar);
         
-        
+        if ( goright( (size_t) xtemp ) == 1 )
+          id_goright(i) = 1;
       }
       
     }else{
       
-      size_t i = 0;
-
-      while( i < RightN ){
-        //Rcout << " i is " << i << " left " << LeftN << " right " << RightN << std::endl;
-        if ( X(real_id[proxy_id[i]], SplitVar) <= SplitValue )
-        {
-          // move subject to left 
-          left_proxy[LeftN++] = proxy_id[i];
-          
-          // remove subject from right 
-          proxy_id[i] = proxy_id[RightN - 1];
-          RightN--;
-        }else{
-          i++;
-        }
+      for (size_t i = 0; i < size ; i++)
+      {
+        xtemp = X( real_id( proxy_id(i) ), SplitVar);
+        
+        if (xtemp > SplitValue)
+          id_goright(i) = 1;
       }
-
     }
+    
+    uvec left_proxy = proxy_id(find(id_goright == 0));
+    proxy_id = proxy_id(find(id_goright == 1));
     
     // left node 
     
-    if (LeftN > 0)
+    if (left_proxy.n_elem > 0)
     {
-      left_proxy.resize(LeftN);
       Uni_Find_Terminal_Node(OneTree.LeftNode[Node], OneTree, X, Ncat, left_proxy, real_id, TermNode);
     }
     
     // right node
-    if (RightN > 0)
+    if (proxy_id.n_elem > 0)
     {
-      proxy_id.resize(RightN);
       Uni_Find_Terminal_Node(OneTree.RightNode[Node], OneTree, X, Ncat, proxy_id, real_id, TermNode);      
     }
     
@@ -109,7 +90,7 @@ void Uni_Find_Terminal_Node_ShuffleJ(size_t Node,
                                     const mat& X,
                                     const uvec& Ncat,
                                     uvec& proxy_id,
-                                    uvec& real_id,
+                                    const uvec& real_id,
                                     uvec& TermNode,
                                     const vec& tildex,
                                     const size_t j)
@@ -122,85 +103,59 @@ void Uni_Find_Terminal_Node_ShuffleJ(size_t Node,
     if (OneTree.NodeType[Node] == 3)
     {
         for ( size_t i=0; i < size; i++ )
-            TermNode[proxy_id[i]] = Node;
+            TermNode(proxy_id(i)) = Node;
     }else{
         
-        uvec left_proxy(proxy_id.n_elem);
-        size_t RightN = size;
-        size_t LeftN = 0;
-        size_t SplitVar = OneTree.SplitVar[Node];
-        double SplitValue = OneTree.SplitValue[Node];
-        double xtemp = 0; 
+        uvec id_goright(proxy_id.n_elem, fill::zeros);
+      
+        size_t SplitVar = OneTree.SplitVar(Node);
+        double SplitValue = OneTree.SplitValue(Node);
+        double xtemp = 0;
         
         if ( Ncat(SplitVar) > 1 ) // categorical var 
         {
-            size_t i = 0;
+
+            uvec goright(Ncat(SplitVar) + 1);
+            unpack(SplitValue, Ncat(SplitVar) + 1, goright); // from Andy's rf package
             
-            uvec goright(Ncat[SplitVar] + 1);
-            unpack(SplitValue, Ncat[SplitVar] + 1, goright); // from Andy's rf package
-            
-            while( i < RightN ){
-                
-                if (SplitVar == j)
-                    xtemp = tildex( proxy_id[i] );
-                else
-                    xtemp = X(real_id[proxy_id[i]], SplitVar);
-                    
-                //Rcout << " i is " << i << " left " << LeftN << " right " << RightN << std::endl;
-                if ( goright( xtemp ) == 0 )
-                {
-                    // move subject to left 
-                    left_proxy[LeftN++] = proxy_id[i];
-                    
-                    // remove subject from right 
-                    proxy_id[i] = proxy_id[RightN - 1];
-                    RightN--;
-                }else{
-                    i++;
-                }
-                
-                
+            for (size_t i = 0; i < size ; i++)
+            {
+              if (SplitVar == j)
+                xtemp = tildex( proxy_id(i) );
+              else
+                xtemp = X( real_id( proxy_id(i) ), SplitVar);
+              
+              if ( goright( (size_t) xtemp ) == 1 )
+                id_goright(i) = 1;
             }
-            
+
         }else{
+
+          for (size_t i = 0; i < size ; i++)
+          {
+            if (SplitVar == j)
+              xtemp = tildex( proxy_id(i) );
+            else
+              xtemp = X( real_id( proxy_id(i) ), SplitVar);
             
-            size_t i = 0;
-            
-            while( i < RightN ){
-                
-                if (SplitVar == j)
-                    xtemp = tildex( proxy_id[i] );
-                else
-                    xtemp = X(real_id[proxy_id[i]], SplitVar);
-                
-                //Rcout << " i is " << i << " left " << LeftN << " right " << RightN << std::endl;
-                if ( xtemp <= SplitValue )
-                {
-                    // move subject to left 
-                    left_proxy[LeftN++] = proxy_id[i];
-                    
-                    // remove subject from right 
-                    proxy_id[i] = proxy_id[RightN - 1];
-                    RightN--;
-                }else{
-                    i++;
-                }
-            }
-            
+            if (xtemp > SplitValue)
+              id_goright(i) = 1;
+          }
         }
+        
+        uvec left_proxy = proxy_id(find(id_goright == 0));
+        proxy_id = proxy_id(find(id_goright == 1));
         
         // left node 
         
-        if (LeftN > 0)
+        if (left_proxy.n_elem > 0)
         {
-            left_proxy.resize(LeftN);
             Uni_Find_Terminal_Node_ShuffleJ(OneTree.LeftNode[Node], OneTree, X, Ncat, left_proxy, real_id, TermNode, tildex, j);
         }
         
         // right node
-        if (RightN > 0)
+        if (proxy_id.n_elem > 0)
         {
-            proxy_id.resize(RightN);
             Uni_Find_Terminal_Node_ShuffleJ(OneTree.RightNode[Node], OneTree, X, Ncat, proxy_id, real_id, TermNode, tildex, j);      
         }
         

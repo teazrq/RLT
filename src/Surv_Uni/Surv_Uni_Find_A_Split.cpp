@@ -86,48 +86,89 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
     {
       DEBUG_Rcout << "      --- try var " << temp_var << " (categorical) " << std::endl;
       
-      Surv_Uni_Split_Cat(TempSplit, 
-                         obs_id, 
-                         SURV_DATA.X.unsafe_col(temp_var), 
-                         Y_collapse, 
-                         Censor_collapse, 
-                         SURV_DATA.obsweight, 
-                         NFail,
-                         penalty,
-                         split_gen, 
-                         split_rule, 
-                         nsplit, 
-                         nmin, 
-                         alpha, 
-                         useobsweight, 
-                         failforce,
-                         SURV_DATA.Ncat(temp_var));
+      if (useobsweight)
+      {
+        Surv_Uni_Split_Cat_W(TempSplit, 
+                             obs_id, 
+                             SURV_DATA.X.unsafe_col(temp_var), 
+                             Y_collapse, 
+                             Censor_collapse, 
+                             SURV_DATA.obsweight, 
+                             NFail,
+                             penalty,
+                             split_gen, 
+                             split_rule, 
+                             nsplit, 
+                             nmin, 
+                             alpha,
+                             failforce,
+                             SURV_DATA.Ncat(temp_var));
+
+      }else{
         
-      DEBUG_Rcout << "      --- try var " << temp_var << " at cut " << TempSplit.value << " (categorical) with score " << TempSplit.score << std::endl;
+        Surv_Uni_Split_Cat(TempSplit, 
+                           obs_id, 
+                           SURV_DATA.X.unsafe_col(temp_var), 
+                           Y_collapse, 
+                           Censor_collapse,
+                           NFail,
+                           penalty,
+                           split_gen, 
+                           split_rule, 
+                           nsplit, 
+                           nmin, 
+                           alpha,
+                           failforce,
+                           SURV_DATA.Ncat(temp_var));
+      }
+
+      DEBUG_Rcout << "      --- get var " << temp_var << " at cut " << TempSplit.value << " (categorical) with score " << TempSplit.score << std::endl;
+      
+      uvec goright(SURV_DATA.Ncat(OneSplit.var) + 1, fill::zeros); 
+      unpack(OneSplit.value, SURV_DATA.Ncat(OneSplit.var) + 1, goright);
+      
+      DEBUG_Rcout << "      --- categories going one side: " << find(goright == 1) << std::endl;
+      
       
     }else{ // continuous variable
       
       DEBUG_Rcout << "      --- try var " << temp_var << " (continuous) " << std::endl;
-
-      DEBUG_Rcout << "      --- SURV_DATA.varweight " << SURV_DATA.varweight << " (continuous) " << std::endl;
       
-      Surv_Uni_Split_Cont(TempSplit, 
-                          obs_id, 
-                          SURV_DATA.X.unsafe_col(temp_var), 
-                          Y_collapse, 
-                          Censor_collapse, 
-                          SURV_DATA.obsweight, 
-                          NFail,
-                          penalty,
-                          split_gen, 
-                          split_rule, 
-                          nsplit, 
-                          nmin, 
-                          alpha, 
-                          useobsweight, 
-                          failforce);
+      if (useobsweight)
+      {
+        Surv_Uni_Split_Cont_W(TempSplit, 
+                              obs_id, 
+                              SURV_DATA.X.unsafe_col(temp_var), 
+                              Y_collapse, 
+                              Censor_collapse,
+                              SURV_DATA.obsweight, 
+                              NFail,
+                              penalty,
+                              split_gen, 
+                              split_rule, 
+                              nsplit, 
+                              nmin, 
+                              alpha,
+                              failforce);
+
+      }else{
         
-      DEBUG_Rcout << "      --- try var " << temp_var << " at cut " << TempSplit.value << " (continuous) with score " << TempSplit.score << std::endl;
+        Surv_Uni_Split_Cont(TempSplit, 
+                            obs_id, 
+                            SURV_DATA.X.unsafe_col(temp_var), 
+                            Y_collapse, 
+                            Censor_collapse, 
+                            NFail,
+                            penalty,
+                            split_gen, 
+                            split_rule, 
+                            nsplit, 
+                            nmin, 
+                            alpha,
+                            failforce);
+      }
+
+      DEBUG_Rcout << "      --- get var " << temp_var << " at cut " << TempSplit.value << " (continuous) with score " << TempSplit.score << std::endl;
     }
     
     if (TempSplit.score > OneSplit.score)

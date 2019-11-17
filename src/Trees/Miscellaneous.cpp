@@ -120,7 +120,7 @@ void get_samples(arma::uvec& inbagObs,
 	
 	size_t mover = 0;
 	
-	for (size_t i = 0; i < N; i++)
+	for (size_t i = 0; i < ObsTrack_nt.n_elem; i++)
 	{
 		if (ObsTrack_nt(i) > 0)
 		{
@@ -131,8 +131,6 @@ void get_samples(arma::uvec& inbagObs,
 			}
 		}
 	}
-	
-	inbagObs.resize(mover);
 }
 
 
@@ -289,7 +287,6 @@ void field_vec_resize(arma::field<arma::uvec>& A, size_t size)
 
 // for categorical variables
 
-
 bool cat_reduced_compare(Cat_Class& a, Cat_Class& b)
 {
     if (a.count == 0 and b.count == 0)
@@ -303,6 +300,16 @@ bool cat_reduced_compare(Cat_Class& a, Cat_Class& b)
     
     return ( a.score < b.score );
 }
+
+bool cat_reduced_collapse(Cat_Class& a, Cat_Class& b)
+{
+    if (a.count > 0 and b.count == 0)
+        return 1;
+  
+    return 0;
+}
+
+
 /*
 bool cat_reduced_compare_score(Cat_Class& a, Cat_Class& b)
 {
@@ -490,22 +497,30 @@ void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Cla
 }
 
 
-double record_cat_split(std::vector<Surv_Cat_Class>& cat_reduced,
-                        size_t best_cat, 
-                        size_t true_cat,
-                        size_t ncat)
+double record_cat_split(size_t cat, 
+                        std::vector<Surv_Cat_Class>& cat_reduced)
 {
-  uvec goright(ncat + 1, fill::zeros); // the first element (category) of goright will always be set to 0 --- go left, but this category does not exist.
+  size_t ncat = cat_reduced.size() - 1;
+  uvec goright(ncat + 1, fill::zeros);
   
-  for (size_t i = 0; i <= best_cat; i++)
-    goright[cat_reduced[i].cat] = 0;
-  
-  for (size_t i = best_cat + 1; i < true_cat; i++)
+  for (size_t i = 0; i <= cat; i++)
     goright[cat_reduced[i].cat] = 1;
   
-  for (size_t i = true_cat + 1; i < ncat + 1; i++)
-    goright[cat_reduced[i].cat] = 0; //intRand(0, 1); // for empty category, assign randomly
+  return pack(ncat + 1, goright);
+}
+
+double record_cat_split(arma::uvec& goright_temp, 
+                        std::vector<Surv_Cat_Class>& cat_reduced)
+{
+  size_t ncat = cat_reduced.size() - 1;
+  uvec goright(ncat + 1, fill::zeros);
   
+  for (size_t i = 0; i < goright_temp.n_elem; i++)
+  {
+    if (goright_temp(i) == 1)
+      goright[cat_reduced[i].cat] = 1;
+  }
+
   return pack(ncat + 1, goright);
 }
 
@@ -528,5 +543,16 @@ double record_cat_split(std::vector<Reg_Cat_Class>& cat_reduced,
   return pack(ncat + 1, goright);
 }
 
-
-
+void goright_roller(arma::uvec& goright_cat)
+{
+  size_t n = goright_cat.n_elem;
+  
+  for (size_t i = 0; i < n-1; i ++)
+  {
+    if (goright_cat(i) == 2)
+    {
+      goright_cat(i) = 0;
+      goright_cat(i+1)++;
+    }
+  }
+}

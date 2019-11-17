@@ -59,6 +59,13 @@ public:
     pre_obstrack  = param["pre.obs.track"];
     seed          = param["seed"];
   }
+  
+  print(){
+      
+      
+      
+      
+  }
 };
 
 class PARAM_RLT{
@@ -439,57 +446,25 @@ public:
 class Surv_Cat_Class: public Cat_Class{
 public:
   arma::vec FailCount;
-  arma::vec CensorCount;
-  arma::vec cHaz;
+  arma::vec RiskCount;
+  size_t nfail; 
   
   void initiate(size_t j, size_t NFail)
   {
 	  cat = j;
+      nfail = 0;
 	  FailCount.zeros(NFail+1);
-	  CensorCount.zeros(NFail+1);
-	  cHaz.zeros(NFail+1);
+	  RiskCount.zeros(NFail+1);
   }
-  
-  void calculate_cHaz(size_t NFail)
-  {
-      if (NFail == 0)
-          return;
-      
-      double AtRisk = weight;
-      double haz;
-      
-      AtRisk -= FailCount(0) + CensorCount(0);
-      
-      for (size_t k=1; k < NFail + 1; k++)
-      {
-          if (AtRisk > SurvWeightTH)
-          {
-            haz = FailCount(k) / AtRisk;
-          }else{
-            haz = 0;
-          }
-          
-          cHaz[k] = cHaz[k-1] + haz;
-          
-          AtRisk -= FailCount(k) + CensorCount(k); 
-      }
-  }
-  
-  void set_score(size_t j)
-  {
-        score = cHaz(j);
-  }
-  
-  void set_score_ccHaz()
-  {
-      score = sum(cHaz);
-  }  
   
   void print() {
       Rcout << "Category is " << cat << " weight is " << weight << " count is " << count << " data is\n" << 
-               join_rows(FailCount, CensorCount, cHaz) << std::endl;
-  }  
+               join_rows(FailCount, RiskCount) << std::endl;
+  }
   
+  void print_simple() {
+      Rcout << "Category is " << cat << " weight is " << weight << " count is " << count << std::endl;
+  }  
 };
 
 #endif

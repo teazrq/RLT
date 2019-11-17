@@ -61,7 +61,7 @@ void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit,
   if ( x(indices(0)) == x(indices(N-1)) ) return;  
   
   // set low and high index
-  size_t lowindex = 1; // less equal goes to left
+  size_t lowindex = 0; // less equal goes to left
   size_t highindex = N - 2;
   
   // alpha is only effective when x can be sorted

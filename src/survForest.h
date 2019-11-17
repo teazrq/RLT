@@ -75,7 +75,6 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          const vec& x,
                          const uvec& Y, // Y is collapsed
                          const uvec& Censor, // Censor is collapsed
-                         vec& obs_weight,
                          size_t NFail,
                          double penalty,
                          int split_gen,
@@ -83,26 +82,54 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          int nsplit,
                          size_t nmin, 
                          double alpha,
-                         bool useobsweight,
                          bool failforce);
-    
-void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit, 
-                         uvec& obs_id,
-                         const vec& x,
-                         const uvec& Y, // Y is collapsed
-                         const uvec& Censor, // Censor is collapsed
-                         vec& obs_weight,
-                         size_t NFail,
-                         double penalty,
-                         int split_gen,
-                         int split_rule,
-                         int nsplit,
-                         size_t nmin, 
-                         double alpha,
-                         bool useobsweight,
-                         bool failforce,
-                         size_t ncat);
 
+void Surv_Uni_Split_Cont_W(Uni_Split_Class& TempSplit, 
+                           uvec& obs_id,
+                           const vec& x,
+                           const uvec& Y, // Y is collapsed
+                           const uvec& Censor, // Censor is collapsed
+                           const vec& obs_weight,
+                           size_t NFail,
+                           double penalty,
+                           int split_gen,
+                           int split_rule,
+                           int nsplit,
+                           size_t nmin, 
+                           double alpha,
+                           bool failforce);
+                         
+void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit, 
+                        uvec& obs_id,
+                        const vec& x,
+                        const uvec& Y, // Y is collapsed
+                        const uvec& Censor, // Censor is collapsed
+                        size_t NFail,
+                        double penalty,
+                        int split_gen,
+                        int split_rule,
+                        int nsplit,
+                        size_t nmin,
+                        double alpha,
+                        bool failforce,
+                        size_t ncat);
+
+void Surv_Uni_Split_Cat_W(Uni_Split_Class& TempSplit, 
+                          uvec& obs_id,
+                          const vec& x,
+                          const uvec& Y, // Y is collapsed
+                          const uvec& Censor, // Censor is collapsed
+                          vec& obs_weight,
+                          size_t NFail,
+                          double penalty,
+                          int split_gen,
+                          int split_rule,
+                          int nsplit,
+                          size_t nmin, 
+                          double alpha,
+                          bool failforce,
+                          size_t ncat);
+                        
 void collapse(const uvec& Y, 
               const uvec& Censor, 
               uvec& Y_collapse, 
@@ -112,113 +139,15 @@ void collapse(const uvec& Y,
 
 // splitting score calculations
 
-double surv_cont_score_at_cut(uvec& obs_id,
-                              const vec& x,
-                              const uvec& Y, // this is collapsed 
-                              const uvec& Censor, // this is collapsed 
-                              const vec& obs_weight,
-                              size_t NFail,
-                              double a_random_cut,
-                              int split_rule,
-                              double penalty,
-                              bool useobsweight);
+double logrank(const vec& Left_Fail, 
+               const vec& Left_Risk, 
+               const vec& All_Fail, 
+               const vec& All_Risk);
 
-double surv_cont_score_at_index(uvec& obs_ranked, // collapsed
-                                uvec& indices, // this is not collapsed, indicates original id
-                                const uvec& Y, //collapsed
-                                const uvec& Censor, //collapsed
-                                const vec& obs_weight,
-                                size_t NFail,
-                                size_t a_random_ind,
-                                int split_rule,
-                                double penalty, 
-                                bool useobsweight);
-
-double surv_cont_score_best(uvec& indices, // for x, sorted
-                            const vec& x,
-                            uvec& obs_ranked, // for Y and censor, sorted
-                            const uvec& Y, 
-                            const uvec& Censor, 
-                            size_t NFail, 
-                            size_t lowindex, 
-                            size_t highindex, 
-                            double& temp_cut, 
-                            double& temp_score,
-                            int split_rule);
-
-double surv_cont_score_best_w(uvec& indices,
-                              const vec& x,
-                              uvec& obs_ranked,
-                              const uvec& Y, 
-                              const uvec& Censor, 
-                              size_t NFail, 
-                              size_t lowindex, 
-                              size_t highindex, 
-                              double& temp_cut, 
-                              double& temp_score,
-                              vec& obs_weight,
-                              int split_rule);
-
-double surv_cat_score(std::vector<Surv_Cat_Class>& cat_reduced, 
-                      size_t temp_cat, 
-                      size_t true_cat,
-                      size_t NFail, 
-                      int split_rule,
-                      bool useobsweight);
-    
-void surv_cat_score_best(std::vector<Surv_Cat_Class>& cat_reduced,
-                         size_t lowindex,
-                         size_t highindex,
-                         size_t true_cat,
-                         size_t& temp_cat,
-                         double& temp_score,
-                         size_t NFail,
-                         int split_rule,
-                         bool useobsweight);
-
-double logrank(vec& Left_Count_Fail,
-               vec& Left_Count_Censor,
-               vec& Right_Count_Fail,
-               vec& Right_Count_Censor,
-               double LeftN,
-               double N,
-               size_t NFail);
-
-double suplogrank(vec& Left_Count_Fail,
-                  vec& Left_Count_Censor,
-                  vec& Right_Count_Fail,
-                  vec& Right_Count_Censor,
-                  double LeftN,
-                  double N,
-                  size_t NFail);
-
-double logrank_w(vec& Left_Count_Fail,
-                 vec& Left_Count_Censor,
-                 vec& Right_Count_Fail,
-                 vec& Right_Count_Censor,
-                 double LeftW,
-                 double W,
-                 size_t NFail, 
-                 bool useobsweight);
-
-double suplogrank_w(vec& Left_Count_Fail,
-                    vec& Left_Count_Censor,
-                    vec& Right_Count_Fail,
-                    vec& Right_Count_Censor,
-                    double LeftW,
-                    double W,
-                    size_t NFail,
-                    bool useobsweight);
-
-vec hazard(const vec& Fail, const vec& Censor);
-
-double survloglike(const vec& basehazard, const vec& lefthazard, const vec& righthazard, 
-                   const vec& Left_Count_Fail, const vec& Left_Count_Censor, 
-                   const vec& Right_Count_Fail, const vec& Right_Count_Censor, 
-                   double penalty);
-
-// utility functions 
-
+double suplogrank(const vec& Left_Fail, 
+                  const vec& Left_Risk, 
+                  const vec& All_Fail, 
+                  const vec& All_Risk);
 
 // prediction 
 
@@ -232,8 +161,4 @@ void Surv_Uni_Forest_Pred(cube& Pred,
                           int usecores,
                           int verbose);
 
-// for converting 
-
-List surv_uni_convert_forest_to_r(std::vector<Surv_Uni_Tree_Class>& Forest);
-    
 #endif

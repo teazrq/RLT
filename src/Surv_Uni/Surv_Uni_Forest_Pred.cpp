@@ -5,7 +5,7 @@
 
 // my header file
 # include "../RLT.h"
-# include "../Trees//Trees.h"
+# include "../Trees/Trees.h"
 # include "../Utility/Utility.h"
 # include "../survForest.h"
 

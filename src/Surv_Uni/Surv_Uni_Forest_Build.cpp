@@ -5,7 +5,7 @@
 
 // my header file
 # include "../RLT.h"
-# include "../Trees//Trees.h"
+# include "../Trees/Trees.h"
 # include "../Utility/Utility.h"
 # include "../survForest.h"
 
@@ -30,7 +30,6 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
                            int usecores,
                            int verbose)
 {
-  // parameters need to be used
   // parameters need to be used
   size_t ntrees = Param.ntrees;
   bool replacement = Param.replacement;
@@ -111,7 +110,6 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       // start to fit a tree
       OneTree.NodeType(0) = 1; // 0: unused, 1: reserved; 2: internal node; 3: terminal node
       
-      
       Surv_Uni_Split_A_Node(0, OneTree, NodeRegi(nt),
                             SURV_DATA, Param, Param_RLT,
                             inbagObs, var_id);
@@ -159,10 +157,11 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         
         for (size_t i =0; i < NTest; i++)
         {
-          oobpred(i) = - sum( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+          oobpred(i) = sum( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
         }
         
-        double baseImp = cindex_i( oobY, oobC, oobpred );  
+        double baseImp = 1 - cindex_i( oobY, oobC, oobpred );  
+        DEBUG_Rcout << "-- base Imp is " << baseImp << std::endl;
         
         for (auto j : AllVar)
         {
@@ -181,21 +180,26 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
           // get prediction
           for (size_t i =0; i < NTest; i++)
           {
-            oobpred(i) = - sum( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+            oobpred(i) = sum( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
           }
           
           DEBUG_Rcout << "-- get oobpred " << oobpred << std::endl;
           
+          DEBUG_Rcout << "-- Imp for " << j << " is " << cindex_i( oobY, oobC, oobpred ) << std::endl;
+          
           // record 
           
-          AllImp(nt, j) =  ( 1 - cindex_i( oobY, oobC, oobpred ) ) / ( 1 - baseImp ) - 1;
+          AllImp(nt, j) =  ( 1 - cindex_i( oobY, oobC, oobpred )) / baseImp - 1;
         }
       }
     }
   }
   
+  
   if (importance == 1)
+  {
     VarImp = mean(AllImp, 0).t();
+  }  
 
   if (pred)
   {

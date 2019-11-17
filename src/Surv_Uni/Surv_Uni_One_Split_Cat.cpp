@@ -17,296 +17,221 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         const vec& x,
                         const uvec& Y, // Y is collapsed
                         const uvec& Censor, // Censor is collapsed
-                        vec& obs_weight,
                         size_t NFail,
                         double penalty,
                         int split_gen,
                         int split_rule,
                         int nsplit,
-                        size_t nmin, 
+                        size_t nmin,
                         double alpha,
-                        bool useobsweight,
                         bool failforce,
                         size_t ncat)
 {
     DEBUG_Rcout << "        --- Surv_One_Split_Cat with ncat = " << ncat << std::endl;
     
-    if (NFail == 0)
-      return; 
-    
+    // initiate the failure and at-risk counts for each category 
     std::vector<Surv_Cat_Class> cat_reduced(ncat + 1);
     
-    for (size_t j = 0; j < cat_reduced.size(); j++)
-        cat_reduced[j].initiate(j, NFail);    
+    for (size_t j = 1; j < cat_reduced.size(); j++)
+        cat_reduced[j].initiate(j, NFail);
     
-    if (useobsweight){
+    for (size_t i = 0; i < obs_id.size(); i++)
+    {
+        size_t temp_cat = (size_t) x(obs_id(i));
+        cat_reduced[temp_cat].count++;
         
-        DEBUG_Rcout << "        --- weighted cat split for surv not done yet " << std::endl;
-        
-    }else{
-     
-        for (size_t i = 0; i < obs_id.size(); i++)
+        if (Censor(i) == 1)
         {
-            size_t temp_cat = (size_t) x(obs_id(i));
-            cat_reduced[temp_cat].weight++;
-            cat_reduced[temp_cat].count++;
-            
-            if (Censor(i) == 1)
-                cat_reduced[temp_cat].FailCount(Y(i))++; 
-            else
-                cat_reduced[temp_cat].CensorCount(Y(i))++;
+          cat_reduced[temp_cat].FailCount(Y(i))++; 
+          cat_reduced[temp_cat].nfail++;
         }
+        
+        cat_reduced[temp_cat].RiskCount(Y(i))++;
     }
-    
+      
+    // count how many nonempty categories
+
     size_t true_cat = 0;
   
     for (size_t j = 0; j < cat_reduced.size(); j++)
         if (cat_reduced[j].count) true_cat++;
 
     if (true_cat <= 1)  // nothing to split
-        return;        
+        return;    
     
-    // if only two categories, then split on middle
+    // move nonzero categories to the front
+    
+    sort(cat_reduced.begin(), cat_reduced.end(), cat_reduced_collapse);
+    
+    //for (size_t j = 0; j < cat_reduced.size(); j ++ )
+    //  cat_reduced[j].print_simple();
+    
+    // initiate the total failure and at-risk counts
+    
+    vec All_Risk(NFail+1, fill::zeros);
+    vec All_Fail(NFail+1, fill::zeros);
+    
+    for (size_t i = 0; i<true_cat; i++)
+    {
+      All_Fail += cat_reduced[i].FailCount;
+      All_Risk += cat_reduced[i].RiskCount;
+    }
+    
+    size_t N = obs_id.n_elem;
+    size_t last_count = 0;
+    
+    for (size_t k = 0; k <= NFail; k++)
+    {
+      N -= last_count;
+      last_count = All_Risk(k);
+      All_Risk(k) = N;
+    }
+
+    //Rcout << " data here " << join_rows(All_Fail, All_Risk) << std::endl;
+    
+    // if only two categories, then split on first category
     
     if (true_cat == 2)
     {
-        sort(cat_reduced.begin(), cat_reduced.end(), cat_reduced_compare);
-        
-        // weighted version and count version are combined into the same function
-        TempSplit.score = surv_cat_score(cat_reduced, 0, true_cat, NFail, split_rule, useobsweight);
-        TempSplit.value = record_cat_split(cat_reduced, 0, true_cat, ncat);
-        
-        return;
+      if (split_rule == 1)
+        TempSplit.score = logrank(cat_reduced[0].FailCount, cat_reduced[0].RiskCount, All_Fail, All_Risk);
+      
+      if (split_rule == 2)
+        TempSplit.score = suplogrank(cat_reduced[0].FailCount, cat_reduced[0].RiskCount, All_Fail, All_Risk);
+      
+      if (split_rule > 2)
+        Rcout << "      --- splitting rule not implemented yet " << std::endl;
+      
+      TempSplit.value = record_cat_split(0, cat_reduced);
+
+      return;
     }
-    
+
     // if more than 2 categories, 
-    
-    // calculate the cHaz for each category (this is for sorting later on)
-    
-    for (size_t j = 1; j < cat_reduced.size(); j++)
-    {
-      cat_reduced[j].calculate_cHaz(NFail);
-    }
-    
-    sort(cat_reduced.begin(), cat_reduced.end(), cat_reduced_compare);
-    
+
     size_t temp_cat = 0;
     double temp_score = -1;
-          
+
+    vec Left_Fail(NFail+1);    
+    vec Left_Risk(NFail+1);
+    
     if ( split_gen == 1 or split_gen == 2 )
     {
         for ( int k = 0; k < nsplit; k++ )
         {
-          size_t timepoint = intRand(1, NFail); // randomly select a timepoint for sorting
+
+          // randomly suffle the categories 
+          std::random_shuffle(cat_reduced.begin(), cat_reduced.begin() + true_cat);
           
-          for (size_t j = 1; j < true_cat; j++)
-            cat_reduced[j].set_score(timepoint);
+          //Rcout << "      --- after suffling, get /n " << std::endl;
+          //for (size_t j = 0; j < cat_reduced.size(); j ++ )
+          //  cat_reduced[j].print_simple();
           
-          // sort based on this new score 
-          sort(cat_reduced.begin(), cat_reduced.begin() + true_cat, cat_reduced_compare);
           
           // get low and high index since the categories are re-ordered
           size_t lowindex = 0;
           size_t highindex = true_cat - 2;
           
-          if ( split_gen == 2 )
-            move_cat_index(lowindex, highindex, cat_reduced, true_cat, nmin);
-
-          // generate a random split 
+          if ( alpha > 0 or failforce )
+          {
+              Rcout << " failforce or alpha in categorical x not implemented yet " << std::endl;
+          }          
+          
+          // randomly select a cut off category           
           size_t temp_cat = (size_t) intRand(lowindex, highindex);
+          //Rcout << "      --- got random cut at  " << temp_cat << std::endl;
           
-          // calculate score of this split (weight version and count version are combined)
-          temp_score = surv_cat_score(cat_reduced, temp_cat, true_cat, NFail, split_rule, useobsweight);
+          // calculate left node counts
+          Left_Fail.zeros();          
+          Left_Risk.zeros();
+
+          for (size_t i = 0; i<= temp_cat; i++)
+          {
+            Left_Fail += cat_reduced[i].FailCount;
+            Left_Risk += cat_reduced[i].RiskCount;
+          }
           
-          DEBUG_Rcout << "        --- temp_score " << temp_score << std::endl;
+          if (split_rule == 1)
+            temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
           
+          if (split_rule == 2)
+            temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+          
+          if (split_rule > 2)
+            Rcout << "      --- splitting rule not implemented yet " << std::endl;
+
           if (temp_score > TempSplit.score)
-          {      
-            TempSplit.value = record_cat_split(cat_reduced, temp_cat, true_cat, ncat);
+          {
+            TempSplit.value = record_cat_split(temp_cat, cat_reduced);
             TempSplit.score = temp_score;
           }
         }
-    }else{
-      // best split
-      
-      for (size_t j = 1; j < true_cat; j++)
-        cat_reduced[j].set_score_ccHaz();
-      
-      // sort based on this new score 
-      sort(cat_reduced.begin(), cat_reduced.begin() + true_cat, cat_reduced_compare);      
-      
-      // get low and high index since the categories are re-ordered
-      size_t lowindex = 0;
-      size_t highindex = true_cat - 2;
-      move_cat_index(lowindex, highindex, cat_reduced, true_cat, nmin);
-      
-      // calculate score at each split (combined weight/count versions)
-      surv_cat_score_best(cat_reduced, lowindex, highindex, true_cat, temp_cat, temp_score, NFail, split_rule, useobsweight);
-      
-      TempSplit.value = record_cat_split(cat_reduced, temp_cat, true_cat, ncat);
-      TempSplit.score = temp_score;
+        
+        return;
     }
-}
-
-
-double surv_cat_score(std::vector<Surv_Cat_Class>& cat_reduced, 
-                      size_t temp_cat, 
-                      size_t true_cat,
-                      size_t NFail, 
-                      int split_rule,
-                      bool useobsweight)
-{
-  vec Left_Count_Fail(NFail+1, fill::zeros);
-  vec Left_Count_Censor(NFail+1, fill::zeros);
-  vec Right_Count_Fail(NFail+1, fill::zeros);
-  vec Right_Count_Censor(NFail+1, fill::zeros);
-  
-  double LeftW = 0;     
-  double RightW = 0;
-  
-  // initiate the failure and censoring counts
-  for (size_t i = 0; i<= temp_cat; i++)
-  {
-    Left_Count_Fail += cat_reduced[i].FailCount;
-    Left_Count_Censor += cat_reduced[i].CensorCount;
-    LeftW += cat_reduced[i].weight;
-  }
-  
-  for (size_t i = temp_cat+1; i < true_cat; i++)
-  {
-    Right_Count_Fail += cat_reduced[i].FailCount;
-    Right_Count_Censor += cat_reduced[i].CensorCount;
-    RightW += cat_reduced[i].weight;
-  }
-  
-  if (split_rule == 1)
-    return logrank_w(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftW, LeftW + RightW, NFail, useobsweight);
-  
-  if (split_rule == 2)
-    return suplogrank_w(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftW, LeftW + RightW, NFail, useobsweight);
-  
-  Rcout << "      --- splitting rule not implemented yet " << std::endl;
-}
-
-void surv_cat_score_best(std::vector<Surv_Cat_Class>& cat_reduced,
-                         size_t lowindex,
-                         size_t highindex,
-                         size_t true_cat,
-                         size_t& temp_cat,
-                         double& temp_score,
-                         size_t NFail,
-                         int split_rule, 
-                         bool useobsweight)
-{
-  double score = 0;
-  
-  double LeftW = 0;
-  double RightW = 0;  
-  
-  vec Left_Count_Fail(NFail+1, fill::zeros);
-  vec Left_Count_Censor(NFail+1, fill::zeros);
-  vec Right_Count_Fail(NFail+1, fill::zeros);
-  vec Right_Count_Censor(NFail+1, fill::zeros);
-  
-  // initiate the failure and censoring counts
-  for (size_t i = 0; i<= lowindex; i++)
-  {
-    Left_Count_Fail += cat_reduced[i].FailCount;
-    Left_Count_Censor += cat_reduced[i].CensorCount;
-    LeftW += cat_reduced[i].weight;
-  }
-  
-  for (size_t i = lowindex+1; i < true_cat; i++)
-  {
-    Right_Count_Fail += cat_reduced[i].FailCount;
-    Right_Count_Censor += cat_reduced[i].CensorCount;
-    RightW += cat_reduced[i].weight;
-  }
-  
-  for (size_t i = lowindex; i <= highindex; i++)
-  {
-    if (split_rule == 1)
-      score = logrank_w(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftW, LeftW + RightW, NFail, useobsweight);
     
-    if (split_rule == 2)
-      score = suplogrank_w(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor, LeftW, LeftW + RightW, NFail, useobsweight);
-    
-    if (score > temp_score)
+    if ( split_gen == 3 ) // best split
     {
-      temp_cat = i;
-      temp_score = score;
-      //Rcout << "      --- update score at cut " << i << " score " << temp_score << std::endl;
-      //Rcout << "      --- leftW rightW: " << LeftW << " " << RightW << temp_score << std::endl;
-      //Rcout << "      --- data \n" << join_rows(Left_Count_Fail, Left_Count_Censor, Right_Count_Fail, Right_Count_Censor) << std::endl;
-    }
-    
-    if (i + 1 <= highindex)
-    {
-      Left_Count_Fail += cat_reduced[i+1].FailCount;
-      Left_Count_Censor += cat_reduced[i+1].CensorCount;
-      LeftW += cat_reduced[i+1].weight;
+
+      // in case there are too many categories, we gonna shuffle it first, and take the first 1024 choices
+      std::random_shuffle(cat_reduced.begin(), cat_reduced.begin() + true_cat);
       
-      Right_Count_Fail -= cat_reduced[i+1].FailCount;
-      Right_Count_Censor -= cat_reduced[i+1].CensorCount;
-      RightW -= cat_reduced[i+1].weight;
+      uvec goright_temp(true_cat, fill::zeros); // this records indicator of the current order of cat_reduced
+      goright_temp(0) = 1; // set first cat go right 
+      
+      size_t counter = 0;
+      
+      //uvec realcat(true_cat, fill::zeros);
+      //for (size_t i =0; i < true_cat; i++)
+      //  realcat[i] = cat_reduced[i].cat;
+      
+      if ( alpha > 0 or failforce )
+      {
+        Rcout << " failforce or alpha in categorical x not implemented yet " << std::endl;
+      }
+      
+      while(goright_temp(true_cat - 1) == 0 and counter < 1024)
+      {
+        
+        // calculate left node counts
+        Left_Fail.zeros();          
+        Left_Risk.zeros();
+        
+        for (size_t i = 0; i<true_cat; i++)
+        {
+          if (goright_temp(i) == 1)
+          {
+            Left_Fail += cat_reduced[i].FailCount;
+            Left_Risk += cat_reduced[i].RiskCount;            
+          }
+        }
+
+        
+        if (split_rule == 1)
+          temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+        
+        if (split_rule == 2)
+          temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+        
+        if (split_rule > 2)
+          Rcout << "      --- splitting rule not implemented yet " << std::endl;
+        
+        // Rcout << " Score " << temp_score << " with split \n" << join_rows(realcat, goright_temp) << std::endl;
+        
+        if (temp_score > TempSplit.score)
+        {
+          TempSplit.value = record_cat_split(goright_temp, cat_reduced);
+          TempSplit.score = temp_score;
+        }
+        
+        // update the splitting rule
+        goright_temp(0)++;
+        goright_roller(goright_temp);
+        
+        // update counter
+        counter ++;
+      }
     }
-  }
 }
 
 
-double logrank_w(vec& Left_Count_Fail,
-                 vec& Left_Count_Censor,
-                 vec& Right_Count_Fail,
-                 vec& Right_Count_Censor,
-                 double LeftW,
-                 double W,
-                 size_t NFail, 
-                 bool useobsweight)
-{
-  double numerator = 0;
-  double denominator = 0;
-  double tempscore = -1;
-  
-  if (NFail == 0)
-    return tempscore;
-  
-  double unbias;
-    
-  if (useobsweight)
-    unbias = 0;
-  else
-    unbias = 1;
-    
-    
-  // calculate the logrank for this split
-  LeftW -= Left_Count_Censor[0];
-  W -= Left_Count_Censor[0] + Right_Count_Censor[0];    
-  
-  for (size_t j = 1; j <= NFail and W > SurvWeightTH; j++)
-  {
-    numerator += LeftW*(Left_Count_Fail[j] + Right_Count_Fail[j])/W - Left_Count_Fail[j];
-    denominator += LeftW*(Left_Count_Fail[j] + Right_Count_Fail[j])/W*(1- LeftW/W)*(W - Left_Count_Fail[j] - Right_Count_Fail[j])/(W - unbias);
-    
-    LeftW -= Left_Count_Fail[j] + Left_Count_Censor[j];
-    W -= Left_Count_Fail[j] + Left_Count_Censor[j] + Right_Count_Fail[j] + Right_Count_Censor[j];
-  }
-  
-  if (denominator > 0)
-    tempscore = numerator*numerator/denominator;
-  
-  return tempscore;
-}
-
-
-double suplogrank_w(vec& Left_Count_Fail,
-                    vec& Left_Count_Censor,
-                    vec& Right_Count_Fail,
-                    vec& Right_Count_Censor,
-                    double LeftW,
-                    double W,
-                    size_t NFail,
-                    bool useobsweight)
-{
-  Rcout << "      --- suplogrank weighted not implemented yet " << std::endl;
-  
-}

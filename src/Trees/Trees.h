@@ -7,6 +7,7 @@
 
 # include <RcppArmadillo.h>
 # include <Rcpp.h>
+# include <algorithm>
 
 using namespace Rcpp;
 using namespace arma;
@@ -25,7 +26,7 @@ void Uni_Find_Terminal_Node(size_t Node,
               							const mat& X,
               							const uvec& Ncat,
               							uvec& proxy_id,
-              							uvec& real_id,
+              							const uvec& real_id,
               							uvec& TermNode);
 
 void Uni_Find_Terminal_Node_ShuffleJ(size_t Node, 
@@ -33,7 +34,7 @@ void Uni_Find_Terminal_Node_ShuffleJ(size_t Node,
                                      const mat& X,
                                      const uvec& Ncat,
                                      uvec& proxy_id,
-                                     uvec& real_id,
+                                     const uvec& real_id,
                                      uvec& TermNode,
                                      const vec& tildex,
                                      const size_t j);
@@ -85,8 +86,9 @@ void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_
 
 
 bool cat_reduced_compare(Cat_Class& a, Cat_Class& b);
-// bool cat_reduced_compare_score(Cat_Class& a, Cat_Class& b);
+bool cat_reduced_collapse(Cat_Class& a, Cat_Class& b); 
 
+// bool cat_reduced_compare_score(Cat_Class& a, Cat_Class& b);
 
 void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Surv_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin);
 void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin);
@@ -101,6 +103,13 @@ double record_cat_split(std::vector<Reg_Cat_Class>& cat_reduced,
                         size_t true_cat,
                         size_t ncat);
 
+double record_cat_split(size_t cat, 
+                        std::vector<Surv_Cat_Class>& cat_reduced);
+                        
+double record_cat_split(arma::uvec& goright_temp, 
+                        std::vector<Surv_Cat_Class>& cat_reduced);                        
+
+void goright_roller(arma::uvec& goright_cat);
 
 // other 
 

@@ -31,7 +31,7 @@ void Surv_Uni_Split_A_Node(size_t Node,
   if (N <= 2*nmin)
   {
 TERMINATENODE:
-
+    
     DEBUG_Rcout << "  -- Terminate node " << Node << std::endl;
     Surv_Uni_Terminate_Node(Node, OneTree, OneNodeRegi, obs_id, 
                             SURV_DATA.Y, SURV_DATA.Censor, SURV_DATA.NFail, SURV_DATA.obsweight, 
@@ -62,7 +62,11 @@ TERMINATENODE:
     }else{
       split_id_cat(SURV_DATA.X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id, SURV_DATA.Ncat(OneSplit.var));
       
-      DEBUG_Rcout << "  -- select cat variable " << OneSplit.var << " split at " << OneSplit.value << std::endl;
+      //uvec goright(SURV_DATA.Ncat(OneSplit.var) + 1, fill::zeros); 
+      //unpack(OneSplit.value, SURV_DATA.Ncat(OneSplit.var) + 1, goright);
+      
+      //Rcout << "  -- select cat variable " << OneSplit.var << " split at " << OneSplit.value << " cat info is " << goright << std::endl;
+      
     }    
     
     // if this happens something about the splitting rule is wrong
@@ -104,6 +108,12 @@ TERMINATENODE:
     
     DEBUG_Rcout << "  -- Surv_Split_A_Node goto Lef and Right " << std::endl;
 
+    
+    //Rcout << "  -- At node " << Node << " split variable " << OneSplit.var << " at " << OneSplit.value << 
+    //  " left is: \n " << SURV_DATA.X.rows(left_id) << " right is: \n " << SURV_DATA.X.rows(obs_id) << std::endl;
+    
+    
+    
     Surv_Uni_Split_A_Node(NextLeft, 
                           OneTree, 
                           OneNodeRegi,
