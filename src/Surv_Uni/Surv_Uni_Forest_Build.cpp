@@ -137,8 +137,9 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         }
       }
       
-      if (importance == 1 and oobagObs.n_elem > 1)
+      if (importance > 0 and oobagObs.n_elem > 1)
       {
+        
         uvec AllVar = unique( OneTree.SplitVar( find( OneTree.NodeType == 2 ) ) );
         
         size_t NTest = oobagObs.n_elem;
@@ -157,49 +158,38 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         
         for (size_t i =0; i < NTest; i++)
         {
-          oobpred(i) = sum( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+          oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
         }
         
-        double baseImp = 1 - cindex_i( oobY, oobC, oobpred );  
-        DEBUG_Rcout << "-- base Imp is " << baseImp << std::endl;
+        double baseImp = cindex_i( oobY, oobC, oobpred );  
         
+        //for (size_t j = 0; j < P; j ++)  
         for (auto j : AllVar)
         {
-          
-          DEBUG_Rcout << "-- variable " << j << std::endl;
-          
           uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
-          uvec TermNode(NTest, fill::zeros);          
-          
+
           vec tildex = shuffle( SURV_DATA.X.unsafe_col(j).elem( oobagObs ) );
           
           Uni_Find_Terminal_Node_ShuffleJ(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, oobagObs, TermNode, tildex, j);
           
-          DEBUG_Rcout << "-- get terminal nodes " << TermNode.t() << std::endl;
-          
           // get prediction
           for (size_t i =0; i < NTest; i++)
           {
-            oobpred(i) = sum( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+            oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
           }
-          
-          DEBUG_Rcout << "-- get oobpred " << oobpred << std::endl;
-          
-          DEBUG_Rcout << "-- Imp for " << j << " is " << cindex_i( oobY, oobC, oobpred ) << std::endl;
-          
+
           // record 
           
-          AllImp(nt, j) =  ( 1 - cindex_i( oobY, oobC, oobpred )) / baseImp - 1;
+          AllImp(nt, j) =  baseImp - cindex_i( oobY, oobC, oobpred);
         }
       }
     }
   }
-  
-  
+    
   if (importance == 1)
   {
     VarImp = mean(AllImp, 0).t();
-  }  
+  }
 
   if (pred)
   {

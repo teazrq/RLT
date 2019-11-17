@@ -121,7 +121,7 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
         Pred.col(nt) = OneTree.NodeAve(TermNode);
       }
       
-      if (importance == 1 and oobagObs.n_elem > 1)
+      if (importance > 0 and oobagObs.n_elem > 1)
       {
         uvec AllVar = unique( OneTree.SplitVar( find( OneTree.NodeType == 2 ) ) );
         
@@ -151,7 +151,7 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
           vec oobpred = OneTree.NodeAve(TermNode);
 
           // record
-          AllImp(nt, j) =  mean(square(oobY - oobpred)) / baseImp - 1;
+          AllImp(nt, j) =  mean(square(oobY - oobpred)) - baseImp;
         }
       }
     }

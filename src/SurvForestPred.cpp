@@ -51,6 +51,8 @@ List SurvForestUniPred(arma::field<arma::uvec>& NodeType,
   // get hazard function by averaging all trees (not weighted, need to update)
   // Pred is NFail by ntrees by N
   
+  // Rcout << "-- first subject is " << X.row(0) << std::endl;
+  
   mat H(Pred.n_slices, Pred.n_rows);
   
 #pragma omp parallel num_threads(usecores)

@@ -58,6 +58,7 @@ void Surv_Uni_Forest_Pred(cube& Pred,
                                   SURV_FOREST.NodeHazList(nt));
 
       Uni_Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
+
       
       if (kernel)
       {
@@ -66,10 +67,15 @@ void Surv_Uni_Forest_Pred(cube& Pred,
         //W.unsafe_col(nt).rows(real_id) = Forest[nt].NodeSize(TermNode);
       }else{
 
+        vec oobpred(N, fill::zeros);
+        
         for (size_t i = 0; i < N; i++)
         {
           Pred.slice(i).col(nt) = OneTree.NodeHaz(TermNode(i));
+          oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) );
         }
+        
+        //Rcout << "-- get prediction " << oobpred << std::endl;
       }
     }
   }

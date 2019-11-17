@@ -90,7 +90,7 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
     //Rcout << " data here " << join_rows(All_Fail, All_Risk) << std::endl;
     
     // if only two categories, then split on first category
-    
+    /*
     if (true_cat == 2)
     {
       if (split_rule == 1)
@@ -106,7 +106,8 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
 
       return;
     }
-
+  */
+    
     // if more than 2 categories, 
 
     size_t temp_cat = 0;

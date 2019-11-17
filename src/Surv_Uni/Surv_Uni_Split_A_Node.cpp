@@ -65,7 +65,8 @@ TERMINATENODE:
       //uvec goright(SURV_DATA.Ncat(OneSplit.var) + 1, fill::zeros); 
       //unpack(OneSplit.value, SURV_DATA.Ncat(OneSplit.var) + 1, goright);
       
-      //Rcout << "  -- select cat variable " << OneSplit.var << " split at " << OneSplit.value << " cat info is " << goright << std::endl;
+
+      //Rcout << "-- at Node " << Node << " go right is \n " << goright << std::endl;
       
     }    
     
@@ -165,9 +166,8 @@ void Surv_Uni_Terminate_Node(size_t Node,
     // DEBUG_Rcout << "terminate nonweighted" << std::endl;
     
     
-    OneTree.NodeHaz(Node).set_size(NFail + 1);
-    OneTree.NodeHaz(Node).zeros(); // replace later 
-    OneTree.NodeHaz(Node)(0) = Node; // this one is to backtrack node ID, there should not be any failure here
+    OneTree.NodeHaz(Node).zeros(NFail + 1);
+    // OneTree.NodeHaz(Node)(0) = Node; // this one is to backtrack node ID, there should not be any failure here
     
     uvec NodeCensor(NFail + 1, fill::zeros);
     

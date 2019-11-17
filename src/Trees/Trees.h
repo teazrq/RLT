@@ -118,8 +118,8 @@ double cindex_d(arma::vec& Y,
               arma::vec& pred);
 
 double cindex_i(arma::uvec& Y,
-               arma::uvec& Censor,
-               arma::vec& pred);
+              arma::uvec& Censor,
+              arma::vec& pred);
 
 #endif
 

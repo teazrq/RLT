@@ -6,16 +6,16 @@ set.seed(1)
 n = 500
 p = 20
 X1 = matrix(rnorm(n*p/2), n, p/2)
-X2 = matrix(as.integer(runif(n*p/2)*5), n, p/2)
-for (j in ncol(X2)) X2[,j] = as.factor(X2[,j])
+X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
+for (j in 1:ncol(X2)) X2[,j] = as.factor(X2[,j])
 
 X = cbind(X1, X2)
-# y = 1 + X[, 1] + 2 * X[, p/2+1] %in% c(1, 3) + rnorm(n)
-y = 1 + X[, 1] + 2 * X[, 2] + rnorm(n)
+y = 1 + X[, 1] + 2 * X[, p/2+1] %in% c(1, 3) + rnorm(n)
+# y = 1 + X[, 1] +  X[, 2] + rnorm(n)
 
 ntrees = 200
 ncores = 10
-nmin = 10
+nmin = 20
 mtry = p
 sampleprob = 0.85
 rule = "best"
@@ -26,9 +26,9 @@ trainn = n/2
 testn = n - trainn
 
 trainX = X[1:trainn, ]
-testX = X[1:trainn + testn, ]
+testX = X[1:testn + trainn, ]
 trainY = y[1:trainn]
-testY = y[1:trainn + testn]
+testY = y[1:testn + trainn]
 
 metric = data.frame(matrix(NA, 3, 4))
 rownames(metric) = c("rlt", "rsf", "rf")

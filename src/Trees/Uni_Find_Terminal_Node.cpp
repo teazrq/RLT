@@ -115,28 +115,38 @@ void Uni_Find_Terminal_Node_ShuffleJ(size_t Node,
         if ( Ncat(SplitVar) > 1 ) // categorical var 
         {
 
-            uvec goright(Ncat(SplitVar) + 1);
-            unpack(SplitValue, Ncat(SplitVar) + 1, goright); // from Andy's rf package
-            
-            for (size_t i = 0; i < size ; i++)
+          uvec goright(Ncat(SplitVar) + 1);
+          unpack(SplitValue, Ncat(SplitVar) + 1, goright); // from Andy's rf package
+          
+          //Rcout << "-- at Node " << Node << " go right is \n " << goright << std::endl;
+          
+          for (size_t i = 0; i < size ; i++)
+          {
+            if (SplitVar == j)
             {
-              if (SplitVar == j)
-                xtemp = tildex( proxy_id(i) );
-              else
-                xtemp = X( real_id( proxy_id(i) ), SplitVar);
+              xtemp = tildex( proxy_id(i) );
+              //Rcout << "-- original data is  " << X( real_id( proxy_id(i) ), SplitVar) << " permuted data is " << xtemp << std::endl;
               
-              if ( goright( (size_t) xtemp ) == 1 )
-                id_goright(i) = 1;
+            }else{
+              xtemp = X( real_id( proxy_id(i) ), SplitVar);
             }
+
+            
+            
+            if ( goright( (size_t) xtemp ) == 1 )
+              id_goright(i) = 1;
+          }
 
         }else{
 
           for (size_t i = 0; i < size ; i++)
           {
             if (SplitVar == j)
+            {
               xtemp = tildex( proxy_id(i) );
-            else
+            }else{
               xtemp = X( real_id( proxy_id(i) ), SplitVar);
+            }
             
             if (xtemp > SplitValue)
               id_goright(i) = 1;
