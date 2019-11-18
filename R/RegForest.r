@@ -30,9 +30,9 @@ RegForest <- function(x, y,
                         ncores, verbose,
                         ObsTrack)
 
-  fit[["ncat"]] = ncat
   fit[["parameters"]] = param
   fit[["RLT.control"]] = RLT.control
+  fit[["ncat"]] = ncat  
   fit[["obs.w"]] = obs.w
   fit[["var.w"]] = var.w
   fit[["y"]] = y

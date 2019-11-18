@@ -55,10 +55,11 @@ SurvForest <- function(x, y, censor,
                          ncores, verbose,
                          ObsTrack)
 
+  fit[["parameters"]] = param
+  fit[["RLT.control"]] = RLT.control  
+  
   fit[["timepoints"]] = timepoints
   fit[["ncat"]] = ncat
-  fit[["parameters"]] = param
-  fit[["RLT.control"]] = RLT.control
   fit[["obs.w"]] = obs.w
   fit[["var.w"]] = var.w
   fit[["y"]] = y

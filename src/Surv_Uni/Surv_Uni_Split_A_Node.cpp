@@ -14,7 +14,6 @@ using namespace arma;
 
 void Surv_Uni_Split_A_Node(size_t Node,
                            Surv_Uni_Tree_Class& OneTree,
-                           arma::field<arma::uvec>& OneNodeRegi,
                            const RLT_SURV_DATA& SURV_DATA,
                            const PARAM_GLOBAL& Param,
                            const PARAM_RLT& Param_RLT,
@@ -26,14 +25,13 @@ void Surv_Uni_Split_A_Node(size_t Node,
   size_t P = Param.P;
   size_t nmin = Param.nmin;
   bool useobsweight = Param.useobsweight;
-  bool kernel_ready = Param.kernel_ready;
   
   if (N <= 2*nmin)
   {
 TERMINATENODE:
     
     DEBUG_Rcout << "  -- Terminate node " << Node << std::endl;
-    Surv_Uni_Terminate_Node(Node, OneTree, OneNodeRegi, obs_id, 
+    Surv_Uni_Terminate_Node(Node, OneTree, obs_id, 
                             SURV_DATA.Y, SURV_DATA.Censor, SURV_DATA.NFail, SURV_DATA.obsweight, 
                             Param, useobsweight);
     
@@ -83,10 +81,6 @@ TERMINATENODE:
       
       // extend tree structure
       OneTree.extend();
-      
-      // extend noderegi
-      if ( kernel_ready and (OneTree.NodeType.n_elem > OneNodeRegi.size()) )
-        field_vec_resize( OneNodeRegi, OneTree.NodeType.n_elem );
     }
     
     // find the locations of next left and right nodes     
@@ -116,8 +110,7 @@ TERMINATENODE:
     
     
     Surv_Uni_Split_A_Node(NextLeft, 
-                          OneTree, 
-                          OneNodeRegi,
+                          OneTree,
                           SURV_DATA,
                           Param,
                           Param_RLT,
@@ -125,8 +118,7 @@ TERMINATENODE:
                           var_id);
     
     Surv_Uni_Split_A_Node(NextRight, 
-                          OneTree, 
-                          OneNodeRegi,
+                          OneTree,
                           SURV_DATA, 
                           Param, 
                           Param_RLT,
@@ -140,7 +132,6 @@ TERMINATENODE:
   
 void Surv_Uni_Terminate_Node(size_t Node, 
                              Surv_Uni_Tree_Class& OneTree,
-                             arma::field<arma::uvec>& OneNodeRegi,
                              uvec& obs_id,
                              const uvec& Y,
                              const uvec& Censor,
@@ -152,9 +143,6 @@ void Surv_Uni_Terminate_Node(size_t Node,
   
   OneTree.NodeType(Node) = 3; // 0: unused, 1: reserved; 2: internal node; 3: terminal node
   OneTree.NodeSize(Node) = obs_id.n_elem;
-  
-  if (Param.kernel_ready)
-    OneNodeRegi[Node] = uvec(&obs_id[0], obs_id.n_elem, false, true);
   
   if (useobsweight)
   {

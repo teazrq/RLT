@@ -33,7 +33,7 @@ ncores = 10
 nmin = 30
 mtry = ncol(X)
 sampleprob = 0.75
-rule = "random"
+rule = "best"
 nsplit = ifelse(rule == "best", 0, 1)
 importance = TRUE
 
@@ -89,7 +89,7 @@ metric[2, 5] = object.size(rsffit)
 
 start_time <- Sys.time()
 rangerfit <- ranger(Surv(trainY, trainCensor) ~ ., data = data.frame(trainX, trainY, trainCensor), num.trees = ntrees, 
-                    min.node.size = nmin, mtry = mtry, splitrule = "extratrees", num.threads = ncores, num.random.splits = 1, 
+                    min.node.size = nmin, mtry = mtry, splitrule = "logrank", num.threads = ncores, 
                     sample.fraction = sampleprob, importance = "permutation")
 metric[3, 1] = difftime(Sys.time(), start_time, units = "secs")
 rangerpred = predict(rangerfit, data.frame(testX))

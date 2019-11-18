@@ -4,6 +4,7 @@
 #' @param y survival time
 #' @param censor The censoring indicator if survival model is used
 #' @param pred the predicted value for each subject
+#' @export
 #' @return c-index
 
 cindex <- function(y, censor, pred, ...)

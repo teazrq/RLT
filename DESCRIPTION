@@ -22,8 +22,5 @@ LazyData: TRUE
 Imports: Rcpp (>= 1.0.2)
 LinkingTo: Rcpp, RcppArmadillo, dqrng, BH, sitmo
 URL: https://cran.r-project.org/package=RLT
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.0
 Roxygen: list(markdown = TRUE)
-
-
-

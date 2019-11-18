@@ -3,7 +3,7 @@
 #' @param x A fitted RLT object
 #' @param tree the tree number
 #' @param ... ...
-#' @examples
+#' @export
 
 getOneTree<- function(x, tree = 1, ...)
 {

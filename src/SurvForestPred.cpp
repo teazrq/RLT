@@ -21,7 +21,6 @@ List SurvForestUniPred(arma::field<arma::uvec>& NodeType,
           					   arma::mat& X,
           					   arma::uvec& Ncat,
           					   size_t NFail,
-          					   bool kernel,
           					   bool keep_all,
           					   int usecores,
           					   int verbose)
@@ -34,17 +33,14 @@ List SurvForestUniPred(arma::field<arma::uvec>& NodeType,
   Surv_Uni_Forest_Class SURV_FOREST(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeSize, NodeHaz);
 
   cube Pred;
-  mat W;
   
   // predict 
   
   Surv_Uni_Forest_Pred(Pred,
-                       W,
                        SURV_FOREST,
       								 X,
       								 Ncat,
       								 NFail,
-      								 kernel,
       								 usecores,
       								 verbose);
 

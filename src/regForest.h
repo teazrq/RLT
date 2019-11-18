@@ -17,14 +17,14 @@ using namespace arma;
 // univariate tree split functions 
 
 List RegForestUniFit(mat& X,
-          					 vec& Y,
-          					 uvec& Ncat,
-          					 List& param,
-          					 List& RLTparam,
-          					 vec& obsweight,
-          					 vec& varweight,
-          					 int usecores,
-          					 int verbose,
+  					 vec& Y,
+  					 uvec& Ncat,
+  					 List& param,
+  					 List& RLTparam,
+  					 vec& obsweight,
+  					 vec& varweight,
+  					 int usecores,
+  					 int verbose,
                      umat& ObsTrackPre);
 
 void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
@@ -36,7 +36,6 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
                           umat& ObsTrack,
                           vec& Prediction,
                           vec& OOBPrediction,
-                          arma::field<arma::field<arma::uvec>>& NodeRegi,
                           vec& VarImp,
                           size_t seed,
                           int usecores,
@@ -44,7 +43,6 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
 
 void Reg_Uni_Split_A_Node(size_t Node,
                           Reg_Uni_Tree_Class& OneTree,
-                          arma::field<arma::uvec>& OneNodeRegi,
                           const RLT_REG_DATA& REG_DATA,
                           const PARAM_GLOBAL& Param,
                           const PARAM_RLT& Param_RLT,
@@ -53,7 +51,6 @@ void Reg_Uni_Split_A_Node(size_t Node,
 
 void Reg_Uni_Terminate_Node(size_t Node, 
                             Reg_Uni_Tree_Class& OneTree,
-                            arma::field<arma::uvec>& OneNodeRegi,
                             uvec& obs_id,
                             const vec& Y,
                             const vec& obs_weight,
@@ -172,11 +169,9 @@ bool reg_cat_reduced_compare(Reg_Cat_Class& a,
 // for prediction 
 
 void Reg_Uni_Forest_Pred(mat& Pred,
-                         mat& W,
                          const Reg_Uni_Forest_Class& REG_FOREST,
                          const mat& X,
                          const uvec& Ncat,
-                         bool kernel,
                          int usecores,
                          int verbose);
 

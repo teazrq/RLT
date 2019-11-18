@@ -34,7 +34,6 @@ public:
   int importance;  
   bool reinforcement;
   bool obs_track;
-  bool kernel_ready;
   bool pre_obstrack;
   size_t seed;
   
@@ -54,8 +53,7 @@ public:
     usevarweight  = param["use.var.w"];    
     importance    = param["importance"];
     reinforcement = param["reinforcement"];   
-    obs_track     = param["track.obs"];   
-    kernel_ready  = param["kernel.ready"];
+    obs_track     = param["track.obs"];
     pre_obstrack  = param["pre.obs.track"];
     seed          = param["seed"];
   }

@@ -24,7 +24,6 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
                            umat& ObsTrack,
                            mat& Prediction,
                            mat& OOBPrediction,
-                           arma::field<arma::field<arma::uvec>>& NodeRegi,
                            vec& VarImp,
                            size_t seed,
                            int usecores,
@@ -42,8 +41,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
   
   bool pre_obstrack = Param.pre_obstrack;    // for ObsTrack
   bool pred = (Prediction.n_elem > 0);       // for Prediction
-  bool oob_pred = (OOBPrediction.n_elem > 0);// for OOBPrediction  
-  bool kernel_ready = Param.kernel_ready;    // for NodeRegi  
+  bool oob_pred = (OOBPrediction.n_elem > 0);// for OOBPrediction
   int importance = Param.importance;         // for VarImp
   
   cube Pred; 
@@ -104,23 +102,16 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
 
       OneTree.initiate(TreeLength);
       
-      if (kernel_ready)
-        NodeRegi(nt).set_size(TreeLength);
-      
       // start to fit a tree
       OneTree.NodeType(0) = 1; // 0: unused, 1: reserved; 2: internal node; 3: terminal node
       
-      Surv_Uni_Split_A_Node(0, OneTree, NodeRegi(nt),
-                            SURV_DATA, Param, Param_RLT,
+      Surv_Uni_Split_A_Node(0, OneTree, SURV_DATA,
+                            Param, Param_RLT,
                             inbagObs, var_id);
       
       TreeLength = OneTree.get_tree_length();
 
       OneTree.trim(TreeLength);
-      
-      // record NodeRegi if needed;
-      if (kernel_ready)
-        field_vec_resize(NodeRegi(nt), TreeLength);
       
       // predictions for all subjects
       

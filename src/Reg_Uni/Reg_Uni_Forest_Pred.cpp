@@ -13,11 +13,9 @@ using namespace Rcpp;
 using namespace arma;
 
 void Reg_Uni_Forest_Pred(mat& Pred,
-                         mat& W,
                          const Reg_Uni_Forest_Class& REG_FOREST,
                   			 const mat& X,
                   			 const uvec& Ncat,
-                  			 bool kernel,
                   			 int usecores,
                   			 int verbose)
 {
@@ -25,15 +23,7 @@ void Reg_Uni_Forest_Pred(mat& Pred,
   size_t N = X.n_rows;
   size_t ntrees = REG_FOREST.NodeTypeList.size();
   
-  
-  Pred.set_size(N, ntrees);
-  Pred.zeros();
-
-  if (kernel)
-  {
-    W.set_size(N, ntrees);
-    W.zeros();
-  }
+  Pred.zeros(N, ntrees);
 
   #pragma omp parallel num_threads(usecores)
   {
@@ -57,9 +47,6 @@ void Reg_Uni_Forest_Pred(mat& Pred,
       Uni_Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
       
       Pred.unsafe_col(nt).rows(real_id) = OneTree.NodeAve(TermNode);
-      
-      if (kernel)
-          W.unsafe_col(nt).rows(real_id) = OneTree.NodeSize(TermNode);
     }
   }
 }

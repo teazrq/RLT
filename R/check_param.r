@@ -8,7 +8,7 @@ check_param <- function(n, p, ntrees,
                         split.gen, split.rule, nsplit, 
                         replacement, resample.prob,
                         importance, reinforcement, 
-                        track.obs, kernel.ready)
+                        track.obs)
 {
   ntrees = max(ntrees, 1)
   storage.mode(ntrees) <- "integer"
@@ -43,9 +43,6 @@ check_param <- function(n, p, ntrees,
   track.obs = (track.obs != 0)
   storage.mode(track.obs) <- "integer"  
   
-  kernel.ready = (kernel.ready != 0)
-  storage.mode(kernel.ready) <- "integer"
-  
   return(param <- list("n" = n,
                        "p" = p,
                        "ntrees" = ntrees,
@@ -59,8 +56,7 @@ check_param <- function(n, p, ntrees,
                        "resample.prob" = resample.prob,
                        "importance" = importance,
                        "reinforcement" = reinforcement,
-                       "track.obs" = track.obs,
-                       "kernel.ready" = kernel.ready))
+                       "track.obs" = track.obs))
 }
 
 

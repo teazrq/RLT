@@ -39,7 +39,6 @@ List RegForestUniFit(arma::mat& X,
   size_t P = REG_DATA.X.n_cols;
   size_t ntrees = Param.ntrees;
   size_t seed = Param.seed;
-  bool kernel_ready = Param.kernel_ready;
   bool obs_track = Param.obs_track;
 
   int importance = Param.importance;
@@ -50,7 +49,7 @@ List RegForestUniFit(arma::mat& X,
   arma::field<arma::vec> SplitValue(ntrees);
   arma::field<arma::uvec> LeftNode(ntrees);
   arma::field<arma::uvec> RightNode(ntrees);
-  arma::field<arma::vec> NodeSize(ntrees);  
+  arma::field<arma::vec> NodeSize(ntrees);
   arma::field<arma::vec> NodeAve(ntrees);
 
   Reg_Uni_Forest_Class REG_FOREST(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeSize, NodeAve);
@@ -64,9 +63,6 @@ List RegForestUniFit(arma::mat& X,
     ObsTrack = umat(ObsTrackPre);
   else
     ObsTrack = umat(N, ntrees, fill::zeros);
-  
-  // NodeRegi
-  arma::field<arma::field<arma::uvec>> NodeRegi(ntrees);
   
   // VarImp
   vec VarImp;
@@ -95,7 +91,6 @@ List RegForestUniFit(arma::mat& X,
                        ObsTrack,
                        Prediction,
                        OOBPrediction,
-                       NodeRegi,
                        VarImp,
                        seed,
                        usecores,
@@ -116,7 +111,6 @@ List RegForestUniFit(arma::mat& X,
   ReturnList["FittedForest"] = Forest_R;
   
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
-  if (kernel_ready) ReturnList["NodeRegi"] = NodeRegi;
   if (importance) ReturnList["VarImp"] = VarImp;
   
   ReturnList["Prediction"] = Prediction;

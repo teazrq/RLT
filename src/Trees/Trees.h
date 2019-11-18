@@ -48,7 +48,6 @@ List ForestKernelUni(arma::field<arma::uvec>& NodeType,
                      arma::mat& X,
                      arma::uvec& Ncat,
                      arma::vec& obsweight,
-                     bool kernel,
                      int usecores,
                      int verbose);
 

@@ -33,7 +33,7 @@
 #'                        child node as a portion of the parent node. Must be 
 #'                        within `[0, 0.5)`. When `alpha` $> 0$ and `split.gen`
 #'                        is `rank` or `best`, this will force each child node 
-#'                        to contain at least $\max$(`nmin`, `alpha`$\times N_A$)$
+#'                        to contain at least \eqn{\max(\texttt{nmin}, \alpha \times N_A)}
 #'                        number of number of observations, where $N_A$ is the 
 #'                        sample size at the current internal node. This is 
 #'                        mainly for theoritical concern. 
@@ -82,9 +82,6 @@
 #' @param RLT.control     A list of tuning parameters for embedded model in 
 #'                        reinforcement splitting rule. See \code{RLT.control}.
 #'                        
-#' @param kernel.ready    Should kernel information (which observations are in
-#'                        which terminal node) be saved for later use? 
-#'                        
 #' @param seed            Random seed using the `Xoshiro256+` generator.
 #' 
 #' @param ncores          Number of cores. Default is 1.
@@ -93,17 +90,19 @@
 #' 
 #' @param ...             Additional arguments.
 #' 
+#' @export
+#' 
 #' @return 
 #' 
 #' A \code{RLT} object, constructed as a list consisting
 #' 
 #' \item{FittedForest}{Fitted tree structures}
+#' \item{VarImp}{Variable importance measures, if `importance = TRUE`}
+#' \item{Prediction}{In-bag prediction values}
+#' \item{OOBPrediction}{Out-of-bag prediction values}
 #' \item{ObsTrack}{An indicator matrix for whether each observation is used in 
 #'                 each fitted tree}
-#' \item{VarImp}{Variable importance measures, if `importance = TRUE`}
-#' \item{NodeRegi}{Observation id info in each terminal node, if \code{kernel.ready = TRUE}}
-#' \item{OOBPred}{Out-of-bag prediction values}
-#' 
+#'                 
 #' @references Zhu, R., Zeng, D., & Kosorok, M. R. (2015) "Reinforcement Learning Trees." Journal of the American Statistical Association. 110(512), 1770-1784.
 #' @references Zhu, R., & Kosorok, M. R. (2012). "Recursively Imputed Survival Trees." Journal of the American Statistical Association, 107(497), 331-340.
 
@@ -124,7 +123,6 @@ RLT <- function(x, y, censor = NULL, model = NULL,
         				track.obs = FALSE,
         				ObsTrack = NaN,
         				RLT.control = list("RLT"= FALSE),
-        				kernel.ready = FALSE,
         				seed = NaN,
         				ncores = 1,
         				verbose = 0,
@@ -147,7 +145,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                        split.gen, split.rule, nsplit, 
                        replacement, resample.prob,
                        importance, reinforcement, 
-                       track.obs, kernel.ready)
+                       track.obs)
   
   # check RLT parameters
   if (reinforcement)

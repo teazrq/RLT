@@ -2,7 +2,7 @@
 #' @description Print a RLT object
 #' @param x A fitted RLT object
 #' @param ... ...
-#' @examples
+#' @export
 
 print.RLT<- function(x, ...)
 {

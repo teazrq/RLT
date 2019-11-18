@@ -13,12 +13,10 @@ using namespace Rcpp;
 using namespace arma;
 
 void Surv_Uni_Forest_Pred(cube& Pred,
-                          mat& W,
                           const Surv_Uni_Forest_Class& SURV_FOREST,
                           const mat& X,
                           const uvec& Ncat,
                           size_t NFail,
-                          bool kernel,
                           int usecores,
                           int verbose)
 {
@@ -27,14 +25,7 @@ void Surv_Uni_Forest_Pred(cube& Pred,
   size_t N = X.n_rows;
   size_t ntrees = SURV_FOREST.NodeTypeList.size();
 
-  Pred.set_size(NFail + 1, ntrees, N);
-  Pred.zeros();
-  
-  if (kernel)
-  {
-    W.set_size(N, ntrees);
-    W.zeros();
-  }
+  Pred.zeros(NFail + 1, ntrees, N);
 
   //mat Pred(N, NFail + 1);
     
@@ -59,23 +50,12 @@ void Surv_Uni_Forest_Pred(cube& Pred,
 
       Uni_Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
 
-      
-      if (kernel)
+      vec oobpred(N, fill::zeros);
+        
+      for (size_t i = 0; i < N; i++)
       {
-        Rcout << " weighed prediction for survival not implemented yet " << std::endl;
-        //Pred.unsafe_col(nt).rows(real_id) = Forest[nt].NodeAve(TermNode) % Forest[nt].NodeSize(TermNode);
-        //W.unsafe_col(nt).rows(real_id) = Forest[nt].NodeSize(TermNode);
-      }else{
-
-        vec oobpred(N, fill::zeros);
-        
-        for (size_t i = 0; i < N; i++)
-        {
-          Pred.slice(i).col(nt) = OneTree.NodeHaz(TermNode(i));
-          oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) );
-        }
-        
-        //Rcout << "-- get prediction " << oobpred << std::endl;
+        Pred.slice(i).col(nt) = OneTree.NodeHaz(TermNode(i));
+        oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) );
       }
     }
   }

@@ -21,7 +21,6 @@ List RegForestUniPred(arma::field<arma::uvec>& NodeType,
           					  arma::field<arma::vec>& NodeAve,
           					  arma::mat& X,
           					  arma::uvec& Ncat,
-          					  bool kernel,
           					  bool keep_all,          					  
           					  int usecores,
           					  int verbose)
@@ -34,35 +33,20 @@ List RegForestUniPred(arma::field<arma::uvec>& NodeType,
   Reg_Uni_Forest_Class REG_FOREST(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeSize, NodeAve);
   
   mat PredAll;
-  mat W;
   
-  Reg_Uni_Forest_Pred(PredAll, 
-                      W,
+  Reg_Uni_Forest_Pred(PredAll,
                       (const Reg_Uni_Forest_Class&) REG_FOREST,
           					  X,
           					  Ncat,
-          					  kernel,
           					  usecores,
           					  verbose);
   
   List ReturnList;
 
-  vec Pred;
-  
-  if (kernel)
-  {
-      Pred = sum(PredAll % W, 1) / sum(W, 1);
-  }else{
-      Pred = mean(PredAll, 1);
-  }
-
-  ReturnList["Prediction"] = Pred;
+  ReturnList["Prediction"] = mean(PredAll, 1);
   
   if (keep_all)
     ReturnList["PredictionAll"] = PredAll;
-      
-  if (keep_all and kernel)
-    ReturnList["WeightAll"] = W;
   
   return ReturnList;
 }

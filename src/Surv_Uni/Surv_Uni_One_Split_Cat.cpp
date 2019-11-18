@@ -203,11 +203,10 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
           if (goright_temp(i) == 1)
           {
             Left_Fail += cat_reduced[i].FailCount;
-            Left_Risk += cat_reduced[i].RiskCount;            
+            Left_Risk += cat_reduced[i].RiskCount;
           }
         }
 
-        
         if (split_rule == 1)
           temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
         

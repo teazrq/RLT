@@ -12,38 +12,32 @@ using namespace Rcpp;
 using namespace arma;
 
 // [[Rcpp::export()]]
-List ForestKernelUni(arma::field<arma::uvec>& NodeType,
-          					 arma::field<arma::uvec>& SplitVar,
-          					 arma::field<arma::vec>& SplitValue,
-          					 arma::field<arma::uvec>& LeftNode,
-          					 arma::field<arma::uvec>& RightNode,
-          					 arma::field<arma::vec>& NodeSize,
-          					 arma::field<arma::field<arma::uvec>>& NodeRegi,
-          					 arma::imat& ObsTrack,
-          					 arma::mat& X,
-          					 arma::uvec& Ncat,
-          					 arma::vec& obsweight,
-          					 bool useobsweight,
-          					 int usecores,
-          					 int verbose)
+List ForestKernelUni_Self(arma::field<arma::uvec>& NodeType,
+                					 arma::field<arma::uvec>& SplitVar,
+                					 arma::field<arma::vec>& SplitValue,
+                					 arma::field<arma::uvec>& LeftNode,
+                					 arma::field<arma::uvec>& RightNode,
+                					 arma::field<arma::vec>& NodeSize,
+                					 arma::mat& X,
+                					 arma::uvec& Ncat,
+                					 int usecores,
+                					 int verbose)
 {
 
-  Rcout << "/// RLT Kernel Function ///" << std::endl;
+  Rcout << "/// RLT Kernel Function Self ///" << std::endl;
   
-  size_t Ntest = X.n_rows;
-  size_t N = ObsTrack.n_rows;
-  size_t ntrees = ObsTrack.n_cols; 
+  size_t N = X.n_rows;
+  size_t ntrees = NodeType.n_elem; 
   
   // check number of cores
   usecores = checkCores(usecores, verbose);
   
-  // initiate output kernel as a field
+  // initiate output kernel
   // each element for one testing subject 
-  
-  arma::field<arma::mat> Kernel(Ntest);
-  arma::mat blank(N, ntrees, fill::zeros);
-  Kernel.fill(blank);
 
+  arma::ucube Kernel(N, N, usecores, fill::zeros); 
+  uvec real_id = linspace<uvec>(0, N-1, N);  
+  
   #pragma omp parallel num_threads(usecores)
   {
   #pragma omp for schedule(static)
@@ -55,35 +49,69 @@ List ForestKernelUni(arma::field<arma::uvec>& NodeType,
                              LeftNode(nt), RightNode(nt), NodeSize(nt));
 
       // initiate all observations
-      uvec proxy_id = linspace<uvec>(0, Ntest-1, Ntest);
-      uvec real_id = linspace<uvec>(0, Ntest-1, Ntest);
-      uvec TermNode(Ntest, fill::zeros);
+      uvec proxy_id = linspace<uvec>(0, N-1, N);
+      uvec TermNode(N, fill::zeros);
       
+      // get terminal node id
       Uni_Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
       
-      DEBUG_Rcout << "--- ready to record each subject " << std::endl;
+      // record
+      size_t tid = omp_get_thread_num();      
       
-      for (size_t i = 0; i < Ntest; i++)
+      uvec UniqueNode = unique(TermNode);
+      
+      for (auto j : UniqueNode)
       {
-        size_t TreeNode = TermNode(i);
-        uvec neighbers = NodeRegi[nt][TreeNode];
+        uvec ID = real_id(find(TermNode == j));
         
-        if (useobsweight)
-        {
-          Kernel[i].unsafe_col(nt).rows(neighbers) += obsweight(neighbers);
-        }else{
-          vec one(neighbers.n_elem, fill::ones);
-          Kernel[i].unsafe_col(nt).rows(neighbers) += one;
-        }
+        Kernel.slice(tid).submat(ID, ID) += 1;
       }
-      
-      DEBUG_Rcout << "--- finishing record each subject " << std::endl;
     }
+  }
+  
+  umat K(N, N, fill::zeros);
+  
+  for (size_t j = 0; j < usecores; j++)
+  {
+    K += Kernel.slice(j);
   }
 
   List ReturnList;
-  ReturnList["Kernel"] = Kernel;
+  ReturnList["Kernel"] = K;
   
   return(ReturnList);
   
 }
+
+
+
+
+
+// [[Rcpp::export()]]
+List ForestKernelUni_Cross(arma::field<arma::uvec>& NodeType,
+                          arma::field<arma::uvec>& SplitVar,
+                          arma::field<arma::vec>& SplitValue,
+                          arma::field<arma::uvec>& LeftNode,
+                          arma::field<arma::uvec>& RightNode,
+                          arma::field<arma::vec>& NodeSize,
+                          arma::mat& XTest,
+                          arma::mat& XTrain,
+                          arma::uvec& Ncat,
+                          arma::umat& ObsTrack,
+                          int usecores,
+                          int verbose)
+{
+  Rcout << "/// RLT Kernel Function Cross not done yet ///" << std::endl;
+  
+  List ReturnList;
+  ReturnList["Kernel"] = 0;
+  
+  return(ReturnList);
+  
+}
+
+
+
+
+
+

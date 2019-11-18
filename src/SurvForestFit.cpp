@@ -43,7 +43,6 @@ List SurvForestUniFit(arma::mat& X,
   size_t P = SURV_DATA.X.n_cols;
   size_t ntrees = Param.ntrees;
   size_t seed = Param.seed;
-  bool kernel_ready = Param.kernel_ready;
   bool obs_track = Param.obs_track;
   int importance = Param.importance;
   
@@ -67,9 +66,6 @@ List SurvForestUniFit(arma::mat& X,
     ObsTrack = umat(ObsTrackPre);
   else
     ObsTrack = umat(N, ntrees, fill::zeros);
-  
-  // NodeRegi
-  arma::field<arma::field<arma::uvec>> NodeRegi(ntrees);
   
   // VarImp
   vec VarImp;
@@ -96,7 +92,6 @@ List SurvForestUniFit(arma::mat& X,
                         ObsTrack,
                         Prediction,
                         OOBPrediction,
-                        NodeRegi,
                         VarImp,
                         seed,
                         usecores,
@@ -120,7 +115,6 @@ List SurvForestUniFit(arma::mat& X,
   ReturnList["FittedForest"] = Forest_R;
   
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
-  if (kernel_ready) ReturnList["NodeRegi"] = NodeRegi;
   if (importance) ReturnList["VarImp"] = VarImp;
   
   ReturnList["Prediction"] = Prediction;
