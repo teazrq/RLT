@@ -13,7 +13,7 @@ X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
 for (j in 1:ncol(X2)) X2[,j] = as.factor(X2[,j])
 
 X = cbind(X1, X2)
-# y = 1 + X[, 1] + 2 * (X[, p/2+1] %in% c(1, 3)) + rnorm(n)
+#y = 1 + X[, 1] + 2 * (X[, p/2+1] %in% c(1, 3)) + rnorm(n)
 y = 1 + X[, 1] + rnorm(n)
 
 ntrees = 200
@@ -26,11 +26,14 @@ nsplit = ifelse(rule == "best", 0, 3)
 importance = TRUE 
 
 trainX = X[1:trainn, ]
-testX = X[1:testn + trainn, ]
-testX = testX[order(testX[, 1]), ]
-
 trainY = y[1:trainn]
+
+testX = X[1:testn + trainn, ]
 testY = y[1:testn + trainn]
+
+xorder = order(testX[, 1])
+testX = testX[xorder, ]
+testY = testY[xorder]
 
 metric = data.frame(matrix(NA, 4, 4))
 rownames(metric) = c("rlt", "rsf", "rf", "ranger")
@@ -88,7 +91,7 @@ barplot(rf.fit$importance[, 1], main = "rf")
 barplot(as.vector(rangerfit$variable.importance), main = "ranger")
 
 
-getOneTree(RLTfit, 1)
+# getOneTree(RLTfit, 1)
 
 A = forest.kernel(RLTfit, testX)
 heatmap(A$Kernel, Rowv = NA, Colv = NA, symm = TRUE)
