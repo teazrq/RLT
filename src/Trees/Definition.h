@@ -34,7 +34,6 @@ public:
   int importance;  
   bool reinforcement;
   bool obs_track;
-  bool pre_obstrack;
   size_t seed;
   
   PARAM_GLOBAL(List& param){
@@ -54,7 +53,6 @@ public:
     importance    = param["importance"];
     reinforcement = param["reinforcement"];   
     obs_track     = param["track.obs"];
-    pre_obstrack  = param["pre.obs.track"];
     seed          = param["seed"];
   }
   

@@ -21,7 +21,7 @@ List RegForestUniFit(arma::mat& X,
           					 arma::vec& varweight,
           					 int usecores,
           					 int verbose,
-          					 arma::umat& ObsTrackPre)
+          					 arma::umat& ObsTrack)
 {
   DEBUG_Rcout << "/// THIS IS A DEBUG MODE OF RLT REGRESSION ///" << std::endl;
 
@@ -39,7 +39,7 @@ List RegForestUniFit(arma::mat& X,
   size_t P = REG_DATA.X.n_cols;
   size_t ntrees = Param.ntrees;
   size_t seed = Param.seed;
-  bool obs_track = Param.obs_track;
+  int obs_track = Param.obs_track;
 
   int importance = Param.importance;
 
@@ -55,15 +55,7 @@ List RegForestUniFit(arma::mat& X,
   Reg_Uni_Forest_Class REG_FOREST(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeSize, NodeAve);
   
   // other objects
-  
-  // ObsTrack
-  arma::umat ObsTrack;
-  
-  if (Param.pre_obstrack and ObsTrackPre.n_rows == N and ObsTrackPre.n_cols == ntrees)
-    ObsTrack = umat(ObsTrackPre);
-  else
-    ObsTrack = umat(N, ntrees, fill::zeros);
-  
+
   // VarImp
   vec VarImp;
   

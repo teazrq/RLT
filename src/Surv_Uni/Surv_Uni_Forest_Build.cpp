@@ -39,7 +39,13 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
   size_t size = (size_t) obs_id.n_elem*resample_prob;
   size_t nmin = Param.nmin;
   
-  bool pre_obstrack = Param.pre_obstrack;    // for ObsTrack
+  bool obs_track_pre = false; 
+  
+  if (ObsTrack.n_elem != 0)
+    obs_track_pre = true; 
+  else
+    ObsTrack.zeros(N, ntrees);
+  
   bool pred = (Prediction.n_elem > 0);       // for Prediction
   bool oob_pred = (OOBPrediction.n_elem > 0);// for OOBPrediction
   int importance = Param.importance;         // for VarImp
@@ -71,7 +77,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       
       uvec inbagObs, oobagObs;
       
-      if (!pre_obstrack)
+      if (!obs_track_pre)
         set_obstrack(ObsTrack, nt, size, replacement);
       
       get_samples(inbagObs, oobagObs, obs_id, ObsTrack.unsafe_col(nt));

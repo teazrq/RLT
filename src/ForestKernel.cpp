@@ -112,6 +112,3 @@ List ForestKernelUni_Cross(arma::field<arma::uvec>& NodeType,
 
 
 
-
-
-

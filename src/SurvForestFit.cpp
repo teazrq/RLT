@@ -22,7 +22,7 @@ List SurvForestUniFit(arma::mat& X,
                       arma::vec& varweight,
                       int usecores,
                       int verbose,
-                      arma::umat& ObsTrackPre)
+                      arma::umat& ObsTrack)
 {
 
   DEBUG_Rcout << "/// THIS IS A DEBUG MODE OF RLT SURVIVAL ///" << std::endl;
@@ -58,14 +58,6 @@ List SurvForestUniFit(arma::mat& X,
   Surv_Uni_Forest_Class SURV_FOREST(NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeSize, NodeHaz);
   
   // other objects
-  
-  // ObsTrack
-  arma::umat ObsTrack;
-  
-  if (Param.pre_obstrack and ObsTrackPre.n_rows == N and ObsTrackPre.n_cols == ntrees)
-    ObsTrack = umat(ObsTrackPre);
-  else
-    ObsTrack = umat(N, ntrees, fill::zeros);
   
   // VarImp
   vec VarImp;

@@ -556,3 +556,4 @@ void goright_roller(arma::uvec& goright_cat)
     }
   }
 }
+

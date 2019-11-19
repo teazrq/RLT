@@ -138,10 +138,10 @@ table(colSums(MySamples1 * MySamples2))
 
 
 
-
-
 RLTfit1 <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry,
-              split.gen = rule, nsplit = nsplit, ObsTrack = MySamples1)
+              split.gen = rule, nsplit = nsplit, track.obs = 2, ObsTrack = MySamples1)
+
+
 
 RLTPred1 <- predict(RLTfit1, testX, keep.all = TRUE, ncores = ncores)
 mean((RLTPred1$Prediction - testY)^2)
@@ -194,7 +194,6 @@ plot(trainX[, 1], trainX[, 2] + rnorm(trainn, sd = 0.1), pch = 19,
 
 # peek a tree
 getOneTree(RLTfit, 1)
-
 
 
 

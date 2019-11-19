@@ -70,14 +70,19 @@
 #'                        
 #' @param importance      Should importance measures be calculated
 #' 
-#' @param track.obs       Track which terminal node the observation belongs to.
-#'                        The fitted object will return `"ObsTrack"` as the 
-#'                        indicator/counts of in-bag data. 
+#' @param track.obs       If `TRUE`, the function will record and return an 
+#'                        \eqn{n \times \texttt{ntrees}} count matrix that 
+#'                        records how many times an observation is used in each 
+#'                        tree. If `ObsTrack` is pre-specified, then this matrix
+#'                        will be returned. Default is `FALSE`.
 #' 
 #' @param ObsTrack        Pre-specified matrix for in-bag data indicator/count 
-#'                        matrix. It will not be used if it contains any 
-#'                        negative value. This is an experimental feature, try 
-#'                        at your own risk. 
+#'                        matrix. It must be an \eqn{n \times \texttt{ntrees}}
+#'                        matrix and cannot contain negative values. Extreamly 
+#'                        large counts are not recommended, and the sum of 
+#'                        each column cannot exceed \eqn{n}. If provided, then 
+#'                        track.obs will set to `TRUE`. This is an experimental 
+#'                        feature. Use at your own risk. 
 #'                        
 #' @param RLT.control     A list of tuning parameters for embedded model in 
 #'                        reinforcement splitting rule. See \code{RLT.control}.
@@ -121,7 +126,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
         				var.w = NULL,
         				importance = FALSE,
         				track.obs = FALSE,
-        				ObsTrack = NaN,
+        				ObsTrack = NULL,
         				RLT.control = list("RLT"= FALSE),
         				seed = NaN,
         				ncores = 1,
@@ -152,25 +157,38 @@ RLT <- function(x, y, censor = NULL, model = NULL,
     RLT.control <- check_RLT_param(RLT.control)
   
   # check ObsTrack
-  if ( !any(is.na(ObsTrack)) )
+  if ( !is.null(ObsTrack) )
   {
       if (!is.matrix(ObsTrack))
           stop("ObsTrack must be a matrix")
       
       if (nrow(ObsTrack) != n | ncol(ObsTrack) != ntrees)
-          stop("Number of rows in ObsTrack must be the same as x;\n Number of columns in ObsTrack must be the same as ntrees")      
-  
-      param$pre.obs.track = TRUE
-  }else{
-      ObsTrack = as.matrix(0);
-      param$pre.obs.track = FALSE
-  }
+          stop("Dimension of ObsTrack does not match n by ntrees")
       
+      if (any(ObsTrack < 0))
+      {
+          warning("Negative entries in ObsTrack are truncated to 0")
+          ObsTrack[ObsTrack < 0] = 0;
+      }
+      
+      if ( any(colSums(ObsTrack) > n) )
+      {
+          stop("Column sums in ObsTrack cannot be larger than n ...")
+      }
+      
+      param$'use.obs.w' = TRUE
+      
+      storage.mode(ObsTrack) <- "integer"
+      
+  }else{
+      ObsTrack = ARMA_EMPTY_UMAT();
+  }
+
   # check observation weights  
   if (is.null(obs.w))
   {
     param$"use.obs.w" = 0L
-    obs.w = 0L
+    obs.w = ARMA_EMPTY_VEC()
   }else{
     param$"use.obs.w" = 1L
     obs.w = as.numeric(as.vector(obs.w))
@@ -189,7 +207,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   if (is.null(var.w))
   {
     param$"use.var.w" = 0L
-    var.w = 0L
+    var.w = ARMA_EMPTY_VEC()
   }else{
     param$"use.var.w" = 1L
     
