@@ -297,7 +297,7 @@ double suplogrank(const vec& Left_Fail,
         
     var = cumsum(var);
     diff = cumsum(diff);
-    diff = diff*diff;
+    diff = diff % diff;
     
     return max(diff/var);
 }

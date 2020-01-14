@@ -61,13 +61,13 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
   
   // start parallel trees
     
-  dqrng::xoshiro256plus rng(seed); // properly seeded rng
+  // dqrng::xoshiro256plus rng(seed); // properly seeded rng
 
   #pragma omp parallel num_threads(usecores)
   {
     
-    dqrng::xoshiro256plus lrng(rng);      // make thread local copy of rng 
-    lrng.long_jump(omp_get_thread_num() + 1);  // advance rng by 1 ... ncores jumps
+    //dqrng::xoshiro256plus lrng(rng);      // make thread local copy of rng 
+    //lrng.long_jump(omp_get_thread_num() + 1);  // advance rng by 1 ... ncores jumps
     
     #pragma omp for schedule(static)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
