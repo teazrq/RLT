@@ -146,6 +146,11 @@ double suplogrank(const vec& Left_Fail,
                   const vec& All_Fail, 
                   const vec& All_Risk);
 
+double loglik(const vec& Left_Fail, 
+               const vec& Left_Risk, 
+               const vec& All_Fail, 
+               const vec& All_Risk);
+    
 // prediction 
 
 void Surv_Uni_Forest_Pred(cube& Pred,

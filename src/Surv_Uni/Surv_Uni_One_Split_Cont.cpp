@@ -91,8 +91,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             if (split_rule == 2)
                 temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
-            if (split_rule > 2)
-                Rcout << "      --- splitting rule not implemented yet " << std::endl;
+            if (split_rule == 3)
+                temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
             if (temp_score > TempSplit.score)
             {
@@ -166,8 +166,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             if (split_rule == 2)
                 temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
-            if (split_rule > 2)
-                Rcout << "      --- splitting rule not implemented yet " << std::endl;
+            if (split_rule == 3)
+                temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
             if (temp_score > TempSplit.score)
             {
@@ -214,8 +214,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             if (split_rule == 2)
                 temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
-            if (split_rule > 2)
-                Rcout << "      --- splitting rule not implemented yet " << std::endl;
+            if (split_rule == 3)
+                temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
             if (temp_score > TempSplit.score)
             {
@@ -285,21 +285,87 @@ double suplogrank(const vec& Left_Fail,
         Left_Risk_All(k) = Left_Risk_All(k-1) - Left_Risk(k-1);
     }
     
-    // Variance: Y_{j1} / Y_{j} * (1 - Y_{j1} / Y_{j}) * d_{j} * ( Y_{j} - d_{j} ) / (Y_{j} - 1)
-    vec var = Left_Risk_All / All_Risk % (1 - Left_Risk_All / All_Risk) % All_Fail % (All_Risk - All_Fail) / (All_Risk - 1);
+    //Code based on Kosorok Renyi algorithm
     
-    // Difference: d_{j1} - Y_{j1} * d_{j} / Y_{j} 
-    vec diff = Left_Fail - Left_Risk_All % ( All_Fail / All_Risk );
+    // w <- (y1 * y2)/(y1 + y2)
+    vec w = (Left_Risk_All % (All_Risk-Left_Risk_All))/(All_Risk);
     
-    for (size_t i = 0; i < All_Risk.n_elem; i++)
-        if (All_Risk(i) < 2)
-            var(i) = 0;
-        
-    var = cumsum(var);
-    diff = cumsum(diff);
-    diff = diff % diff;
+    // terms <- (d1/y1 - d2/y2)[w > 0]
+    vec terms = (Left_Fail/Left_Risk_All-(All_Fail-Left_Fail)/(All_Risk-Left_Risk_All));   
     
-    return max(diff/var);
+    // temp<-y1+y2-1; temp<-ifelse(temp<1,1,temp)
+    vec temp = clamp(All_Risk - 1, 1, All_Risk(0));
+    
+    // cc<-1-(d1+d2-1)/temp
+    vec cc = 1- (All_Fail-1)/temp;
+    
+    // vterms <- (cc*(d1 + d2)/(y1 + y2))[w > 0]
+    vec vterms = cc%All_Fail/All_Risk;
+    
+    // terms <- (weight * w * terms)/sqrt(sum(weight^2 * w * vterms))
+    terms = (w % terms);
+    terms = terms*terms;
+    terms = terms / accu(w % vterms);
+
+    temp = cumsum(terms);
+    temp = temp.replace(datum::inf,0);
+    temp = temp.replace(datum::nan, 0);
+    
+    return max(temp);
 }
+
+
+vec hazard(const vec& Fail, 
+           const vec& Risk)
+{
+    vec haz = Fail/Risk;
+    
+    //datum::nan replace with 0 handles case where the at-risk
+    ///set is empty after a certain timepoint (i.e., all large values of Y are in left node)
+    return haz.replace(datum::nan, 0);
+}
+
+
+double loglik(const vec& Left_Fail, 
+              const vec& Left_Risk, 
+              const vec& All_Fail, 
+              const vec& All_Risk)
+{
+    // cumulative at risk count
+    vec Left_Risk_All(Left_Risk.n_elem);
+    Left_Risk_All(0) = accu(Left_Risk);
+    
+    for (size_t k = 1; k < Left_Risk_All.n_elem; k++)
+    {
+        Left_Risk_All(k) = Left_Risk_All(k-1) - Left_Risk(k-1);
+    }
+    
+    // left and right hazard funcion 
+    vec lambda0 = hazard(All_Fail, All_Risk); 
+    vec lambdaLtmp = hazard(Left_Fail, Left_Risk);
+    vec lambdaRtmp = hazard(All_Fail-Left_Fail, All_Risk-Left_Risk);
+    
+    double epsilon = 0.001;
+    
+    vec lambdaL = (lambdaLtmp-lambda0)*epsilon+lambda0;//
+    vec lambdaR = (lambdaRtmp-lambda0)*epsilon+lambda0;
+    
+    // left and right log-likelihood
+    double loglikL = dot(Left_Fail, log(lambdaL)) - dot(Left_Risk_All, cumsum(lambdaL));
+    double loglikR = dot(All_Fail-Left_Fail, log(lambdaR)) - dot(All_Risk-Left_Risk_All, cumsum(lambdaR));
+    double loglik_ep = loglikL + loglikR;
+    double loglik0 = dot(All_Fail, log(lambda0)) - dot(All_Risk, cumsum(lambda0));
+    
+    return (loglik_ep-loglik0)/epsilon;
+}
+
+
+
+
+
+
+
+
+
 
 
