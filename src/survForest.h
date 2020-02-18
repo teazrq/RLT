@@ -102,6 +102,9 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         const uvec& Y, // Y is collapsed
                         const uvec& Censor, // Censor is collapsed
                         size_t NFail,
+                        const vec& All_Fail,
+                        const vec& All_Risk,
+                        const vec& Temp_Vec,
                         double penalty,
                         int split_gen,
                         int split_rule,

@@ -18,6 +18,9 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          const uvec& Y, // Y is collapsed
                          const uvec& Censor, // Censor is collapsed
                          size_t NFail,
+                         const vec& All_Fail,
+                         const vec& All_Risk,
+                         const vec& Temp_Vec,
                          double penalty,
                          int split_gen,
                          int split_rule,
@@ -31,31 +34,7 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
     double temp_cut;
     size_t temp_ind;
     double temp_score = -1;
-    
-    // initiate the failure and at-risk counts
-    vec All_Risk(NFail+1, fill::zeros);
-    vec All_Fail(NFail+1, fill::zeros);
-    
-    for (size_t i = 0; i<obs_id.n_elem; i++)
-    {
-        All_Risk(Y(i)) ++;
-        
-        if (Censor(i) == 1)
-            All_Fail(Y(i)) ++;
-    }
-    
     size_t N = obs_id.n_elem;
-    size_t last_count = 0;
-
-    for (size_t k = 0; k <= NFail; k++)
-    {
-        N -= last_count;
-        last_count = All_Risk(k);
-        All_Risk(k) = N;
-    }
-    
-    N = obs_id.n_elem;
-    
     
     // initiate the hazard and log-likelihood for split_rule>2
     vec lambda0(NFail+1, fill::zeros);
@@ -98,7 +77,7 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                 temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
                 
             if (split_rule == 2)
-                temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+                temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec);
             
             if (split_rule == 3 or split_rule == 4)
                 temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, lambda0, Loglik0);
@@ -295,7 +274,8 @@ double logrank(const vec& Left_Fail,
 double suplogrank(const vec& Left_Fail, 
                   const vec& Left_Risk, 
                   const vec& All_Fail, 
-                  const vec& All_Risk)
+                  const vec& All_Risk, 
+                  const vec& Temp_Vec)
 {
     vec Left_Risk_All(Left_Risk.n_elem);
     Left_Risk_All(0) = accu(Left_Risk);
@@ -313,25 +293,16 @@ double suplogrank(const vec& Left_Fail,
     // terms <- (d1/y1 - d2/y2)[w > 0]
     vec terms = (Left_Fail/Left_Risk_All-(All_Fail-Left_Fail)/(All_Risk-Left_Risk_All));   
     
-    // temp<-y1+y2-1; temp<-ifelse(temp<1,1,temp)
-    //vec temp = clamp(All_Risk - 1, 1, All_Risk(0));
+    // check 0 and inf 
     
-    // cc<-1-(d1+d2-1)/temp
-    //vec cc = 1- (All_Fail-1)/temp;
+    double denominator = accu(Temp_Vec % w);
     
-    // vterms <- (cc*(d1 + d2)/(y1 + y2))[w > 0]
-    //vec vterms = cc%All_Fail/All_Risk;
+    terms = w % terms;
+    terms = cumsum(terms);
     
-    // terms <- (weight * w * terms)/sqrt(sum(weight^2 * w * vterms))
-    terms = (w % terms);
-    terms = terms % terms;
-    //terms = terms / accu(w % vterms);
+    terms = terms % terms / denominator;
 
-    vec temp = cumsum(terms);
-    temp = temp.replace(datum::inf,0);
-    temp = temp.replace(datum::nan, 0);
-    
-    return max(temp);
+    return max(terms);
 }
 
 

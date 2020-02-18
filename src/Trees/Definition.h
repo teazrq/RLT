@@ -56,12 +56,8 @@ public:
     seed          = param["seed"];
   }
   
-  print(){
-      
-      
-      
-      
-  }
+  //print(){
+  //}
 };
 
 class PARAM_RLT{

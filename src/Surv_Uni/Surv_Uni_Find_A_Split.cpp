@@ -60,10 +60,39 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   //DEBUG_Rcout << "    --- number of failure " << NFail << std::endl;
   
   if (NFail == 0)
-    return; 
+    return;   
+  
+  // initiate the failure and at-risk counts
+  vec All_Risk(NFail+1, fill::zeros);
+  vec All_Fail(NFail+1, fill::zeros);
+  
+  for (size_t i = 0; i<N; i++)
+  {
+      All_Risk(Y(i)) ++;
+      
+      if (Censor(i) == 1)
+          All_Fail(Y(i)) ++;
+  }
+  
+  size_t last_count = 0;
+  
+  for (size_t k = 0; k <= NFail; k++)
+  {
+      N -= last_count;
+      last_count = All_Risk(k);
+      All_Risk(k) = N;
+  }
+  
+  vec Temp_Vec;
+  // if suplogrank, calculate the cc/temp*vterms
+  // call that Temp_Vec 
+  
+  // if logliklihood split, calculate hazard here
+  // call that Temp_Vec
+  
 
   bool failforce = 0; // need to change later 
-  double penalty = 0;  
+  double penalty = 0; // initiate 
   
   // start univariate search
   // shuffle the order of var_id
@@ -159,6 +188,9 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
                             Y_collapse, 
                             Censor_collapse, 
                             NFail,
+                            All_Fail,
+                            All_Risk,
+                            Temp_Vec,
                             penalty,
                             split_gen, 
                             split_rule, 
