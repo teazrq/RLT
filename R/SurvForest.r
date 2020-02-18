@@ -40,7 +40,7 @@ SurvForest <- function(x, y, censor,
   if (is.null(param$"split.rule"))
     param$"split.rule" = "logrank"
   
-  if (param$"split.rule" == "penll" & param$use.obs.w == 0)
+  if (param$"split.rule" == "penll" & param$use.var.w == 0)
     stop("must specify variable weights if penalized splitting rule is used.")
   
   all.split.rule = c("logrank", "suplogrank", "ll", "penll")

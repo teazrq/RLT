@@ -57,6 +57,15 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
     N = obs_id.n_elem;
     
     
+    // initiate the hazard and log-likelihood for split_rule>2
+    vec lambda0(NFail+1, fill::zeros);
+    double Loglik0 = 0;
+    
+    if(split_rule==3 or split_rule==4){
+      lambda0 = hazard(All_Fail, All_Risk);
+      Loglik0 = dot(All_Fail, log(lambda0.replace(0, 1))) - dot(All_Risk, lambda0);
+    }
+    
     //Rcout << " data here \n" << join_rows(All_Fail, All_Risk) << std::endl;
         
     vec Left_Risk(NFail+1);
@@ -91,8 +100,11 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             if (split_rule == 2)
                 temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
-            if (split_rule == 3)
-                temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk);
+            if (split_rule == 3 or split_rule == 4)
+                temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, lambda0, Loglik0);
+            
+            if(split_rule == 4)
+                temp_score = temp_score * penalty;
             
             if (temp_score > TempSplit.score)
             {
@@ -166,8 +178,11 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             if (split_rule == 2)
                 temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
-            if (split_rule == 3)
-                temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk);
+            if (split_rule == 3 or split_rule == 4)
+              temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, lambda0, Loglik0);
+            
+            if(split_rule == 4)
+              temp_score = temp_score * penalty;
             
             if (temp_score > TempSplit.score)
             {
@@ -214,8 +229,13 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
             if (split_rule == 2)
                 temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
             
-            if (split_rule == 3)
-                temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk);
+            if (split_rule == 3 or split_rule == 4)
+              temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, lambda0, Loglik0);
+            
+            if(split_rule == 4)
+              temp_score = temp_score * penalty;
+            
+            //Rcout << temp_score << std::endl;
             
             if (temp_score > TempSplit.score)
             {
@@ -294,20 +314,20 @@ double suplogrank(const vec& Left_Fail,
     vec terms = (Left_Fail/Left_Risk_All-(All_Fail-Left_Fail)/(All_Risk-Left_Risk_All));   
     
     // temp<-y1+y2-1; temp<-ifelse(temp<1,1,temp)
-    vec temp = clamp(All_Risk - 1, 1, All_Risk(0));
+    //vec temp = clamp(All_Risk - 1, 1, All_Risk(0));
     
     // cc<-1-(d1+d2-1)/temp
-    vec cc = 1- (All_Fail-1)/temp;
+    //vec cc = 1- (All_Fail-1)/temp;
     
     // vterms <- (cc*(d1 + d2)/(y1 + y2))[w > 0]
-    vec vterms = cc%All_Fail/All_Risk;
+    //vec vterms = cc%All_Fail/All_Risk;
     
     // terms <- (weight * w * terms)/sqrt(sum(weight^2 * w * vterms))
     terms = (w % terms);
-    terms = terms*terms;
-    terms = terms / accu(w % vterms);
+    terms = terms % terms;
+    //terms = terms / accu(w % vterms);
 
-    temp = cumsum(terms);
+    vec temp = cumsum(terms);
     temp = temp.replace(datum::inf,0);
     temp = temp.replace(datum::nan, 0);
     
@@ -329,7 +349,9 @@ vec hazard(const vec& Fail,
 double loglik(const vec& Left_Fail, 
               const vec& Left_Risk, 
               const vec& All_Fail, 
-              const vec& All_Risk)
+              const vec& All_Risk,
+              vec& lambda0,
+              double& Loglik0)
 {
     // cumulative at risk count
     vec Left_Risk_All(Left_Risk.n_elem);
@@ -341,22 +363,22 @@ double loglik(const vec& Left_Fail,
     }
     
     // left and right hazard funcion 
-    vec lambda0 = hazard(All_Fail, All_Risk); 
-    vec lambdaLtmp = hazard(Left_Fail, Left_Risk);
-    vec lambdaRtmp = hazard(All_Fail-Left_Fail, All_Risk-Left_Risk);
+    //vec lambda0 = hazard(All_Fail, All_Risk); 
+    vec lambdaLtmp = hazard(Left_Fail, Left_Risk_All);
+    vec lambdaRtmp = hazard(All_Fail-Left_Fail, All_Risk-Left_Risk_All);
     
-    double epsilon = 0.001;
+    double epsilon = 0.1;
     
     vec lambdaL = (lambdaLtmp-lambda0)*epsilon+lambda0;//
     vec lambdaR = (lambdaRtmp-lambda0)*epsilon+lambda0;
-    
+
     // left and right log-likelihood
-    double loglikL = dot(Left_Fail, log(lambdaL)) - dot(Left_Risk_All, cumsum(lambdaL));
-    double loglikR = dot(All_Fail-Left_Fail, log(lambdaR)) - dot(All_Risk-Left_Risk_All, cumsum(lambdaR));
+    double loglikL = dot(Left_Fail, log(lambdaL.replace(0, 1))) - dot(Left_Risk_All, lambdaL);//Alternatively, dot(Left_Fail, log(lambdaL.replace(0, 1))) - dot(Left_Risk, cumsum(lambdaL))
+    double loglikR = dot(All_Fail-Left_Fail, log(lambdaR.replace(0, 1))) - dot(All_Risk-Left_Risk_All, lambdaR);
     double loglik_ep = loglikL + loglikR;
-    double loglik0 = dot(All_Fail, log(lambda0)) - dot(All_Risk, cumsum(lambda0));
-    
-    return (loglik_ep-loglik0)/epsilon;
+    //double loglik0 = dot(All_Fail, log(lambda0.replace(0, 1))) - dot(All_Risk, lambda0);
+
+    return (loglik_ep-Loglik0)/epsilon;
 }
 
 

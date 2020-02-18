@@ -146,10 +146,15 @@ double suplogrank(const vec& Left_Fail,
                   const vec& All_Fail, 
                   const vec& All_Risk);
 
+vec hazard(const vec& Fail, 
+           const vec& Risk);
+
 double loglik(const vec& Left_Fail, 
                const vec& Left_Risk, 
                const vec& All_Fail, 
-               const vec& All_Risk);
+               const vec& All_Risk,
+               vec& lambda0,
+               double& Loglik0);
     
 // prediction 
 
