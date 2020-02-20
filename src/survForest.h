@@ -73,6 +73,9 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          const uvec& Y, // Y is collapsed
                          const uvec& Censor, // Censor is collapsed
                          size_t NFail,
+                         const vec& All_Fail,
+                         const vec& All_Risk,
+                         vec& Temp_Vec,
                          double penalty,
                          int split_gen,
                          int split_rule,
@@ -104,7 +107,7 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         size_t NFail,
                         const vec& All_Fail,
                         const vec& All_Risk,
-                        const vec& Temp_Vec,
+                        vec& Temp_Vec,
                         double penalty,
                         int split_gen,
                         int split_rule,
@@ -147,7 +150,8 @@ double logrank(const vec& Left_Fail,
 double suplogrank(const vec& Left_Fail, 
                   const vec& Left_Risk, 
                   const vec& All_Fail, 
-                  const vec& All_Risk);
+                  const vec& All_Risk,
+                  const vec& Temp_Vec);
 
 vec hazard(const vec& Fail, 
            const vec& Risk);

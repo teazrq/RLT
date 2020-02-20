@@ -18,6 +18,9 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         const uvec& Y, // Y is collapsed
                         const uvec& Censor, // Censor is collapsed
                         size_t NFail,
+                        const vec& All_Fail,
+                        const vec& All_Risk,
+                        vec& Temp_Vec,
                         double penalty,
                         int split_gen,
                         int split_rule,
@@ -68,32 +71,32 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
     
     // initiate the total failure and at-risk counts
     
-    vec All_Risk(NFail+1, fill::zeros);
-    vec All_Fail(NFail+1, fill::zeros);
-    
-    for (size_t i = 0; i<true_cat; i++)
-    {
-      All_Fail += cat_reduced[i].FailCount;
-      All_Risk += cat_reduced[i].RiskCount;
-    }
-    
-    size_t N = obs_id.n_elem;
-    size_t last_count = 0;
-    
-    for (size_t k = 0; k <= NFail; k++)
-    {
-      N -= last_count;
-      last_count = All_Risk(k);
-      All_Risk(k) = N;
-    }
+    // vec All_Risk(NFail+1, fill::zeros);
+    // vec All_Fail(NFail+1, fill::zeros);
+    // 
+    // for (size_t i = 0; i<true_cat; i++)
+    // {
+    //   All_Fail += cat_reduced[i].FailCount;
+    //   All_Risk += cat_reduced[i].RiskCount;
+    // }
+    // 
+    // size_t N = obs_id.n_elem;
+    // size_t last_count = 0;
+    // 
+    // for (size_t k = 0; k <= NFail; k++)
+    // {
+    //   N -= last_count;
+    //   last_count = All_Risk(k);
+    //   All_Risk(k) = N;
+    // }
 
     // initiate the hazard and log-likelihood for split_rule>2
-    vec lambda0(NFail+1, fill::zeros);
+    //vec lambda0(NFail+1, fill::zeros);
     double Loglik0 = 0;
     
     if(split_rule==3 or split_rule==4){
-      lambda0 = hazard(All_Fail, All_Risk);
-      Loglik0 = dot(All_Fail, log(lambda0.replace(0, 1))) - dot(All_Risk, lambda0);
+      //lambda0 = hazard(All_Fail, All_Risk);
+      Loglik0 = dot(All_Fail, log(Temp_Vec.replace(0, 1))) - dot(All_Risk, Temp_Vec);
     }
     
     //Rcout << " data here " << join_rows(All_Fail, All_Risk) << std::endl;
@@ -165,10 +168,10 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
             temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
           
           if (split_rule == 2)
-            temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+            temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec);
           
           if (split_rule == 3 or split_rule == 4)
-            temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, lambda0, Loglik0);
+            temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec, Loglik0);
           
           if(split_rule == 4)
             temp_score = temp_score * penalty;
@@ -223,10 +226,10 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
           temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
         
         if (split_rule == 2)
-          temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+          temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec);
         
         if (split_rule == 3 or split_rule == 4)
-          temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, lambda0, Loglik0);
+          temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec, Loglik0);
         
         if(split_rule == 4)
           temp_score = temp_score * penalty;
