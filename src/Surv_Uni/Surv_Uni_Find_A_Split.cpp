@@ -51,13 +51,13 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   uvec Y_collapse(N);
   uvec Censor_collapse(N);
   
-  //DEBUG_Rcout << "    --- Y before collapse \n" << join_rows(Y(obs_id), Censor(obs_id))  << std::endl;
+  DEBUG_Rcout << "    --- Y before collapse \n" << join_rows(Y(obs_id), Censor(obs_id))  << std::endl;
  
   collapse(Y, Censor, Y_collapse, Censor_collapse, obs_id, NFail);
   
-  //DEBUG_Rcout << "    --- Y after collapse " << std::endl;
-  //DEBUG_Rcout << join_rows(Y_collapse, Censor_collapse) << std::endl;
-  //DEBUG_Rcout << "    --- number of failure " << NFail << std::endl;
+  DEBUG_Rcout << "    --- Y after collapse " << std::endl;
+  DEBUG_Rcout << join_rows(Y_collapse, Censor_collapse) << std::endl;
+  DEBUG_Rcout << "    --- number of failure " << NFail << std::endl;
   
   if (NFail == 0)
     return;   
@@ -65,13 +65,13 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   // initiate the failure and at-risk counts
   vec All_Risk(NFail+1, fill::zeros);
   vec All_Fail(NFail+1, fill::zeros);
-  
+
   for (size_t i = 0; i<N; i++)
   {
-      All_Risk(Y(i)) ++;
+    All_Risk(Y_collapse(i)) ++;
       
-      if (Censor(i) == 1)
-          All_Fail(Y(i)) ++;
+      if (Censor_collapse(i) == 1)
+          All_Fail(Y_collapse(i)) ++;
   }
   
   size_t last_count = 0;
@@ -82,15 +82,16 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
       last_count = All_Risk(k);
       All_Risk(k) = N;
   }
-  
-  vec Temp_Vec;
+
+  vec Temp_Vec(NFail+1, fill::zeros);
   // if suplogrank, calculate the cc/temp*vterms
-  // call that Temp_Vec 
+  if(Param.split_rule == 2) Temp_Vec = (1-(All_Fail-1)/(All_Risk-1)) % All_Fail/All_Risk;
+
   
   // if logliklihood split, calculate hazard here
-  // call that Temp_Vec
+  if(Param.split_rule == 3 or Param.split_rule == 4) Temp_Vec = hazard(All_Fail, All_Risk);
+  //Rcout << "Hazard: " << Temp_Vec(0)  << std::endl;
   
-
   bool failforce = 0; // need to change later 
   double penalty = 0; // initiate 
   
@@ -141,6 +142,9 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
                            Y_collapse, 
                            Censor_collapse,
                            NFail,
+                           All_Fail,
+                           All_Risk,
+                           Temp_Vec,
                            penalty,
                            split_gen, 
                            split_rule, 
@@ -202,7 +206,7 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
 
       DEBUG_Rcout << "      --- get var " << temp_var << " at cut " << TempSplit.value << " (continuous) with score " << TempSplit.score << std::endl;
     }
-    
+
     if (TempSplit.score > OneSplit.score)
     {
       OneSplit.var = TempSplit.var;
