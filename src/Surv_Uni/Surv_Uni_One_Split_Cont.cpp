@@ -18,8 +18,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          const uvec& Y, // Y is collapsed
                          const uvec& Censor, // Censor is collapsed
                          size_t NFail,
-                         const vec& All_Fail,
-                         const vec& All_Risk,
+                         const uvec& All_Fail,
+                         const uvec& All_Risk,
                          vec& Temp_Vec,//Constant interferes with later calculations
                          double penalty,
                          int split_gen,
@@ -47,8 +47,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
     
     //Rcout << " data here \n" << join_rows(All_Fail, All_Risk) << std::endl;
         
-    vec Left_Risk(NFail+1);
-    vec Left_Fail(NFail+1);
+    uvec Left_Risk(NFail+1);
+    uvec Left_Fail(NFail+1);
     
     //Rcout << "Starting random split " << std::endl;
     
@@ -240,12 +240,12 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
     }
 }
 
-double logrank(const vec& Left_Fail, 
-               const vec& Left_Risk, 
-               const vec& All_Fail, 
-               const vec& All_Risk)
+double logrank(const uvec& Left_Fail, 
+               const uvec& Left_Risk, 
+               const uvec& All_Fail, 
+               const uvec& All_Risk)
 {
-    vec Left_Risk_All(Left_Risk.n_elem);
+    uvec Left_Risk_All(Left_Risk.n_elem);
     Left_Risk_All(0) = accu(Left_Risk);
         
     if (Left_Risk_All(0) == 0 or Left_Risk_All(0) == All_Risk(0))
@@ -260,10 +260,10 @@ double logrank(const vec& Left_Fail,
     
     
     // Variance: Y_{j1} / Y_{j} * (1 - Y_{j1} / Y_{j}) * d_{j} * ( Y_{j} - d_{j} ) / (Y_{j} - 1)
-    vec var = Left_Risk_All / All_Risk % (1 - Left_Risk_All / All_Risk) % All_Fail % (All_Risk - All_Fail) / (All_Risk - 1);
+    vec var = conv_to< vec >::from(Left_Risk_All) / All_Risk % (1 - conv_to< vec >::from(Left_Risk_All) / All_Risk) % All_Fail % conv_to< vec >::from(All_Risk - All_Fail) / (All_Risk - 1.0);
     
     // Difference: d_{j1} - Y_{j1} * d_{j} / Y_{j} 
-    vec diff = Left_Fail - Left_Risk_All % ( All_Fail / All_Risk );
+    vec diff = Left_Fail - conv_to< vec >::from(Left_Risk_All) % ( conv_to< vec >::from(All_Fail) / All_Risk );
     
     for (size_t i = 0; i < All_Risk.n_elem; i++)
         if (All_Risk(i) < 2)
@@ -275,13 +275,13 @@ double logrank(const vec& Left_Fail,
 }
 
 
-double suplogrank(const vec& Left_Fail, 
-                  const vec& Left_Risk, 
-                  const vec& All_Fail, 
-                  const vec& All_Risk, 
-                  const vec& Temp_Vec)
+double suplogrank(const uvec& Left_Fail, 
+                  const uvec& Left_Risk, 
+                  const uvec& All_Fail, 
+                  const uvec& All_Risk, 
+                  vec& Temp_Vec)
 {
-    vec Left_Risk_All(Left_Risk.n_elem);
+    uvec Left_Risk_All(Left_Risk.n_elem);
     Left_Risk_All(0) = accu(Left_Risk);
     
     for (size_t k = 1; k < Left_Risk_All.n_elem; k++)
@@ -295,13 +295,20 @@ double suplogrank(const vec& Left_Fail,
     //Code based on Kosorok Renyi algorithm
     
     // w <- (y1 * y2)/(y1 + y2)
-    vec w = (Left_Risk_All % (All_Risk-Left_Risk_All))/(All_Risk);
+    vec w = (Left_Risk_All % conv_to< vec >::from(All_Risk-Left_Risk_All))/(All_Risk);
     
     // terms <- (d1/y1 - d2/y2)[w > 0]
-    vec terms = (Left_Fail/Left_Risk_All-(All_Fail-Left_Fail)/(All_Risk-Left_Risk_All));   
+    vec terms = (conv_to< vec >::from(Left_Fail)/Left_Risk_All-conv_to< vec >::from(All_Fail-Left_Fail)/(All_Risk-Left_Risk_All));   
     
     // check 0 and inf 
     
+    for (size_t i = 0; i < All_Risk.n_elem; i++){
+      if (All_Risk(i) < 2)
+        Temp_Vec(i) = 0;
+      if (Left_Risk_All(i) < 1 or (All_Risk(i)-Left_Risk_All(i))<1)
+         terms(i) = 0;
+    }
+      
     double denominator = accu(Temp_Vec % w);
     
     terms = w % terms;
@@ -313,11 +320,11 @@ double suplogrank(const vec& Left_Fail,
 }
 
 
-vec hazard(const vec& Fail, 
-           const vec& Risk)
+vec hazard(const uvec& Fail, 
+           const uvec& Risk)
 {
     //Rcout << "Calculating hazard..."  << std::endl;
-    vec haz = Fail/Risk;
+    vec haz = conv_to< vec >::from(Fail)/Risk;
     
     //datum::nan replace with 0 handles case where the at-risk
     ///set is empty after a certain timepoint (i.e., all large values of Y are in left node)
@@ -325,15 +332,15 @@ vec hazard(const vec& Fail,
 }
 
 
-double loglik(const vec& Left_Fail, 
-              const vec& Left_Risk, 
-              const vec& All_Fail, 
-              const vec& All_Risk,
+double loglik(const uvec& Left_Fail, 
+              const uvec& Left_Risk, 
+              const uvec& All_Fail, 
+              const uvec& All_Risk,
               vec& lambda0,
               double& Loglik0)
 {
     // cumulative at risk count
-    vec Left_Risk_All(Left_Risk.n_elem);
+    uvec Left_Risk_All(Left_Risk.n_elem);
     Left_Risk_All(0) = accu(Left_Risk);
     
     for (size_t k = 1; k < Left_Risk_All.n_elem; k++)
@@ -364,14 +371,3 @@ double loglik(const vec& Left_Fail,
 
     return (loglik_ep-Loglik0)/epsilon;
 }
-
-
-
-
-
-
-
-
-
-
-
