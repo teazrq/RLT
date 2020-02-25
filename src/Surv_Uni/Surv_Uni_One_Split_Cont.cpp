@@ -285,28 +285,28 @@ double suplogrank(const uvec& Left_Fail,
     uvec Left_Risk_All(Left_Risk.n_elem);
     Left_Risk_All(0) = accu(Left_Risk);
     
+    if (Left_Risk_All(0) == 0 or Left_Risk_All(0) == All_Risk(0))
+      return -1;     
+    
     for (size_t k = 1; k < Left_Risk_All.n_elem; k++)
     {
         Left_Risk_All(k) = Left_Risk_All(k-1) - Left_Risk(k-1);
     }
     
-    if (Left_Risk_All(0) == 0 or Left_Risk_All(0) == All_Risk(0))
-      return -1; 
-    
     //Code based on Kosorok Renyi algorithm
     
+    vec Right_Risk_All = conv_to< vec >::from(All_Risk - Left_Risk_All);
+    
     // w <- (y1 * y2)/(y1 + y2)
-    vec w = (Left_Risk_All % conv_to< vec >::from(All_Risk-Left_Risk_All))/(All_Risk);
+    vec w = (Left_Risk_All % Right_Risk_All)/(All_Risk);
     
     // terms <- (d1/y1 - d2/y2)[w > 0]
-    vec terms = (conv_to< vec >::from(Left_Fail)/Left_Risk_All-conv_to< vec >::from(All_Fail-Left_Fail)/(All_Risk-Left_Risk_All));   
+    vec terms = conv_to< vec >::from(Left_Fail)/Left_Risk_All - (All_Fail - Left_Fail)/Right_Risk_All;   
     
     // check 0 and inf 
     
     for (size_t i = 0; i < All_Risk.n_elem; i++){
-      if (All_Risk(i) < 2)
-        Temp_Vec(i) = 0;
-      if (Left_Risk_All(i) < 1 or (All_Risk(i)-Left_Risk_All(i))<1)
+      if (Left_Risk_All(i) < 1 or Right_Risk_All(i)<1)
          terms(i) = 0;
     }
       
@@ -344,14 +344,14 @@ double loglik(const uvec& Left_Fail,
     uvec Left_Risk_All(Left_Risk.n_elem);
     Left_Risk_All(0) = accu(Left_Risk);
     
+    if (Left_Risk_All(0) == 0 or Left_Risk_All(0) == All_Risk(0))
+      return -1;
+    
     for (size_t k = 1; k < Left_Risk_All.n_elem; k++)
     {
         Left_Risk_All(k) = Left_Risk_All(k-1) - Left_Risk(k-1);
     }
-    
-    if (Left_Risk_All(0) == 0 or Left_Risk_All(0) == All_Risk(0))
-      return -1; 
-    
+
     //Rcout << "Left_Risk_All(0): " << Left_Risk_All(0)  << std::endl;
     // left and right hazard funcion 
     //vec lambda0 = hazard(All_Fail, All_Risk); 
