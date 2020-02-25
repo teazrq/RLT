@@ -258,12 +258,13 @@ double logrank(const uvec& Left_Fail,
     
     //Rcout << " \n left node \n" << join_rows(Left_Fail, Left_Risk_All) << std::endl;
     
+    vec SizeRatio = conv_to< vec >::from(Left_Risk_All) / All_Risk;
     
-    // Variance: Y_{j1} / Y_{j} * (1 - Y_{j1} / Y_{j}) * d_{j} * ( Y_{j} - d_{j} ) / (Y_{j} - 1)
-    vec var = conv_to< vec >::from(Left_Risk_All) / All_Risk % (1 - conv_to< vec >::from(Left_Risk_All) / All_Risk) % All_Fail % conv_to< vec >::from(All_Risk - All_Fail) / (All_Risk - 1.0);
+    // Variance: N_{1j} / N_{j} * (1 - N_{1j} / N_{j}) * O_{j} * ( N_{j} - O_{j} ) / (N_{j} - 1)
+    vec var = SizeRatio % (1.0 - SizeRatio) % All_Fail % (All_Risk - All_Fail) / (All_Risk - 1);
     
-    // Difference: d_{j1} - Y_{j1} * d_{j} / Y_{j} 
-    vec diff = Left_Fail - conv_to< vec >::from(Left_Risk_All) % ( conv_to< vec >::from(All_Fail) / All_Risk );
+    // Difference: O_{1j} - N_{1j} * O_{j} / N_{j}
+    vec diff = Left_Fail - SizeRatio % All_Fail;
     
     for (size_t i = 0; i < All_Risk.n_elem; i++)
         if (All_Risk(i) < 2)
