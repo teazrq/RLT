@@ -437,8 +437,8 @@ public:
 
 class Surv_Cat_Class: public Cat_Class{
 public:
-  arma::vec FailCount;
-  arma::vec RiskCount;
+  arma::uvec FailCount;
+  arma::uvec RiskCount;
   size_t nfail; 
   
   void initiate(size_t j, size_t NFail)

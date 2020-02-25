@@ -18,8 +18,8 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         const uvec& Y, // Y is collapsed
                         const uvec& Censor, // Censor is collapsed
                         size_t NFail,
-                        const vec& All_Fail,
-                        const vec& All_Risk,
+                        const uvec& All_Fail,
+                        const uvec& All_Risk,
                         vec& Temp_Vec,
                         double penalty,
                         int split_gen,
@@ -125,8 +125,8 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
     size_t temp_cat = 0;
     double temp_score = -1;
 
-    vec Left_Fail(NFail+1);    
-    vec Left_Risk(NFail+1);
+    uvec Left_Fail(NFail+1);    
+    uvec Left_Risk(NFail+1);
     
     if ( split_gen == 1 or split_gen == 2 )
     {

@@ -73,8 +73,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          const uvec& Y, // Y is collapsed
                          const uvec& Censor, // Censor is collapsed
                          size_t NFail,
-                         const vec& All_Fail,
-                         const vec& All_Risk,
+                         const uvec& All_Fail,
+                         const uvec& All_Risk,
                          vec& Temp_Vec,
                          double penalty,
                          int split_gen,
@@ -105,8 +105,8 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         const uvec& Y, // Y is collapsed
                         const uvec& Censor, // Censor is collapsed
                         size_t NFail,
-                        const vec& All_Fail,
-                        const vec& All_Risk,
+                        const uvec& All_Fail,
+                        const uvec& All_Risk,
                         vec& Temp_Vec,
                         double penalty,
                         int split_gen,
@@ -142,24 +142,24 @@ void collapse(const uvec& Y,
 
 // splitting score calculations
 
-double logrank(const vec& Left_Fail, 
-               const vec& Left_Risk, 
-               const vec& All_Fail, 
-               const vec& All_Risk);
+double logrank(const uvec& Left_Fail, 
+               const uvec& Left_Risk, 
+               const uvec& All_Fail, 
+               const uvec& All_Risk);
 
-double suplogrank(const vec& Left_Fail, 
-                  const vec& Left_Risk, 
-                  const vec& All_Fail, 
-                  const vec& All_Risk,
-                  const vec& Temp_Vec);
+double suplogrank(const uvec& Left_Fail, 
+                  const uvec& Left_Risk, 
+                  const uvec& All_Fail, 
+                  const uvec& All_Risk,
+                  vec& Temp_Vec);
 
-vec hazard(const vec& Fail, 
-           const vec& Risk);
+vec hazard(const uvec& Fail, 
+           const uvec& Risk);
 
-double loglik(const vec& Left_Fail, 
-               const vec& Left_Risk, 
-               const vec& All_Fail, 
-               const vec& All_Risk,
+double loglik(const uvec& Left_Fail, 
+               const uvec& Left_Risk, 
+               const uvec& All_Fail, 
+               const uvec& All_Risk,
                vec& lambda0,
                double& Loglik0);
     
