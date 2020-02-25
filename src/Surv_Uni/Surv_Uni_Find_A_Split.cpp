@@ -84,8 +84,16 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   }
 
   vec Temp_Vec(NFail+1, fill::zeros);
+  
   // if suplogrank, calculate the cc/temp*vterms
-  if(Param.split_rule == 2) Temp_Vec = (1.0-conv_to< vec >::from(All_Fail-1.0)/(All_Risk-1.0)) % conv_to< vec >::from(All_Fail)/All_Risk;
+  if(Param.split_rule == 2){
+    Temp_Vec = 1.0 - conv_to< vec >::from(All_Fail - 1.0)/(All_Risk-1.0); 
+    Temp_Vec = Temp_Vec % All_Fail/All_Risk;
+    
+    for (size_t i =0; i < All_Risk.n_elem; i++)
+        if (All_Risk(i) < 2)
+            Temp_Vec(i) = 0;
+  }
 
   
   // if logliklihood split, calculate hazard here
