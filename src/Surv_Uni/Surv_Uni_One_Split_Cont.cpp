@@ -306,7 +306,7 @@ double suplogrank(const uvec& Left_Fail,
     // check 0 and inf 
     
     for (size_t i = 0; i < All_Risk.n_elem; i++){
-      if (Left_Risk_All(i) < 1 or Right_Risk_All(i)<1)
+      if (Left_Risk_All(i) < 1 or Right_Risk_All(i) < 1)
          terms(i) = 0;
     }
       
@@ -352,23 +352,42 @@ double loglik(const uvec& Left_Fail,
         Left_Risk_All(k) = Left_Risk_All(k-1) - Left_Risk(k-1);
     }
 
-    //Rcout << "Left_Risk_All(0): " << Left_Risk_All(0)  << std::endl;
-    // left and right hazard funcion 
-    //vec lambda0 = hazard(All_Fail, All_Risk); 
     vec lambdaLtmp = hazard(Left_Fail, Left_Risk_All);
     vec lambdaRtmp = hazard(All_Fail-Left_Fail, All_Risk-Left_Risk_All);
     
     double epsilon = 0.1;
     
+    //double scl = 1.0/((Left_Risk_All(0)*accu(lambdaLtmp)+(All_Risk(0)-Left_Risk_All(0))*accu(lambdaRtmp))/All_Risk(0)-accu(lambda0));
+    
     vec lambdaL = (lambdaLtmp-lambda0)*epsilon+lambda0;//
     vec lambdaR = (lambdaRtmp-lambda0)*epsilon+lambda0;
-
+    
+    //vec logLtmp  = log(lambdaLtmp-lambda0);
+    //vec logRtmp  = log(lambdaRtmp-lambda0);
+    // Rcout << "logLtmp.is_finite(): " << logLtmp.is_finite()  << std::endl;
+    // Rcout << "logLtmp(logLtmp.n_elem-1): " << logLtmp(logLtmp.n_elem-1)  << std::endl;
+    //logLtmp.elem( find_nonfinite(logLtmp) ).zeros();
+    //logRtmp.elem( find_nonfinite(logRtmp) ).zeros();
+    // //if(logLtmp.has_inf()==1) logLtmp.replace(-datum::inf, 0);
+    // Rcout << "accu(logLtmp%logLtmp): " << accu(logLtmp%logLtmp)  << std::endl;
+    // Rcout << "logLtmp(logLtmp.n_elem-1): " << logLtmp(logLtmp.n_elem-1)  << std::endl;
+    //if(logRtmp.has_inf()==1) logRtmp.replace(-datum::inf, 0);
+        
+    //vec loglambdaL = logLtmp/sqrt(accu((lambdaLtmp%lambdaLtmp)))*epsilon+log(lambda0.replace(0, 1));//
+    //vec loglambdaR = logRtmp/sqrt(accu((lambdaRtmp%lambdaRtmp)))*epsilon+log(lambda0.replace(0, 1));
+    
     //Rcout << "lambdaL(0): " << lambdaL(0)  << std::endl;
     // left and right log-likelihood
-    double loglikL = dot(Left_Fail, log(lambdaL.replace(0, 1))) - dot(Left_Risk_All, lambdaL);//Alternatively, dot(Left_Fail, log(lambdaL.replace(0, 1))) - dot(Left_Risk, cumsum(lambdaL))
-    double loglikR = dot(All_Fail-Left_Fail, log(lambdaR.replace(0, 1))) - dot(All_Risk-Left_Risk_All, lambdaR);
+    double loglikL = dot(Left_Fail, log(lambdaL)) - dot(Left_Risk_All, lambdaL);//Alternatively, dot(Left_Fail, log(lambdaL.replace(0, 1))) - dot(Left_Risk, cumsum(lambdaL))
+    double loglikR = dot(All_Fail-Left_Fail, log(lambdaR)) - dot(All_Risk-Left_Risk_All, lambdaR);
+    //double loglikL = dot(Left_Fail, loglambdaL) - dot(Left_Risk_All, exp(loglambdaL));//Alternatively, dot(Left_Fail, log(lambdaL.replace(0, 1))) - dot(Left_Risk, cumsum(lambdaL))
+    //double loglikR = dot(All_Fail-Left_Fail, loglambdaR) - dot(All_Risk-Left_Risk_All, exp(loglambdaR));
     double loglik_ep = loglikL + loglikR;
     //double loglik0 = dot(All_Fail, log(lambda0.replace(0, 1))) - dot(All_Risk, lambda0);
-
+    // Rcout << "loglikL: " << loglikL  << std::endl;
+    // Rcout << "loglikR: " << loglikR  << std::endl;
+    // Rcout << "loglik0: " << Loglik0  << std::endl;
+    // Rcout << "(loglik_ep-Loglik0)/epsilon: " << (loglik_ep-Loglik0)/epsilon  << std::endl;
+    
     return (loglik_ep-Loglik0)/epsilon;
 }
