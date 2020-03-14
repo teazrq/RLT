@@ -47,13 +47,10 @@
 #'                        finds the best cutting point, and can be cominbed with 
 #'                        `alpha` too.
 #'                        
-#' @param split.rule      Splitting rule for comparison:
-#'                        \itemize{
-#'                        \item{"regression"}{`"var"` for variance reduction}
-#'                        \item{"survival"}{`"logrank"`, `"suplogrank"`, 
-#'                                        `"LL"` and `"penLL"` are avaliable}
-#'                        \item{"classification"}{`"gini"` index is used}
-#'                        }
+#' @param split.rule      Splitting rule for comparison: For regression, variance 
+#'                        reduction "var" is used; For survival, `"logrank"`, 
+#'                        `"suplogrank"`, `"LL"` and `"penLL"` are avaliable; for 
+#'                        classification, `"gini"` index is used.
 #' 
 #' @param nsplit          Number of random cutting points to compare for each 
 #'                        variable at an internal node.
