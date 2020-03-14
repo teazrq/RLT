@@ -97,6 +97,12 @@ A = forest.kernel(RLTfit, testX)
 heatmap(A$Kernel, Rowv = NA, Colv = NA, symm = TRUE)
 
 
+# predict on a subset of trees 
+
+RLTPred_sub <- predict(RLTfit, testX, treeindex = c(1:10), keep.all = TRUE, ncores = ncores)
+
+
+
 
 
 ################# other features of RLT ##########################

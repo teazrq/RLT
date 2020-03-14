@@ -17,6 +17,7 @@ void Surv_Uni_Forest_Pred(cube& Pred,
                           const mat& X,
                           const uvec& Ncat,
                           size_t NFail,
+                          const uvec& treeindex,
                           int usecores,
                           int verbose)
 {
@@ -25,14 +26,14 @@ void Surv_Uni_Forest_Pred(cube& Pred,
   size_t N = X.n_rows;
   size_t ntrees = SURV_FOREST.NodeTypeList.size();
 
-  Pred.zeros(NFail + 1, ntrees, N);
+  Pred.zeros(NFail + 1, treeindex.n_elem, N);
 
   //mat Pred(N, NFail + 1);
     
   #pragma omp parallel num_threads(usecores)
   {
     #pragma omp for schedule(static)
-    for (size_t nt = 0; nt < ntrees; nt++)
+    for (size_t nt = 0; nt < treeindex.n_elem; nt++)
     {
       
       // initiate all observations
@@ -40,13 +41,15 @@ void Surv_Uni_Forest_Pred(cube& Pred,
       uvec real_id = linspace<uvec>(0, N-1, N);
       uvec TermNode(N, fill::zeros);
       
-      Surv_Uni_Tree_Class OneTree(SURV_FOREST.NodeTypeList(nt), 
-                                  SURV_FOREST.SplitVarList(nt),
-                                  SURV_FOREST.SplitValueList(nt),
-                                  SURV_FOREST.LeftNodeList(nt),
-                                  SURV_FOREST.RightNodeList(nt),
-                                  SURV_FOREST.NodeSizeList(nt),
-                                  SURV_FOREST.NodeHazList(nt));
+      size_t whichtree = treeindex(nt);
+      
+      Surv_Uni_Tree_Class OneTree(SURV_FOREST.NodeTypeList(whichtree), 
+                                  SURV_FOREST.SplitVarList(whichtree),
+                                  SURV_FOREST.SplitValueList(whichtree),
+                                  SURV_FOREST.LeftNodeList(whichtree),
+                                  SURV_FOREST.RightNodeList(whichtree),
+                                  SURV_FOREST.NodeSizeList(whichtree),
+                                  SURV_FOREST.NodeHazList(whichtree));
 
       Uni_Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
 

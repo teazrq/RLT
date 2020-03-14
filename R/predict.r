@@ -2,6 +2,7 @@
 #' @description Predict the outcome (regression, classification or survival) using a fitted RLT object
 #' @param object A fitted RLT object
 #' @param testx the testing samples, must have the same structure as the training samples
+#' @param treeindex if only a subset of trees are used for prediction, specify the index. The index should start with 0. This is an experimental feature. 
 #' @param keep.all whether to keep the prediction from all trees
 #' @param ncores number of cores
 #' @param ... ...
@@ -9,6 +10,7 @@
 
 predict.RLT<- function(object, 
                        testx = NULL, 
+                       treeindex = NULL,                       
                        keep.all = FALSE,
                        ncores = 1, 
                        verbose = 0,
@@ -22,7 +24,14 @@ predict.RLT<- function(object,
   
   if (!is.matrix(testx) & !is.data.frame(testx)) stop("testx must be a matrix or a data.frame")
   
-  if( class(object)[2] == "fit" &  class(object)[3] == "reg" ) 
+  if (is.null(treeindex)){
+    treeindex = c(1:object$parameters$ntrees) - 1
+  }else{
+    if (any(treeindex < 0 | treeindex >= object$parameters$ntrees))
+      stop("treeindex out of bound")
+  }
+  
+  if( class(object)[2] == "fit" &  class(object)[3] == "reg" )
   {
     # check test data 
 
@@ -38,7 +47,7 @@ predict.RLT<- function(object,
     }
 
     testx <- data.matrix(testx)
-    
+
     pred <- RegForestUniPred(object$FittedForest$NodeType,
                              object$FittedForest$SplitVar,
                              object$FittedForest$SplitValue,
@@ -48,6 +57,7 @@ predict.RLT<- function(object,
                              object$FittedForest$NodeAve,
                              testx,
                              object$ncat,
+                             treeindex,
                              keep.all,
                              ncores,
                              verbose)
@@ -85,6 +95,7 @@ predict.RLT<- function(object,
                               testx,
                               object$ncat,
                               length(object$timepoints),
+                              treeindex,
                               keep.all,
                               ncores,
                               verbose)

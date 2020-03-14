@@ -172,6 +172,7 @@ void Reg_Uni_Forest_Pred(mat& Pred,
                          const Reg_Uni_Forest_Class& REG_FOREST,
                          const mat& X,
                          const uvec& Ncat,
+                         const uvec& treeindex,
                          int usecores,
                          int verbose);
 
