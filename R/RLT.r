@@ -48,10 +48,12 @@
 #'                        `alpha` too.
 #'                        
 #' @param split.rule      Splitting rule for comparison:
-#'                        \item{regression}{`"var"` for variance reduction}
-#'                        \item{survival}{`"logrank"`, `"suplogrank"`, 
-#'                                        `"LL"` and `"penLL"`}
-#'                        \item{classification}{`"gini"`}
+#'                        \itemize{
+#'                        \item{"regression"}{`"var"` for variance reduction}
+#'                        \item{"survival"}{`"logrank"`, `"suplogrank"`, 
+#'                                        `"LL"` and `"penLL"` are avaliable}
+#'                        \item{"classification"}{`"gini"` index is used}
+#'                        }
 #' 
 #' @param nsplit          Number of random cutting points to compare for each 
 #'                        variable at an internal node.
