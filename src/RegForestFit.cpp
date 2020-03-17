@@ -66,9 +66,6 @@ List RegForestUniFit(arma::mat& X,
   vec Prediction;
   vec OOBPrediction;
   
-  Prediction.zeros(N); // initialization means they will be calculated
-  OOBPrediction.zeros(N); 
-  
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);
   uvec var_id = linspace<uvec>(0, P-1, P);

@@ -280,6 +280,9 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   }
 
   RLT.fit$"xnames" = xnames
-
-	return(RLT.fit)
+  
+  if (importance == TRUE)
+    rownames(RLT.fit$"VarImp") = xnames
+    
+  return(RLT.fit)
 }

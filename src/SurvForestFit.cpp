@@ -67,8 +67,11 @@ List SurvForestUniFit(arma::mat& X,
 
   // prediction
   
-  mat Prediction(N, NFail, fill::zeros); // initialization means they will be calculated
-  mat OOBPrediction(N, NFail, fill::zeros); 
+  mat Prediction; // initialization means they will be calculated
+  mat OOBPrediction;
+  
+  // mat Prediction(N, NFail, fill::zeros); // initialization means they will be calculated
+  // mat OOBPrediction(N, NFail, fill::zeros);
 
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);
