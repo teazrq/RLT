@@ -90,7 +90,7 @@
 #' 
 #' @param ncores          Number of cores. Default is 1.
 #' 
-#' @param verbose         Whether fitting should be printed.
+#' @param verbose         Whether fitting info should be printed.
 #' 
 #' @param ...             Additional arguments.
 #' 
@@ -126,7 +126,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
         				importance = FALSE,
         				track.obs = FALSE,
         				ObsTrack = NULL,
-        				RLT.control = list("RLT"= FALSE),
+        				RLT.control = list(),
         				seed = NaN,
         				ncores = 1,
         				verbose = 0,
@@ -153,8 +153,10 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   
   # check RLT parameters
   if (reinforcement)
+  {
     RLT.control <- check_RLT_param(RLT.control)
-  
+  }
+
   # check ObsTrack
   if ( !is.null(ObsTrack) )
   {
@@ -255,29 +257,29 @@ RLT <- function(x, y, censor = NULL, model = NULL,
 
   param$"seed" = as.integer(seed)
     
-	# fit model
-
-	if (model == "regression")
-	{
-	  RLT.fit = RegForest(x, y, ncat,
-	                      param, RLT.control,
-	                      obs.w, var.w,
-	                      ncores, verbose,
-	                      ObsTrack,
-	                      ...)
-	}
-  
-  if (model == "survival")
-  {
-    cat(" run survival forest ")
+    # fit model
     
-    RLT.fit = SurvForest(x, y, censor, ncat,
-                         param, RLT.control,
-                         obs.w, var.w,
-                         ncores, verbose,
-                         ObsTrack,
-                         ...)
-  }
+    if (model == "regression")
+    {
+        RLT.fit = RegForest(x, y, ncat,
+                            param, RLT.control,
+                            obs.w, var.w,
+                            ncores, verbose,
+                            ObsTrack,
+                            ...)
+    }
+  
+    if (model == "survival")
+    {
+        cat(" run survival forest ")
+        
+        RLT.fit = SurvForest(x, y, censor, ncat,
+                             param, RLT.control,
+                             obs.w, var.w,
+                             ncores, verbose,
+                             ObsTrack,
+                             ...)
+    }
 
   RLT.fit$"xnames" = xnames
   

@@ -6,6 +6,26 @@
 
 using namespace Rcpp;
 
+// ClaForestMultiFit
+List ClaForestMultiFit(arma::mat& X, arma::uvec& Y, arma::uvec& Ncat, List& param, List& RLTparam, arma::vec& obsweight, arma::vec& varweight, int usecores, int verbose, arma::umat& ObsTrack);
+RcppExport SEXP _RLT_ClaForestMultiFit(SEXP XSEXP, SEXP YSEXP, SEXP NcatSEXP, SEXP paramSEXP, SEXP RLTparamSEXP, SEXP obsweightSEXP, SEXP varweightSEXP, SEXP usecoresSEXP, SEXP verboseSEXP, SEXP ObsTrackSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Ncat(NcatSEXP);
+    Rcpp::traits::input_parameter< List& >::type param(paramSEXP);
+    Rcpp::traits::input_parameter< List& >::type RLTparam(RLTparamSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type obsweight(obsweightSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type varweight(varweightSEXP);
+    Rcpp::traits::input_parameter< int >::type usecores(usecoresSEXP);
+    Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
+    Rcpp::traits::input_parameter< arma::umat& >::type ObsTrack(ObsTrackSEXP);
+    rcpp_result_gen = Rcpp::wrap(ClaForestMultiFit(X, Y, Ncat, param, RLTparam, obsweight, varweight, usecores, verbose, ObsTrack));
+    return rcpp_result_gen;
+END_RCPP
+}
 // EofVar
 List EofVar(arma::umat& ObsTrack, arma::mat& Pred, arma::uvec& C, int usecores, int verbose);
 RcppExport SEXP _RLT_EofVar(SEXP ObsTrackSEXP, SEXP PredSEXP, SEXP CSEXP, SEXP usecoresSEXP, SEXP verboseSEXP) {
@@ -186,6 +206,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_RLT_ClaForestMultiFit", (DL_FUNC) &_RLT_ClaForestMultiFit, 10},
     {"_RLT_EofVar", (DL_FUNC) &_RLT_EofVar, 5},
     {"_RLT_ForestKernelUni_Self", (DL_FUNC) &_RLT_ForestKernelUni_Self, 10},
     {"_RLT_ForestKernelUni_Cross", (DL_FUNC) &_RLT_ForestKernelUni_Cross, 12},

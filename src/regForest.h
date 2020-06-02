@@ -17,14 +17,14 @@ using namespace arma;
 // univariate tree split functions 
 
 List RegForestUniFit(mat& X,
-  					 vec& Y,
-  					 uvec& Ncat,
-  					 List& param,
-  					 List& RLTparam,
-  					 vec& obsweight,
-  					 vec& varweight,
-  					 int usecores,
-  					 int verbose,
+          	         vec& Y,
+          		     uvec& Ncat,
+          		     List& param,
+          		     List& RLTparam,
+          		     vec& obsweight,
+          		     vec& varweight,
+          		     int usecores,
+          		     int verbose,
                      umat& ObsTrackPre);
 
 void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
@@ -64,6 +64,13 @@ void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
                           const PARAM_RLT& RLTParam,
                           uvec& obs_id,
                           uvec& var_id);
+
+void Reg_Uni_Find_A_Split_Embed(Uni_Split_Class& OneSplit,
+                                const RLT_REG_DATA& REG_DATA,
+                                const PARAM_GLOBAL& Param,
+                                const PARAM_RLT& RLTParam,
+                                uvec& obs_id,
+                                uvec& var_id);
 
 void Reg_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                         uvec& obs_id,
@@ -158,10 +165,10 @@ void reg_cat_score_best_w(std::vector<Reg_Cat_Class>& cat_reduced,
 // other utilities functions for regression 
 /*
 void reg_move_cat_index(size_t& lowindex, 
-						size_t& highindex, 
-						std::vector<Reg_Cat_Class>& cat_reduced, 
-						size_t true_cat, 
-						size_t nmin);
+        		size_t& highindex, 
+        		std::vector<Reg_Cat_Class>& cat_reduced, 
+        		size_t true_cat, 
+        		size_t nmin);
 
 bool reg_cat_reduced_compare(Reg_Cat_Class& a, 
                              Reg_Cat_Class& b);

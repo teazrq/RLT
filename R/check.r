@@ -65,11 +65,55 @@ check_param <- function(n, p, ntrees,
 #' @description Check parameters for RLT method
 #' @keywords internal
 
-check_RLT_param <- function(RLT.control)
+check_RLT_param <- function(control)
 {
-  
-  return(RLT.control)
 
+  if (!is.list(control)) {
+    stop("RLT.control must be a list of tuning parameters")
+  }
+  
+  if (is.null(control$embed.ntrees)) {
+    embed.ntrees <- 50
+  } else embed.ntrees = max(control$embed.ntrees, 1)
+  
+  storage.mode(embed.ntrees) <- "integer"
+  
+  if (is.null(control$embed.resample.prob)) {
+    embed.resample.prob <- 0.8
+  } else embed.resample.prob = max(0, min(control$embed.resample.prob, 1))
+  
+  storage.mode(embed.resample.prob) <- "double"
+  
+  if (is.null(control$embed.mtry.prop)) { # for embedded model, mtry is proportion
+    embed.mtry.prop <- 1/2
+  } else embed.mtry.prop = max(min(control$embed.mtry.prop, 1), 0)
+  
+  storage.mode(embed.mtry.prop) <- "double"
+  
+  if (is.null(control$embed.nmin)) {
+    embed.nmin <- 5
+  } else embed.nmin = max(1, floor(control$embed.nmin))
+
+  storage.mode(embed.nmin) <- "double"
+  
+  if (is.null(control$embed.split.gen)) {
+    embed.split.gen <- 1
+  } else embed.split.gen = match(control$embed.split.gen, c("random", "rank", "best"))
+  
+  storage.mode(embed.split.gen) <- "integer"
+  
+  if (is.null(control$embed.nsplit)) {
+    embed.nsplit <- 1
+  } else embed.nsplit = max(1, control$embed.nsplit)
+  
+  storage.mode(embed.nsplit) <- "integer"
+  
+  return(list("embed.ntrees" = embed.ntrees,
+               "embed.resample.prob" = embed.resample.prob,
+               "embed.mtry.prop" = embed.mtry.prop,
+               "embed.nmin" = embed.nmin,
+               "embed.split.gen" = embed.split.gen,
+               "embed.nsplit" = embed.nsplit))
 }
   
 

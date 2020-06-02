@@ -30,7 +30,9 @@ List RegForestUniFit(arma::mat& X,
 
   // readin parameters 
   PARAM_GLOBAL Param(param);
-  PARAM_RLT Param_RLT;
+  if (verbose) Param.print();
+  PARAM_RLT Param_RLT(RLTparam);
+  if (verbose and Param.reinforcement) Param_RLT.print();
 
   // create data objects  
   RLT_REG_DATA REG_DATA(X, Y, Ncat, obsweight, varweight);

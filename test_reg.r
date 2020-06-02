@@ -102,10 +102,22 @@ heatmap(A$Kernel, Rowv = NA, Colv = NA, symm = TRUE)
 RLTPred_sub <- predict(RLTfit, testX, treeindex = c(1:10), keep.all = TRUE, ncores = ncores)
 
 
+################# RLT with Embedded Model ##########################
+
+
+RLTfit <- RLT(trainX, trainY, ntrees = 1, ncores = 1, nmin = nmin/2, mtry = mtry,
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = importance, 
+              reinforcement = TRUE, verbose = TRUE)
+
+getOneTree(RLTfit, 1)
+
+
+
 
 
 
 ################# other features of RLT ##########################
+
 
 ntrees = 2000
 mtry = p/2

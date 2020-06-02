@@ -32,7 +32,9 @@ List SurvForestUniFit(arma::mat& X,
 
   // readin parameters 
   PARAM_GLOBAL Param(param);
-  PARAM_RLT Param_RLT;
+  if (verbose) Param.print();
+  PARAM_RLT Param_RLT(RLTparam);
+  if (verbose) Param_RLT.print();
   
   size_t NFail = max( Y(find(Censor == 1)) );  
   

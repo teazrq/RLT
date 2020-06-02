@@ -51,18 +51,81 @@ public:
     useobsweight  = param["use.obs.w"];
     usevarweight  = param["use.var.w"];    
     importance    = param["importance"];
-    reinforcement = param["reinforcement"];   
+    reinforcement = param["reinforcement"];
     obs_track     = param["track.obs"];
     seed          = param["seed"];
   }
   
-  //print(){
-  //}
+  copyfrom(const PARAM_GLOBAL& Input){
+      N             = Input.N;
+      P             = Input.P;
+      ntrees        = Input.ntrees;
+      mtry          = Input.mtry;
+      nmin          = Input.nmin;
+      alpha         = Input.alpha;
+      split_gen     = Input.split_gen;
+      split_rule    = Input.split_rule;
+      nsplit        = Input.nsplit;
+      replacement   = Input.replacement;
+      resample_prob = Input.resample_prob;
+      useobsweight  = Input.useobsweight;
+      usevarweight  = Input.usevarweight;
+      importance    = Input.importance;
+      reinforcement = Input.reinforcement;
+      obs_track     = Input.obs_track;
+      seed          = Input.seed;
+  }
+  
+  void print() {
+      Rcout << "--- Random Forest Parameters ---" << std::endl;
+      Rcout << "            N = " << N << std::endl;
+      Rcout << "            P = " << P << std::endl;
+      Rcout << "       ntrees = " << ntrees << std::endl;
+      Rcout << "         mtry = " << mtry << std::endl;
+      Rcout << "         nmin = " << nmin << std::endl;
+      Rcout << "        alpha = " << alpha << std::endl;
+      Rcout << "    split_gen = " << ((split_gen == 1) ? "Random" : (split_gen == 2) ? "Rank" : "Best") << std::endl;
+      if (split_gen < 3) Rcout << "   split_rule = " << split_rule << std::endl;
+      Rcout << "       nsplit = " << nsplit << std::endl;
+      Rcout << "  replacement = " << replacement << std::endl;
+      Rcout << "resample prob = " << resample_prob << std::endl;
+      Rcout << " useobsweight = " << (useobsweight ? "Yes" : "No") << std::endl;
+      Rcout << " usevarweight = " << (usevarweight ? "Yes" : "No") << std::endl;
+      Rcout << "   importance = " << (importance ? "Yes" : "No") << std::endl;
+      Rcout << "reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
+      Rcout << std::endl;
+  }
 };
 
 class PARAM_RLT{
 public:
-  bool reinforcement = 0;
+    size_t embed_ntrees;
+    double embed_resample_prob;
+    double embed_mtry_prop;
+    size_t embed_nmin;
+    size_t embed_split_gen;
+    size_t embed_nsplit;    
+    
+  PARAM_RLT(List& Param_RLT){
+      embed_ntrees        = Param_RLT["embed.ntrees"];
+      embed_resample_prob = Param_RLT["embed.resample.prob"];
+      embed_mtry_prop     = Param_RLT["embed.mtry.prop"];
+      embed_nmin          = Param_RLT["embed.nmin"];
+      embed_split_gen     = Param_RLT["embed.split.gen"];
+      embed_nsplit        = Param_RLT["embed.nsplit"];
+  }
+  
+  void print() {
+      Rcout << "--- Embedded Model Parameters ---" << std::endl;
+      Rcout << "        embed_ntrees = " << embed_ntrees << std::endl;
+      Rcout << " embed_resample_prob = " << embed_resample_prob << std::endl;
+      Rcout << "     embed_mtry_prop = " << embed_mtry_prop << std::endl;
+      Rcout << "          embed_nmin = " << embed_nmin << std::endl;
+      Rcout << "     embed_split_gen = " << embed_split_gen << std::endl;
+      Rcout << "        embed_nsplit = " << embed_nsplit << std::endl;
+      Rcout << std::endl;
+  }
+  
 };
 
 // *************** //

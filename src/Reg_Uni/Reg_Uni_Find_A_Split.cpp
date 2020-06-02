@@ -32,7 +32,7 @@ void Reg_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   
   size_t N = obs_id.n_elem;
   size_t P = var_id.n_elem;
-
+  
   mtry = ( (mtry <= P) ? mtry:P ); // take minimum
   
   uvec var_try = arma::randperm(P, mtry);
