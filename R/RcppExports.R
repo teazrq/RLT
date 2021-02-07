@@ -29,6 +29,30 @@ SurvForestUniPred <- function(NodeType, SplitVar, SplitValue, LeftNode, RightNod
     .Call(`_RLT_SurvForestUniPred`, NodeType, SplitVar, SplitValue, LeftNode, RightNode, NodeSize, NodeHaz, X, Ncat, NFail, keep_all, usecores, verbose)
 }
 
+PLS_test <- function(Left_Fail, Left_Risk, All_Fail, All_Censor, All_Risk) {
+    .Call(`_RLT_PLS_test`, Left_Fail, Left_Risk, All_Fail, All_Censor, All_Risk)
+}
+
+PLS_test2 <- function(Pseudo_X, Y_collapse, Censor_collapse, All_Fail, All_Censor, All_Risk, Left_Risk) {
+    .Call(`_RLT_PLS_test2`, Pseudo_X, Y_collapse, Censor_collapse, All_Fail, All_Censor, All_Risk, Left_Risk)
+}
+
+zetaF <- function(All_Fail, All_Censor, All_Risk) {
+    .Call(`_RLT_zetaF`, All_Fail, All_Censor, All_Risk)
+}
+
+wetaF <- function(All_Fail, All_Censor, All_Risk) {
+    .Call(`_RLT_wetaF`, All_Fail, All_Censor, All_Risk)
+}
+
+wetaC <- function(All_Fail, All_Censor, All_Risk) {
+    .Call(`_RLT_wetaC`, All_Fail, All_Censor, All_Risk)
+}
+
+zetaC <- function(All_Fail, All_Censor, All_Risk) {
+    .Call(`_RLT_zetaC`, All_Fail, All_Censor, All_Risk)
+}
+
 cindex_d <- function(Y, Censor, pred) {
     .Call(`_RLT_cindex_d`, Y, Censor, pred)
 }

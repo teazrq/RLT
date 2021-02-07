@@ -149,6 +149,90 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// PLS_test
+double PLS_test(const arma::uvec& Left_Fail, const arma::uvec& Left_Risk, const arma::uvec& All_Fail, const arma::uvec& All_Censor, const arma::uvec& All_Risk);
+RcppExport SEXP _RLT_PLS_test(SEXP Left_FailSEXP, SEXP Left_RiskSEXP, SEXP All_FailSEXP, SEXP All_CensorSEXP, SEXP All_RiskSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type Left_Fail(Left_FailSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type Left_Risk(Left_RiskSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Fail(All_FailSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Censor(All_CensorSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Risk(All_RiskSEXP);
+    rcpp_result_gen = Rcpp::wrap(PLS_test(Left_Fail, Left_Risk, All_Fail, All_Censor, All_Risk));
+    return rcpp_result_gen;
+END_RCPP
+}
+// PLS_test2
+double PLS_test2(const arma::uvec& Pseudo_X, const arma::uvec& Y_collapse, const arma::uvec& Censor_collapse, const arma::uvec& All_Fail, const arma::uvec& All_Censor, const arma::uvec& All_Risk, const arma::uvec& Left_Risk);
+RcppExport SEXP _RLT_PLS_test2(SEXP Pseudo_XSEXP, SEXP Y_collapseSEXP, SEXP Censor_collapseSEXP, SEXP All_FailSEXP, SEXP All_CensorSEXP, SEXP All_RiskSEXP, SEXP Left_RiskSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type Pseudo_X(Pseudo_XSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type Y_collapse(Y_collapseSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type Censor_collapse(Censor_collapseSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Fail(All_FailSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Censor(All_CensorSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Risk(All_RiskSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type Left_Risk(Left_RiskSEXP);
+    rcpp_result_gen = Rcpp::wrap(PLS_test2(Pseudo_X, Y_collapse, Censor_collapse, All_Fail, All_Censor, All_Risk, Left_Risk));
+    return rcpp_result_gen;
+END_RCPP
+}
+// zetaF
+arma::vec zetaF(const arma::uvec& All_Fail, const arma::uvec& All_Censor, const arma::uvec& All_Risk);
+RcppExport SEXP _RLT_zetaF(SEXP All_FailSEXP, SEXP All_CensorSEXP, SEXP All_RiskSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Fail(All_FailSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Censor(All_CensorSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Risk(All_RiskSEXP);
+    rcpp_result_gen = Rcpp::wrap(zetaF(All_Fail, All_Censor, All_Risk));
+    return rcpp_result_gen;
+END_RCPP
+}
+// wetaF
+arma::vec wetaF(const arma::uvec& All_Fail, const arma::uvec& All_Censor, const arma::uvec& All_Risk);
+RcppExport SEXP _RLT_wetaF(SEXP All_FailSEXP, SEXP All_CensorSEXP, SEXP All_RiskSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Fail(All_FailSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Censor(All_CensorSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Risk(All_RiskSEXP);
+    rcpp_result_gen = Rcpp::wrap(wetaF(All_Fail, All_Censor, All_Risk));
+    return rcpp_result_gen;
+END_RCPP
+}
+// wetaC
+arma::vec wetaC(const arma::uvec& All_Fail, const arma::uvec& All_Censor, const arma::uvec& All_Risk);
+RcppExport SEXP _RLT_wetaC(SEXP All_FailSEXP, SEXP All_CensorSEXP, SEXP All_RiskSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Fail(All_FailSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Censor(All_CensorSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Risk(All_RiskSEXP);
+    rcpp_result_gen = Rcpp::wrap(wetaC(All_Fail, All_Censor, All_Risk));
+    return rcpp_result_gen;
+END_RCPP
+}
+// zetaC
+arma::vec zetaC(const arma::uvec& All_Fail, const arma::uvec& All_Censor, const arma::uvec& All_Risk);
+RcppExport SEXP _RLT_zetaC(SEXP All_FailSEXP, SEXP All_CensorSEXP, SEXP All_RiskSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Fail(All_FailSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Censor(All_CensorSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type All_Risk(All_RiskSEXP);
+    rcpp_result_gen = Rcpp::wrap(zetaC(All_Fail, All_Censor, All_Risk));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cindex_d
 double cindex_d(arma::vec& Y, arma::uvec& Censor, arma::vec& pred);
 RcppExport SEXP _RLT_cindex_d(SEXP YSEXP, SEXP CensorSEXP, SEXP predSEXP) {
@@ -191,6 +275,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RLT_RegForestUniPred", (DL_FUNC) &_RLT_RegForestUniPred, 12},
     {"_RLT_SurvForestUniFit", (DL_FUNC) &_RLT_SurvForestUniFit, 11},
     {"_RLT_SurvForestUniPred", (DL_FUNC) &_RLT_SurvForestUniPred, 13},
+    {"_RLT_PLS_test", (DL_FUNC) &_RLT_PLS_test, 5},
+    {"_RLT_PLS_test2", (DL_FUNC) &_RLT_PLS_test2, 7},
+    {"_RLT_zetaF", (DL_FUNC) &_RLT_zetaF, 3},
+    {"_RLT_wetaF", (DL_FUNC) &_RLT_wetaF, 3},
+    {"_RLT_wetaC", (DL_FUNC) &_RLT_wetaC, 3},
+    {"_RLT_zetaC", (DL_FUNC) &_RLT_zetaC, 3},
     {"_RLT_cindex_d", (DL_FUNC) &_RLT_cindex_d, 3},
     {"_RLT_ARMA_EMPTY_UMAT", (DL_FUNC) &_RLT_ARMA_EMPTY_UMAT, 0},
     {"_RLT_ARMA_EMPTY_VEC", (DL_FUNC) &_RLT_ARMA_EMPTY_VEC, 0},

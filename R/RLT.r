@@ -124,6 +124,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
         				resample.prob = if(replacement) 1 else 0.85,
         				obs.w = NULL,
         				var.w = NULL,
+        				var.w.type = NULL,
         				importance = FALSE,
         				track.obs = FALSE,
         				ObsTrack = NULL,
@@ -131,6 +132,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
         				seed = NaN,
         				ncores = 1,
         				verbose = 0,
+        				failcount=FALSE,
         				...)
 {
   # check inputs
@@ -151,6 +153,8 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                        replacement, resample.prob,
                        importance, reinforcement, 
                        track.obs)
+  
+  param$"failcount"<-failcount
   
   # check RLT parameters
   if (reinforcement)
@@ -208,6 +212,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   {
     param$"use.var.w" = 0L
     var.w = ARMA_EMPTY_VEC()
+    param$"var.w.type" = 0
   }else{
     param$"use.var.w" = 1L
     
@@ -220,6 +225,12 @@ RLT <- function(x, y, censor = NULL, model = NULL,
     var.w = var.w/sum(var.w)
     
     if (length(var.w) != ncol(x)) stop("length of variable weights must be p")
+    
+    if(is.null(var.w.type)){
+      param$"var.w.type" = 1
+    }else{
+      param$"var.w.type" = match(var.w.type,c("score","mtry"))
+    }
   }
   
   # prepare x, continuous and categorical

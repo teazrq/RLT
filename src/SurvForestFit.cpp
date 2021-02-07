@@ -27,6 +27,7 @@ List SurvForestUniFit(arma::mat& X,
 
   DEBUG_Rcout << "/// THIS IS A DEBUG MODE OF RLT SURVIVAL ///" << std::endl;
   
+  
   // check number of cores
   usecores = checkCores(usecores, verbose);
 
