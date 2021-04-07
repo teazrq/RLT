@@ -16,7 +16,7 @@ set.seed(1)
 trainn = 300
 testn = 1000
 n = trainn + testn
-p = 100
+p = 10
 rho = 0.5
 V <- rho^abs(outer(1:p, 1:p, "-"))
 X = as.matrix(mvrnorm(n, mu=rep(0,p), Sigma=V))#Keep important variables in first 100
@@ -37,12 +37,12 @@ colnames(X) = NULL
 
 ntrees = 500
 ncores = 1
-nmin = 100
+nmin = 10
 mtry = p/3
 sampleprob = 0.75
 
 rule = "random"
-nsplit = ifelse(rule == "best", 0, 20)
+nsplit = ifelse(rule == "best", 0, 25)
 importance = FALSE
 failcount = FALSE
 
@@ -108,6 +108,7 @@ rangerfit <- ranger(Surv(trainY, trainCensor) ~ ., data = data.frame(trainX, tra
                     min.node.size = nmin, mtry = mtry, splitrule = "logrank", num.threads = ncores, 
                     sample.fraction = sampleprob, importance = "permutation")
 metric[3, 1] = difftime(Sys.time(), start_time, units = "secs")
+start_time <- Sys.time()
 rangerpred = predict(rangerfit, data.frame(testX))
 metric[3, 2] = difftime(Sys.time(), start_time, units = "secs")
 metric[3, 3] = 1- cindex(testY, testCensor, rowSums(rangerpred$chf))
