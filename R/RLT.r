@@ -123,8 +123,8 @@ RLT <- function(x, y, censor = NULL, model = NULL,
         				replacement = TRUE,
         				resample.prob = if(replacement) 1 else 0.85,
         				obs.w = NULL,
-        				var.w = NULL,
-        				var.w.type = NULL,
+        				var.w = NULL, #Variable weights themselves. Only requirement is that sum not be 0
+        				var.w.type = NULL, #Type of variable weighting, options are score (penalized) or mtry (probability weighted). Can change names easily
         				importance = FALSE,
         				track.obs = FALSE,
         				ObsTrack = NULL,
