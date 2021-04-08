@@ -31,7 +31,7 @@ List SurvForestUniFit(arma::mat& X,
   // check number of cores
   usecores = checkCores(usecores, verbose);
 
-  // readin parameters 
+  // reading parameters 
   PARAM_GLOBAL Param(param);
   if (verbose) Param.print();
   PARAM_RLT Param_RLT(RLTparam);

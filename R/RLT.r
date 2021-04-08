@@ -159,6 +159,15 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   if (reinforcement)
   {
     RLT.control <- check_RLT_param(RLT.control)
+  }else{
+    # Had to add this, as it was crashing the survival version if the list had no named elements.
+    # Need a better default
+    RLT.control <- list("embed.ntrees" = 1,
+                        "embed.resample.prob" = 0.75,
+                        "embed.mtry.prop" = 0.33,
+                        "embed.nmin" = 1,
+                        "embed.split.gen" = 1,
+                        "embed.nsplit" = 1)
   }
 
   # check ObsTrack
