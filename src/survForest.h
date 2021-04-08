@@ -104,14 +104,8 @@ void Surv_Uni_Split_Cont_Pseudo(Uni_Split_Class& TempSplit,
                                  const uvec& Y, // Y is collapsed
                                  const uvec& Censor, // Censor is collapsed
                                  size_t NFail,
-                                 vec& w_eta,
                                  vec& z_eta,
-                                 // vec& w_etaF,//Constant interferes with later calculations
-                                 // vec& w_etaC,//Constant interferes with later calculations
-                                 // vec& z_etaF,//Constant interferes with later calculations
-                                 // vec& z_etaC,//Constant interferes with later calculations
                                  int split_gen,
-                                 int split_rule,
                                  int nsplit,
                                  size_t nmin, 
                                  double alpha,
@@ -173,35 +167,9 @@ double suplogrank(const uvec& Left_Fail,
                   const vec& All_Risk,
                   vec& Temp_Vec);
 
-// double PLS(const uvec& Left_Fail, 
-//            const uvec& Left_Risk, 
-//            const vec& w_etaF, 
-//            const vec& w_etaC, 
-//            const vec& z_etaF, 
-//            const vec& z_etaC);
-double PLS(uvec& Pseudo_X,
-           const vec& w_eta,
-           const vec& z_eta, 
-           const uvec& Y, 
-           const uvec& obs_id, 
-           const size_t& NFail);
+double CoxGrad(uvec& Pseudo_X,
+           const vec& z_eta);
 
-double beta_fun(vec& x, 
-                double beta, 
-                const uvec& Y, 
-                const uvec& obs_id, 
-                const size_t& NFail);
-
-vec hazard(const uvec& Fail, 
-           const uvec& Risk);
-
-double loglik(const uvec& Left_Fail, 
-               const uvec& Left_Risk, 
-               const uvec& All_Fail, 
-               const vec& All_Risk,
-               vec& lambda0,
-               vec& Loglik0);
-    
 // prediction 
 
 void Surv_Uni_Forest_Pred(cube& Pred,
