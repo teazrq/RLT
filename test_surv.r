@@ -36,13 +36,13 @@ mean(censor)
 colnames(X) = NULL
 
 ntrees = 500
-ncores = 1
+ncores = 2
 nmin = 10
 mtry = p/3
 sampleprob = 0.75
 
-rule = "random"
-nsplit = ifelse(rule == "best", 0, 25)
+rule = "best"
+nsplit = ifelse(rule == "best", 0, 1)
 importance = FALSE
 failcount = FALSE
 
@@ -70,7 +70,7 @@ for (j in 1:length(timepoints))
 # fit models 
 
 metric = data.frame(matrix(NA, 5, 6))
-rownames(metric) = c("rlt", "rsf", "ranger", "PLS", "PLSw")
+rownames(metric) = c("rlt", "rsf", "ranger", "coxgrad", "coxgradw")
 colnames(metric) = c("fit.time", "pred.time", "pred.error", "L1", "obj.size", "TermNodeCount")
 
 start_time <- Sys.time()
@@ -117,7 +117,7 @@ metric[3, 5] = object.size(rsffit)
 
 start_time <- Sys.time()
 RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, replacement = FALSE, 
-              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = TRUE, track.obs = TRUE, split.rule = "PLS",
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = TRUE, track.obs = TRUE, split.rule = "coxgrad",
               failcount = failcount)
 summary(unlist(RLTfit$FittedForest$SplitValue)[unlist(RLTfit$FittedForest$SplitValue)!=0])
 metric[4, 1] = difftime(Sys.time(), start_time, units = "secs")
@@ -133,7 +133,7 @@ VI<-RLTfit$VarImp
 
 start_time <- Sys.time()
 RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, replacement = FALSE, 
-              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = importance, track.obs = TRUE, split.rule = "PLS",
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = importance, track.obs = TRUE, split.rule = "coxgrad",
               var.w = ifelse(VI<=0,min(VI[VI>0]),VI),failcount = failcount)
 metric[5, 1] = difftime(Sys.time(), start_time, units = "secs")
 start_time <- Sys.time()
