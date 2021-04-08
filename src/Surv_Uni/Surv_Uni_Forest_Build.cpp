@@ -46,29 +46,39 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
   else
     ObsTrack.zeros(N, ntrees);
   
-  bool pred = (Prediction.n_elem > 0);       // for Prediction
-  bool oob_pred = (OOBPrediction.n_elem > 0);// for OOBPrediction
-  int importance = Param.importance;         // for VarImp
+  // predictions
+  bool pred_cal = true; // this could be changed later to an argument
   
-  cube Pred; 
+  if (pred_cal)
+    Prediction.zeros(N, NFail+1);
   
-  if (pred or oob_pred)
-    Pred.zeros(NFail + 1, ntrees, N); // need NFail + 1 time points for recording
+  bool oob_pred_cal = (replacement or resample_prob < 1);
+  uvec oob_count;
   
-  mat AllImp; 
+  if (oob_pred_cal)
+  {
+    OOBPrediction.zeros(N, NFail+1);
+    oob_count.zeros(N);
+  }
+  
+  // importance
+  
+  int importance = Param.importance;
+  
+  mat AllImp;
   
   if (importance == 1)
     AllImp = mat(ntrees, P, fill::zeros);
   
   // start parallel trees
 
-  dqrng::xoshiro256plus rng(seed); // properly seeded rng
+  // dqrng::xoshiro256plus rng(seed); // properly seeded rng
     
   #pragma omp parallel num_threads(usecores)
   {
     
-    dqrng::xoshiro256plus lrng(rng);      // make thread local copy of rng 
-    lrng.long_jump(omp_get_thread_num() + 1);  // advance rng by 1 ... ncores jumps
+    // dqrng::xoshiro256plus lrng(rng);      // make thread local copy of rng 
+    // lrng.long_jump(omp_get_thread_num() + 1);  // advance rng by 1 ... ncores jumps
       
     #pragma omp for schedule(static)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
@@ -121,22 +131,42 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       
       // predictions for all subjects
       
-      if (pred or oob_pred)
+      if (pred_cal and oob_pred_cal)
       {
         uvec proxy_id = linspace<uvec>(0, N-1, N);
         uvec TermNode(N, fill::zeros);
         
-        Uni_Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, obs_id, TermNode);
+        Uni_Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, obs_id, TermNode);        
         
         for (size_t i = 0; i < N; i++)
-        {
-          Pred.slice(i).col(nt) = OneTree.NodeHaz(TermNode(i));
-        }
+          Prediction.row(i) += OneTree.NodeHaz(TermNode(i)).t();
+        
+        for (auto i : oobagObs)
+          OOBPrediction.row(i) += OneTree.NodeHaz(TermNode(i)).t();
+
+        oob_count(oobagObs) += 1;
+        
       }
+      
+      // predictions for oob data only 
+      
+      if (!pred_cal and oob_pred_cal)
+      {
+        size_t NTest = oobagObs.n_elem;
+        uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
+        uvec TermNode(NTest, fill::zeros);
+        Uni_Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, oobagObs, TermNode);
+
+        for (size_t i = 0; i < NTest; i++)
+          OOBPrediction.row(oobagObs(i)) += OneTree.NodeHaz(TermNode(i)).t();
+        
+        oob_count(oobagObs) += 1;
+      }
+      
+      // calculate importance 
       
       if (importance > 0 and oobagObs.n_elem > 1)
       {
-        
         uvec AllVar = unique( OneTree.SplitVar( find( OneTree.NodeType == 2 ) ) );
         
         size_t NTest = oobagObs.n_elem;
@@ -188,34 +218,19 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
     VarImp = mean(AllImp, 0).t();
   }
 
-  if (pred)
+  if (pred_cal)
   {
-    Prediction.set_size(N, Pred.n_rows);
-    Prediction.zeros();
-    
-    for (size_t i=0; i < N; i++)
-    {
-      Prediction.row(i) = mean( Pred.slice(i), 1 ).t();
-    }
-    
-    Prediction.shed_col(0);
+    Prediction.shed_col(0);    
+    Prediction /= ntrees; 
   }
   
-  if (oob_pred)
+  if (oob_pred_cal)
   {
-    OOBPrediction.set_size(N, Pred.n_rows);
-    OOBPrediction.zeros();
-
-    for (size_t i=0; i < N; i++)
-    {
-      if ( sum(ObsTrack.row(i) == 0) > 0)
-        OOBPrediction.row(i) = mean(Pred.slice(i).cols(find(ObsTrack.row(i) == 0)), 1).t();
-      else{
-        DEBUG_Rcout << "  subject " << i + 1 << " na " << std::endl;
-        OOBPrediction.row(i).fill(datum::nan);
-      }
-    }
+    OOBPrediction.shed_col(0);    
     
-    OOBPrediction.shed_col(0);
+    for (size_t j = 0; j < NFail; j++)
+    {
+      OOBPrediction.col(j) = OOBPrediction.col(j) / oob_count;
+    }
   }
 }

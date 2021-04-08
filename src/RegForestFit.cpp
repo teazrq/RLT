@@ -30,7 +30,9 @@ List RegForestUniFit(arma::mat& X,
 
   // readin parameters 
   PARAM_GLOBAL Param(param);
-  PARAM_RLT Param_RLT;
+  if (verbose) Param.print();
+  PARAM_RLT Param_RLT(RLTparam);
+  if (verbose and Param.reinforcement) Param_RLT.print();
 
   // create data objects  
   RLT_REG_DATA REG_DATA(X, Y, Ncat, obsweight, varweight);
@@ -65,9 +67,6 @@ List RegForestUniFit(arma::mat& X,
   // prediction
   vec Prediction;
   vec OOBPrediction;
-  
-  Prediction.zeros(N); // initialization means they will be calculated
-  OOBPrediction.zeros(N); 
   
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);

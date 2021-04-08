@@ -33,7 +33,9 @@ List SurvForestUniFit(arma::mat& X,
 
   // readin parameters 
   PARAM_GLOBAL Param(param);
-  PARAM_RLT Param_RLT;
+  if (verbose) Param.print();
+  PARAM_RLT Param_RLT(RLTparam);
+  if (verbose) Param_RLT.print();
   
   size_t NFail = max( Y(find(Censor == 1)) );  
   
@@ -68,8 +70,11 @@ List SurvForestUniFit(arma::mat& X,
 
   // prediction
   
-  mat Prediction(N, NFail, fill::zeros); // initialization means they will be calculated
-  mat OOBPrediction(N, NFail, fill::zeros); 
+  mat Prediction; // initialization means they will be calculated
+  mat OOBPrediction;
+  
+  // mat Prediction(N, NFail, fill::zeros); // initialization means they will be calculated
+  // mat OOBPrediction(N, NFail, fill::zeros);
 
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);

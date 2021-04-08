@@ -17,11 +17,12 @@ List RegForestUniPred(arma::field<arma::uvec>& NodeType,
           					  arma::field<arma::vec>& SplitValue,
           					  arma::field<arma::uvec>& LeftNode,
           					  arma::field<arma::uvec>& RightNode,
-          					  arma::field<arma::vec>& NodeSize,          					  
+          					  arma::field<arma::vec>& NodeSize,
           					  arma::field<arma::vec>& NodeAve,
           					  arma::mat& X,
           					  arma::uvec& Ncat,
-          					  bool keep_all,          					  
+          					  arma::uvec& treeindex,
+          					  bool keep_all,
           					  int usecores,
           					  int verbose)
 {
@@ -38,6 +39,7 @@ List RegForestUniPred(arma::field<arma::uvec>& NodeType,
                       (const Reg_Uni_Forest_Class&) REG_FOREST,
           					  X,
           					  Ncat,
+          					  treeindex,
           					  usecores,
           					  verbose);
   

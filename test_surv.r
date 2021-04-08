@@ -184,6 +184,8 @@ RLTfit$cindex
 
 
 
+RLTPred_sub <- predict(RLTfit, testX, treeindex = c(1:10), keep.all = TRUE, ncores = ncores)
+
 
 
 

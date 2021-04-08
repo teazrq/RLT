@@ -21,6 +21,7 @@ List SurvForestUniPred(arma::field<arma::uvec>& NodeType,
           					   arma::mat& X,
           					   arma::uvec& Ncat,
           					   size_t NFail,
+          					   arma::uvec& treeindex,
           					   bool keep_all,
           					   int usecores,
           					   int verbose)
@@ -41,6 +42,7 @@ List SurvForestUniPred(arma::field<arma::uvec>& NodeType,
       								 X,
       								 Ncat,
       								 NFail,
+      								 treeindex,
       								 usecores,
       								 verbose);
 

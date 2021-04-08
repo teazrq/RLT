@@ -177,6 +177,7 @@ void Surv_Uni_Forest_Pred(cube& Pred,
                           const mat& X,
                           const uvec& Ncat,
                           size_t NFail,
+                          const uvec& treeindex,
                           int usecores,
                           int verbose);
 

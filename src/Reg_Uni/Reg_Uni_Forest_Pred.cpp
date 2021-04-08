@@ -16,6 +16,7 @@ void Reg_Uni_Forest_Pred(mat& Pred,
                          const Reg_Uni_Forest_Class& REG_FOREST,
                   			 const mat& X,
                   			 const uvec& Ncat,
+                  			 const uvec& treeindex,
                   			 int usecores,
                   			 int verbose)
 {
@@ -23,12 +24,12 @@ void Reg_Uni_Forest_Pred(mat& Pred,
   size_t N = X.n_rows;
   size_t ntrees = REG_FOREST.NodeTypeList.size();
   
-  Pred.zeros(N, ntrees);
+  Pred.zeros(N, treeindex.n_elem);
 
   #pragma omp parallel num_threads(usecores)
   {
     #pragma omp for schedule(static)
-    for (size_t nt = 0; nt < ntrees; nt++)
+    for (size_t nt = 0; nt < treeindex.n_elem; nt++)
     {
       
       // initiate all observations
@@ -36,13 +37,15 @@ void Reg_Uni_Forest_Pred(mat& Pred,
       uvec real_id = linspace<uvec>(0, N-1, N);
       uvec TermNode(N, fill::zeros);
       
-      Reg_Uni_Tree_Class OneTree(REG_FOREST.NodeTypeList(nt), 
-                                 REG_FOREST.SplitVarList(nt),
-                                 REG_FOREST.SplitValueList(nt),
-                                 REG_FOREST.LeftNodeList(nt),
-                                 REG_FOREST.RightNodeList(nt),
-                                 REG_FOREST.NodeSizeList(nt),
-                                 REG_FOREST.NodeAveList(nt));
+      size_t whichtree = treeindex(nt);
+        
+      Reg_Uni_Tree_Class OneTree(REG_FOREST.NodeTypeList(whichtree), 
+                                 REG_FOREST.SplitVarList(whichtree),
+                                 REG_FOREST.SplitValueList(whichtree),
+                                 REG_FOREST.LeftNodeList(whichtree),
+                                 REG_FOREST.RightNodeList(whichtree),
+                                 REG_FOREST.NodeSizeList(whichtree),
+                                 REG_FOREST.NodeAveList(whichtree));
       
       Uni_Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
       

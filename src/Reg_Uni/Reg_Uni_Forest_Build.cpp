@@ -25,7 +25,7 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
                           vec& Prediction,
                           vec& OOBPrediction,
                           vec& VarImp,
-                          size_t seed,
+                          size_t seed, // this is not done yet
                           int usecores,
                           int verbose)
 {
@@ -38,23 +38,34 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
   size_t size = (size_t) obs_id.n_elem*resample_prob;
   size_t nmin = Param.nmin;
   
+  // track obs matrix 
   bool obs_track_pre = false; 
   
-  if (ObsTrack.n_elem != 0)
+  if (ObsTrack.n_elem != 0) //pre-defined
     obs_track_pre = true; 
   else
     ObsTrack.zeros(N, ntrees);
   
-  bool pred = (Prediction.n_elem > 0);       // for Prediction
-  bool oob_pred = (OOBPrediction.n_elem > 0);// for OOBPrediction
-  int importance = Param.importance;         // for VarImp
+  // predictions
+  bool pred_cal = true; // this could be changed later to an argument
+  
+  if (pred_cal)
+    Prediction.zeros(N);
+  
+  bool oob_pred_cal = (replacement or resample_prob < 1);
+  uvec oob_count;
+  
+  if (oob_pred_cal)
+  {
+    OOBPrediction.zeros(N);
+    oob_count.zeros(N);
+  }
+  
+  // importance 
 
-  mat Pred;
+  int importance = Param.importance;
   
-  if (pred or oob_pred)
-    Pred.zeros(N, ntrees);
-  
-  mat AllImp; 
+  mat AllImp;
   
   if (importance == 1)
     AllImp = mat(ntrees, P, fill::zeros);
@@ -106,17 +117,34 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
       TreeLength = OneTree.get_tree_length();
       OneTree.trim(TreeLength);
 
-      // predictions 
+      // predictions for all subjects and oob data
       
-      if (pred or oob_pred)
+      if (pred_cal and oob_pred_cal)
       {
         uvec proxy_id = linspace<uvec>(0, N-1, N);
         uvec TermNode(N, fill::zeros);
-        
+      
         Uni_Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, obs_id, TermNode);
+      
+        Prediction += OneTree.NodeAve(TermNode);
         
-        Pred.col(nt) = OneTree.NodeAve(TermNode);
+        OOBPrediction(oobagObs) += OneTree.NodeAve(TermNode(oobagObs));
+        oob_count(oobagObs) += 1;        
       }
+      
+      // predictions for oob data only 
+      
+      if (!pred_cal and oob_pred_cal)
+      {
+        size_t NTest = oobagObs.n_elem;
+        uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
+        uvec TermNode(NTest, fill::zeros);
+        Uni_Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobagObs, TermNode);
+        OOBPrediction(oobagObs) += OneTree.NodeAve(TermNode);
+        oob_count(oobagObs) += 1;
+      }
+      
+      // calculate importance 
       
       if (importance > 0 and oobagObs.n_elem > 1)
       {
@@ -152,27 +180,15 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
         }
       }
     }
-    
-    #pragma omp barrier
-    
-    if (importance == 1)
-      VarImp = mean(AllImp, 0).t();
-    
-    if (pred)
-      Prediction = mean(Pred, 1);
-    
-    if (oob_pred)
-    {
-      #pragma omp for schedule(static)
-      for (size_t i = 0; i < N; i++) // fit all trees
-      {
-        if ( sum(ObsTrack.row(i) == 0) > 0 )
-        {
-          rowvec OnePred = Pred.row(i);
-          OOBPrediction(i) = mean( OnePred( find(ObsTrack.row(i) == 0) ) );
-        }else
-          OOBPrediction(i) = datum::nan;
-      }
-    }
   }
+  
+  if (importance == 1)
+    VarImp = mean(AllImp, 0).t();
+  
+  if (pred_cal)
+    Prediction /= ntrees;
+  
+  if (oob_pred_cal)
+    OOBPrediction = OOBPrediction / oob_count;  
+  
 }

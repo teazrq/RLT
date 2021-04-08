@@ -38,8 +38,13 @@ TERMINATENODE:
     
     Uni_Split_Class OneSplit;
     
-    Reg_Uni_Find_A_Split(OneSplit, REG_DATA, Param, Param_RLT, obs_id, var_id);
-
+    if (Param.reinforcement)
+    {
+      Reg_Uni_Find_A_Split_Embed(OneSplit, REG_DATA, Param, Param_RLT, obs_id, var_id);
+    }else{
+      Reg_Uni_Find_A_Split(OneSplit, REG_DATA, Param, Param_RLT, obs_id, var_id);
+    }
+    
     DEBUG_Rcout << "  -- Found split on variable " << OneSplit.var << " cut " << OneSplit.value << " and score " << OneSplit.score << std::endl;
     
     OneTree.NodeAve(Node) = arma::mean(REG_DATA.Y(obs_id));
