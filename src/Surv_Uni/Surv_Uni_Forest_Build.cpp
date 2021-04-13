@@ -72,13 +72,13 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
   
   // start parallel trees
 
-  // dqrng::xoshiro256plus rng(seed); // properly seeded rng
+  dqrng::xoshiro256plus rng(seed); // properly seeded rng
     
   #pragma omp parallel num_threads(usecores)
   {
     
-    // dqrng::xoshiro256plus lrng(rng);      // make thread local copy of rng 
-    // lrng.long_jump(omp_get_thread_num() + 1);  // advance rng by 1 ... ncores jumps
+    dqrng::xoshiro256plus lrng(rng);      // make thread local copy of rng 
+    lrng.long_jump(omp_get_thread_num() + 1);  // advance rng by 1 ... ncores jumps
       
     #pragma omp for schedule(static)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
@@ -105,7 +105,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         });
       
       // initialize a tree (univariate split)
-      
+
       Surv_Uni_Tree_Class OneTree(SURV_FOREST.NodeTypeList(nt), 
                                   SURV_FOREST.SplitVarList(nt),
                                   SURV_FOREST.SplitValueList(nt),
@@ -162,7 +162,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         
         oob_count(oobagObs) += 1;
       }
-      
+
       // calculate importance 
       
       if (importance > 0 and oobagObs.n_elem > 1)
@@ -212,7 +212,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       }
     }
   }
-    
+
   if (importance == 1)
   {
     VarImp = mean(AllImp, 0).t();

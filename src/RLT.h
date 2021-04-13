@@ -32,9 +32,9 @@
 #define OMPMSG(...) Rprintf("Package is not compiled with OpenMP (omp.h).\n")
 #endif
 
-// #define ARMA_USE_OPENMP
-// #define ARMA_NO_DEBUG
-// #define RLT_DEBUG
+#define ARMA_USE_OPENMP
+#define ARMA_NO_DEBUG
+//#define RLT_DEBUG
 
 #include <RcppArmadillo.h>
 #include <Rcpp.h>

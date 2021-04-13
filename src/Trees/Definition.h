@@ -30,11 +30,13 @@ public:
   bool replacement;
   double resample_prob;
   bool useobsweight;
-  bool usevarweight;  
+  bool usevarweight;
+  int varweighttype;
   int importance;  
   bool reinforcement;
   bool obs_track;
   size_t seed;
+  bool failcount;
   
   PARAM_GLOBAL(List& param){
     N             = param["n"];
@@ -50,10 +52,12 @@ public:
     resample_prob = param["resample.prob"];  
     useobsweight  = param["use.obs.w"];
     usevarweight  = param["use.var.w"];    
+    varweighttype  = param["var.w.type"];    
     importance    = param["importance"];
     reinforcement = param["reinforcement"];
     obs_track     = param["track.obs"];
     seed          = param["seed"];
+    failcount     = param["failcount"];
   }
   
   copyfrom(const PARAM_GLOBAL& Input){

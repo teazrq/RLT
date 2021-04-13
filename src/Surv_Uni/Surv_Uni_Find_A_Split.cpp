@@ -8,9 +8,16 @@
 # include "../Trees//Trees.h"
 # include "../Utility/Utility.h"
 # include "../survForest.h"
+#include <iostream>
+#include <fstream>
+#include <chrono>
+#include <random>
+#include <RcppArmadillo.h>
+#include <RcppArmadilloExtensions/sample.h>
 
-using namespace Rcpp;
-using namespace arma;
+//using namespace Rcpp;
+//using namespace arma;
+//using namespace std;
 
 void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
                            const RLT_SURV_DATA& SURV_DATA,
@@ -26,13 +33,19 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   double alpha = Param.alpha;
   bool useobsweight = Param.useobsweight;
   bool usevarweight = Param.usevarweight;
+  int varweighttype = Param.varweighttype;
   int nsplit = Param.nsplit;
   int split_gen = Param.split_gen;
   int split_rule = Param.split_rule;
   bool reinforcement = Param.reinforcement;
-  
+
   size_t N = obs_id.n_elem;
   size_t P = var_id.n_elem;
+  //Define CoxGrad parameters
+  vec z_etaF;
+  vec z_etaC;
+  vec z_eta(N);
+  z_eta.zeros();
   
   // sort obs_id based on Y values 
   const uvec& Y = SURV_DATA.Y;
@@ -63,7 +76,7 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
     return;   
   
   // initiate the failure and at-risk counts
-  uvec All_Risk(NFail+1, fill::zeros);
+  vec All_Risk(NFail+1, fill::zeros);
   uvec All_Fail(NFail+1, fill::zeros);
 
   for (size_t i = 0; i<N; i++)
@@ -75,6 +88,7 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   }
   
   size_t last_count = 0;
+  vec All_Censor = All_Risk-All_Fail; //The number of times censored observations are repeated
   
   for (size_t k = 0; k <= NFail; k++)
   {
@@ -86,7 +100,7 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   vec Temp_Vec(NFail+1, fill::zeros);
   
   // if suplogrank, calculate the cc/temp*vterms
-  if(Param.split_rule == 2){
+  if(split_rule == 2){
     Temp_Vec = 1.0 - conv_to< vec >::from(All_Fail - 1.0)/(All_Risk-1.0); 
     Temp_Vec = Temp_Vec % All_Fail/All_Risk;
     
@@ -96,23 +110,75 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
   }
 
   
-  // if logliklihood split, calculate hazard here
-  if(Param.split_rule == 3 or Param.split_rule == 4) Temp_Vec = hazard(All_Fail, All_Risk);
-  //Rcout << "Hazard: " << Temp_Vec(0)  << std::endl;
+  uvec obs_id_uni = find_unique(obs_id);
+  uvec omega(obs_id_uni.n_elem);
+  uvec y_uni(obs_id_uni.n_elem);
+  uvec censor_uni(obs_id_uni.n_elem);
+  omega.zeros();
+  uvec ind;
+  
+  if(split_rule == 3) //Calculate z & w.  Pass into split function Surv_..._Cont_Pseudo. 
+  {
+    vec etaj = All_Risk;
+    
+    vec tmp = All_Fail/etaj;
+    tmp = cumsum(tmp);
+    tmp(All_Risk.n_elem-1) = 0;
+    tmp = shift(tmp, 1);
+    
+    z_etaF = (1 - tmp);
+    z_etaF.elem( find_nonfinite(z_etaF) ).zeros();
+    z_etaC = (0 - tmp);
+    z_etaC.elem( find_nonfinite(z_etaC) ).zeros();
+
+    for (size_t i = 0; i<obs_id.n_elem; i++)
+    {
+      
+      if (Censor_collapse(i) == 1){
+        z_eta(i) = z_etaF(Y_collapse(i));
+      }else{
+        z_eta(i) = z_etaC(Y_collapse(i));
+      }
+    }
+
+  }
   
   bool failforce = 0; // need to change later 
   double penalty = 0; // initiate 
   
+  uvec var_try(P);
+  var_try.zeros();
+  var_try = var_try + P + 1;
+  uword tmp;
+  vec var_ws = SURV_DATA.varweight;
+  
   // start univariate search
   // shuffle the order of var_id
-  uvec var_try = shuffle(var_id);
+  // REDO IF SWITCHING ENTIRELY TO ARMA
+  if(varweighttype==2){
+    //std::default_random_engine generator;
+    // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    // std::minstd_rand g1 (seed);  // minstd_rand0 is a standard linear_congruential_engine
+    // for(size_t j = 0; j < mtry; j++){
+    //   std::discrete_distribution<int> d_mtry{var_ws.begin(),var_ws.end()};
+    //   tmp = d_mtry(g1);
+    //   var_try(j) = tmp;
+    //   var_ws(tmp) = 0;
+    // //while(any(var_try==tmp)) tmp = d_mtry(g1);
+    // }
+    //var_try = Rcpp::RcppArmadillo::sample(var_id, P, false, var_ws);
+  }else{
+    //var_try = shuffle(var_id);
+    var_try = Rcpp::RcppArmadillo::sample(var_id, P, false);
+  }
+  //Rcout << var_try <<std::endl;;
   
   for (size_t j = 0; j < mtry; j++)
   {
     size_t temp_var = var_try(j);
     
-    if (Param.split_rule == 4) penalty = SURV_DATA.varweight(temp_var); // penalized LL
-    
+    if (usevarweight) penalty = SURV_DATA.varweight(temp_var); // penalized LL
+
     Uni_Split_Class TempSplit;
     TempSplit.var = temp_var;
     TempSplit.value = 0;
@@ -172,6 +238,10 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
       
       
     }else{ // continuous variable
+      //ofstream myfile;
+      //myfile.open ("splits.txt", ios::out | ios::app);
+      //myfile <<"Var"<<temp_var<< ": ";
+      //myfile.close();
       
       DEBUG_Rcout << "      --- try var " << temp_var << " (continuous) " << std::endl;
       
@@ -194,26 +264,48 @@ void Surv_Uni_Find_A_Split(Uni_Split_Class& OneSplit,
 
       }else{
         
-        Surv_Uni_Split_Cont(TempSplit, 
-                            obs_id, 
-                            SURV_DATA.X.unsafe_col(temp_var), 
-                            Y_collapse, 
-                            Censor_collapse, 
-                            NFail,
-                            All_Fail,
-                            All_Risk,
-                            Temp_Vec,
-                            penalty,
-                            split_gen, 
-                            split_rule, 
-                            nsplit, 
-                            nmin, 
-                            alpha,
-                            failforce);
+        if(split_rule == 3){
+          Surv_Uni_Split_Cont_Pseudo(TempSplit, 
+                              obs_id, 
+                              SURV_DATA.X.unsafe_col(temp_var), 
+                              Y_collapse, 
+                              Censor_collapse, 
+                              NFail,
+                              z_eta,
+                              split_gen, 
+                              nsplit, 
+                              nmin, 
+                              alpha,
+                              failforce);
+        }else{
+          Surv_Uni_Split_Cont(TempSplit, 
+                              obs_id, 
+                              SURV_DATA.X.unsafe_col(temp_var), 
+                              Y_collapse, 
+                              Censor_collapse, 
+                              NFail,
+                              All_Fail,
+                              All_Risk,
+                              Temp_Vec,
+                              split_gen, 
+                              split_rule, 
+                              nsplit, 
+                              nmin, 
+                              alpha,
+                              failforce);
+        }
+        
       }
 
       DEBUG_Rcout << "      --- get var " << temp_var << " at cut " << TempSplit.value << " (continuous) with score " << TempSplit.score << std::endl;
     }
+    //ofstream myfile;
+    //myfile.open ("splits.txt", ios::out | ios::app);
+    //myfile <<"\n";
+    //myfile.close();
+    
+    //if(usevarweight) 
+    if(varweighttype==1)  TempSplit.score = TempSplit.score*penalty;
 
     if (TempSplit.score > OneSplit.score)
     {

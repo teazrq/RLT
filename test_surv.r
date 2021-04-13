@@ -3,23 +3,30 @@ library(randomForest)
 library(randomForestSRC)
 library(survival)
 library(ranger)
+library(MASS)
+
+# Do Script 100 times, box plots
+# Test how the random point is generated - uniform X
 
 # survival analysis
 
 # generate data 
 set.seed(1)
 
-trainn = 400
+trainn = 300
 testn = 1000
 n = trainn + testn
-p = 100
-X1 = matrix(rnorm(n*p/2), n, p/2)
-X2 = data.frame(matrix(as.integer(runif(n*p/2)*5), n, p/2))
+p = 10
+rho = 0.5
+V <- rho^abs(outer(1:p, 1:p, "-"))
+X = as.matrix(mvrnorm(n, mu=rep(0,p), Sigma=V))#Keep important variables in first 100
+#X1 = matrix(rnorm(n*p/2), n, p/2)
+#X2 = data.frame(matrix(as.integer(runif(n*p/2)*5), n, p/2))
 # for (j in 1:ncol(X2)) X2[,j] = as.factor(X2[,j])
-X = cbind(X1, X2)
+#X = cbind(X1, X2)
 # xlink <- function(x) exp(x[, 1] + (x[, p/2 + 1] %in% c(1, 3)) )
-xlink <- function(x) exp(x[, 1] + x[, p]) 
-FT = rexp(n, rate = xlink(X) )
+xlink <- function(x) exp(x[, 3]) # + x[, 7] + x[, 16] + x[, 25] + x[, p]) 
+FT = rexp(n, rate = 1/xlink(X) )
 CT = rexp(n, rate = 1)
 
 y = pmin(FT, CT)
@@ -28,14 +35,16 @@ mean(censor)
 
 colnames(X) = NULL
 
-ntrees = 100
-ncores = 10
-nmin = 30
-mtry = ncol(X)
+ntrees = 500
+ncores = 2
+nmin = 10
+mtry = p/3
 sampleprob = 0.75
+
 rule = "best"
 nsplit = ifelse(rule == "best", 0, 1)
-importance = TRUE
+importance = FALSE
+failcount = FALSE
 
 
 trainX = X[1:trainn, ]
@@ -54,26 +63,31 @@ SurvMat = matrix(NA, testn, length(timepoints))
 
 for (j in 1:length(timepoints))
 {
-    SurvMat[, j] = 1 - pexp(timepoints[j], rate = xlink(testX) )
+    SurvMat[, j] = 1 - pexp(timepoints[j], rate = 1/xlink(testX) )
 }
 
 
 # fit models 
 
-metric = data.frame(matrix(NA, 3, 5))
-rownames(metric) = c("rlt", "rsf", "ranger")
-colnames(metric) = c("fit.time", "pred.time", "pred.error", "L1", "obj.size")
+metric = data.frame(matrix(NA, 5, 6))
+rownames(metric) = c("rlt", "rsf", "ranger", "coxgrad", "coxgradw")
+colnames(metric) = c("fit.time", "pred.time", "pred.error", "L1", "obj.size", "TermNodeCount")
 
 start_time <- Sys.time()
-RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores, nmin = nmin/2, mtry = mtry, replacement = FALSE, 
-              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = importance, track.obs = TRUE)
+RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, replacement = FALSE, 
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = importance, track.obs = TRUE, split.rule = "logrank",
+              failcount = failcount)
 metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
 start_time <- Sys.time()
-RLTPred <- predict(RLTfit, testX, ncores = ncores)
+RLTPred <- predict.RLT(RLTfit, testX, ncores = ncores)
 metric[1, 2] = difftime(Sys.time(), start_time, units = "secs")
 metric[1, 3] = 1- cindex(testY, testCensor, colSums(apply(RLTPred$hazard, 1, cumsum)))
 metric[1, 4] = mean(colMeans(abs(RLTPred$Survival - SurvMat)))
 metric[1, 5] = object.size(RLTfit)
+metric[1, 6] = sum(unlist(RLTfit$FittedForest$NodeType)==3)/ntrees
+summary(unlist(RLTfit$FittedForest$SplitValue)[unlist(RLTfit$FittedForest$SplitValue)!=0])
+
+LR <- RLTfit
 
 options(rf.cores = ncores)
 start_time <- Sys.time()
@@ -86,21 +100,52 @@ metric[2, 2] = difftime(Sys.time(), start_time, units = "secs")
 metric[2, 3] = 1- cindex(testY, testCensor, rowSums(rsfpred$chf))
 metric[2, 4] = mean(colMeans(abs(rsfpred$survival - SurvMat)))
 metric[2, 5] = object.size(rsffit)
+metric[2, 6] = sum(is.na(rsffit$forest$nativeArray[,4]))/ntrees
+summary(rsffit$forest$nativeArray[,4])
 
 start_time <- Sys.time()
 rangerfit <- ranger(Surv(trainY, trainCensor) ~ ., data = data.frame(trainX, trainY, trainCensor), num.trees = ntrees, 
                     min.node.size = nmin, mtry = mtry, splitrule = "logrank", num.threads = ncores, 
                     sample.fraction = sampleprob, importance = "permutation")
 metric[3, 1] = difftime(Sys.time(), start_time, units = "secs")
+start_time <- Sys.time()
 rangerpred = predict(rangerfit, data.frame(testX))
 metric[3, 2] = difftime(Sys.time(), start_time, units = "secs")
 metric[3, 3] = 1- cindex(testY, testCensor, rowSums(rangerpred$chf))
 metric[3, 4] = mean(colMeans(abs(rangerpred$survival[, yloc] - SurvMat)))
 metric[3, 5] = object.size(rsffit)
 
+start_time <- Sys.time()
+RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, replacement = FALSE, 
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = TRUE, track.obs = TRUE, split.rule = "coxgrad",
+              failcount = failcount)
+summary(unlist(RLTfit$FittedForest$SplitValue)[unlist(RLTfit$FittedForest$SplitValue)!=0])
+metric[4, 1] = difftime(Sys.time(), start_time, units = "secs")
+start_time <- Sys.time()
+RLTPred <- predict.RLT(RLTfit, testX, ncores = ncores)
+metric[4, 2] = difftime(Sys.time(), start_time, units = "secs")
+metric[4, 3] = 1- cindex(testY, testCensor, colSums(apply(RLTPred$hazard, 1, cumsum)))
+metric[4, 4] = mean(colMeans(abs(RLTPred$Survival - SurvMat)))
+metric[4, 5] = object.size(RLTfit)
+metric[4, 6] = sum(unlist(RLTfit$FittedForest$NodeType)==3)/ntrees
+
+VI<-RLTfit$VarImp
+
+start_time <- Sys.time()
+RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores, nmin = nmin, mtry = mtry, replacement = FALSE, 
+              split.gen = rule, nsplit = nsplit, resample.prob = sampleprob, importance = importance, track.obs = TRUE, split.rule = "coxgrad",
+              var.w = ifelse(VI<=0,min(VI[VI>0]),VI),failcount = failcount)
+metric[5, 1] = difftime(Sys.time(), start_time, units = "secs")
+start_time <- Sys.time()
+RLTPred <- predict.RLT(RLTfit, testX, ncores = ncores)
+metric[5, 2] = difftime(Sys.time(), start_time, units = "secs")
+metric[5, 3] = 1- cindex(testY, testCensor, colSums(apply(RLTPred$hazard, 1, cumsum)))
+metric[5, 4] = mean(colMeans(abs(RLTPred$Survival - SurvMat)))
+metric[5, 5] = object.size(RLTfit)
+metric[5, 6] = sum(unlist(RLTfit$FittedForest$NodeType)==3)/ntrees
+
 
 metric
-
 
 
 par(mfrow=c(3,2))

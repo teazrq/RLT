@@ -19,7 +19,7 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         const uvec& Censor, // Censor is collapsed
                         size_t NFail,
                         const uvec& All_Fail,
-                        const uvec& All_Risk,
+                        const vec& All_Risk,
                         vec& Temp_Vec,
                         double penalty,
                         int split_gen,
@@ -90,15 +90,6 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
     //   All_Risk(k) = N;
     // }
 
-    // initiate the hazard and log-likelihood for split_rule>2
-    //vec lambda0(NFail+1, fill::zeros);
-    double Loglik0 = 0;
-    
-    if(split_rule==3 or split_rule==4){
-      //lambda0 = hazard(All_Fail, All_Risk);
-      Loglik0 = dot(All_Fail, log(Temp_Vec.replace(0, 1))) - dot(All_Risk, Temp_Vec);
-    }
-    
     //Rcout << " data here " << join_rows(All_Fail, All_Risk) << std::endl;
     
     // if only two categories, then split on first category
@@ -170,12 +161,9 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
           if (split_rule == 2)
             temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec);
           
-          if (split_rule == 3 or split_rule == 4)
-            temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec, Loglik0);
-          
-          if(split_rule == 4)
-            temp_score = temp_score * penalty;
-          
+          if (split_rule > 2)
+            Rcout << "      --- splitting rule not implemented yet for categorical data" << std::endl;
+
           if (temp_score > TempSplit.score)
           {
             TempSplit.value = record_cat_split(temp_cat, cat_reduced);
@@ -228,11 +216,8 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
         if (split_rule == 2)
           temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec);
         
-        if (split_rule == 3 or split_rule == 4)
-          temp_score = loglik(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec, Loglik0);
-        
-        if(split_rule == 4)
-          temp_score = temp_score * penalty;
+        if (split_rule > 2)
+          Rcout << "      --- splitting rule not implemented yet for categorical data" << std::endl;
         
         // Rcout << " Score " << temp_score << " with split \n" << join_rows(realcat, goright_temp) << std::endl;
         

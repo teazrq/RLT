@@ -74,9 +74,8 @@ void Surv_Uni_Split_Cont(Uni_Split_Class& TempSplit,
                          const uvec& Censor, // Censor is collapsed
                          size_t NFail,
                          const uvec& All_Fail,
-                         const uvec& All_Risk,
+                         const vec& All_Risk,
                          vec& Temp_Vec,
-                         double penalty,
                          int split_gen,
                          int split_rule,
                          int nsplit,
@@ -99,6 +98,21 @@ void Surv_Uni_Split_Cont_W(Uni_Split_Class& TempSplit,
                            double alpha,
                            bool failforce);
                          
+void Surv_Uni_Split_Cont_Pseudo(Uni_Split_Class& TempSplit, 
+                                 uvec& obs_id,
+                                 const vec& x,
+                                 const uvec& Y, // Y is collapsed
+                                 const uvec& Censor, // Censor is collapsed
+                                 size_t NFail,
+                                 vec& z_eta,
+                                 int split_gen,
+                                 int nsplit,
+                                 size_t nmin, 
+                                 double alpha,
+                                 bool failforce);
+   
+ 
+ 
 void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit, 
                         uvec& obs_id,
                         const vec& x,
@@ -106,7 +120,7 @@ void Surv_Uni_Split_Cat(Uni_Split_Class& TempSplit,
                         const uvec& Censor, // Censor is collapsed
                         size_t NFail,
                         const uvec& All_Fail,
-                        const uvec& All_Risk,
+                        const vec& All_Risk,
                         vec& Temp_Vec,
                         double penalty,
                         int split_gen,
@@ -145,24 +159,17 @@ void collapse(const uvec& Y,
 double logrank(const uvec& Left_Fail, 
                const uvec& Left_Risk, 
                const uvec& All_Fail, 
-               const uvec& All_Risk);
+               const vec& All_Risk);
 
 double suplogrank(const uvec& Left_Fail, 
                   const uvec& Left_Risk, 
                   const uvec& All_Fail, 
-                  const uvec& All_Risk,
+                  const vec& All_Risk,
                   vec& Temp_Vec);
 
-vec hazard(const uvec& Fail, 
-           const uvec& Risk);
+double CoxGrad(uvec& Pseudo_X,
+           const vec& z_eta);
 
-double loglik(const uvec& Left_Fail, 
-               const uvec& Left_Risk, 
-               const uvec& All_Fail, 
-               const uvec& All_Risk,
-               vec& lambda0,
-               double& Loglik0);
-    
 // prediction 
 
 void Surv_Uni_Forest_Pred(cube& Pred,

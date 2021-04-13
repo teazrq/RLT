@@ -25,10 +25,21 @@ void Surv_Uni_Split_A_Node(size_t Node,
   size_t P = Param.P;
   size_t nmin = Param.nmin;
   bool useobsweight = Param.useobsweight;
+  bool failcount = Param.failcount;
   
-  if (N <= 2*nmin)
-  {
-TERMINATENODE:
+  size_t check = N;
+  if(failcount){
+    // uvec Censor = SURV_DATA.Censor;
+    // check = 0;
+    // for (size_t i = 0; i < obs_id.n_elem; i++){
+    //   check += Censor(obs_id(i));
+    // }
+    check = sum(SURV_DATA.Censor(obs_id));
+  }
+  
+  if (check < 2*nmin)//Check Ishwaran- if N_Fail <= nmin?
+  {//Used to be 2*nmin
+    TERMINATENODE:
     
     DEBUG_Rcout << "  -- Terminate node " << Node << std::endl;
     Surv_Uni_Terminate_Node(Node, OneTree, obs_id, 
