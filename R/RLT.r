@@ -77,7 +77,7 @@
 #' 
 #' @param ObsTrack        Pre-specified matrix for in-bag data indicator/count 
 #'                        matrix. It must be an \eqn{n \times \texttt{ntrees}}
-#'                        matrix and cannot contain negative values. Extreamly 
+#'                        matrix and cannot contain negative values. Extremely 
 #'                        large counts are not recommended, and the sum of 
 #'                        each column cannot exceed \eqn{n}. If provided, then 
 #'                        track.obs will set to `TRUE`. This is an experimental 
