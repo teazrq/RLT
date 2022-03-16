@@ -1,18 +1,30 @@
 #' @title prediction using RLT
-#' @description Predict the outcome (regression, classification or survival) using a fitted RLT object
-#' @param object A fitted RLT object
-#' @param testx the testing samples, must have the same structure as the training samples
-#' @param treeindex if only a subset of trees are used for prediction, specify the index. The index should start with 0. This is an experimental feature. 
+#' @description Predict the outcome (regression, classification or survival) 
+#'              using a fitted RLT object
+#' @param object   A fitted RLT object
+#' @param testx    The testing samples, must have the same structure as the 
+#'                 training samples
+#' @param var.est  Whether to estimate the variance of each testing data. 
+#'                 The original forest must be fitted with \code{var.ready = TRUE}.
 #' @param keep.all whether to keep the prediction from all trees
-#' @param ncores number of cores
+#' @param ncores   number of cores
 #' @param ... ...
+#'
+#' @return 
+#' 
+#' A \code{RLT} prediction object, constructed as a list consisting
+#' 
+#' \item{Prediction}{Prediction}
+#' \item{Variance}{if \code{var.est = TRUE} and the fitted object is 
+#'                 \code{var.ready = TRUE}}
+#'
 #' @export
 
-predict.RLT<- function(object, 
-                       testx = NULL, 
-                       treeindex = NULL,                       
+predict.RLT<- function(object,
+                       testx = NULL,
+                       var.est = FALSE,
                        keep.all = FALSE,
-                       ncores = 1, 
+                       ncores = 1,
                        verbose = 0,
                        ...)
 {
@@ -23,13 +35,6 @@ predict.RLT<- function(object,
   }
   
   if (!is.matrix(testx) & !is.data.frame(testx)) stop("testx must be a matrix or a data.frame")
-  
-  if (is.null(treeindex)){
-    treeindex = c(1:object$parameters$ntrees) - 1
-  }else{
-    if (any(treeindex < 0 | treeindex >= object$parameters$ntrees))
-      stop("treeindex out of bound")
-  }
   
   if( class(object)[2] == "fit" &  class(object)[3] == "reg" )
   {
@@ -47,17 +52,18 @@ predict.RLT<- function(object,
     }
 
     testx <- data.matrix(testx)
+    
+    if (var.est & !object$parameters$var.ready)
+      stop("The original forest is not fitted with `var.ready` Please check the conditions and build another forest.")
 
-    pred <- RegForestUniPred(object$FittedForest$NodeType,
-                             object$FittedForest$SplitVar,
+    pred <- RegUniForestPred(object$FittedForest$SplitVar,
                              object$FittedForest$SplitValue,
                              object$FittedForest$LeftNode,
                              object$FittedForest$RightNode,
-                             object$FittedForest$NodeSize,                             
                              object$FittedForest$NodeAve,
                              testx,
                              object$ncat,
-                             treeindex,
+                             var.est,
                              keep.all,
                              ncores,
                              verbose)
@@ -85,17 +91,15 @@ predict.RLT<- function(object,
     
     testx <- data.matrix(testx)
     
-    pred <- SurvForestUniPred(object$FittedForest$NodeType,
-                              object$FittedForest$SplitVar,
+    pred <- SurvUniForestPred(object$FittedForest$SplitVar,
                               object$FittedForest$SplitValue,
                               object$FittedForest$LeftNode,
                               object$FittedForest$RightNode,
-                              object$FittedForest$NodeSize,
                               object$FittedForest$NodeHaz,
                               testx,
                               object$ncat,
                               length(object$timepoints),
-                              treeindex,
+                              var.est,
                               keep.all,
                               ncores,
                               verbose)

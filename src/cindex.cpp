@@ -5,8 +5,6 @@
 
 // my header file
 # include "RLT.h"
-# include "Trees//Trees.h"
-# include "Utility/Utility.h"
 
 using namespace Rcpp;
 using namespace arma;
@@ -154,30 +152,3 @@ double cindex_i(arma::uvec& Y,
   return C/P;
   
 }
-
-
-
-
-// [[Rcpp::export()]]
-arma::umat ARMA_EMPTY_UMAT()
-{
-  arma::umat temp;
-  return temp;
-}
-
-// [[Rcpp::export()]]
-arma::vec ARMA_EMPTY_VEC()
-{
-  arma::vec temp;
-  return temp;
-}
-
-
-
-
-
-
-
-
-
-

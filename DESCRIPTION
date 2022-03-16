@@ -1,26 +1,33 @@
 Package: RLT
 Type: Package
 Title: Reinforcement Learning Trees
-Version: 4.0.1
+Version: 4.1.3
 Authors@R: c(
     person("Ruoqing", "Zhu",
            email = "teazrq@gmail.com", 
            role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0002-0753-5716")),
     person("Sarah", "Formentini",
-           email = "sarahef2@illinois.edu", 
-           role = c("aut", "cph"))
+           email = "sarahef2@illinois.edu",
+           role = c("aut")),
+    person("Haowen", "Zhou",
+           email = "pja9pw@virginia.edu", 
+           role = c("ctb")),
+    person("Zhechao", "Huang",
+           email = "huangzhechao1995@gmail.com", 
+           role = c("ctb"))
     )
 Description: Random forest with a variety of additional features for regression, 
     classification and survival analysis. The features include: parallel computing 
-    with OpenMP, embedded model for selecting the splitting variable (based on Zhu, 
-    Zeng & Kosorok, 2015), linear combination splits, subject weight, variable weight, 
-    tracking subjects used in each tree, construct confidence intervels, etc.
+    with OpenMP, reproduciblity with random seeds, variance estimation, embedded model 
+    for selecting the splitting variable (based on Zhu, Zeng & Kosorok, 2015), linear 
+    combination splits, observaton and variable weights, setting and tracking subjects 
+    used in each tree, etc.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: TRUE
 Imports: Rcpp (>= 1.0.2)
 LinkingTo: Rcpp, RcppArmadillo, dqrng, BH, sitmo
 URL: https://cran.r-project.org/package=RLT
-RoxygenNote: 7.0.0
+RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)

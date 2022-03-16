@@ -19,28 +19,23 @@
 //
 //    ----------------------------------------------------------------
 
-// ****************//
-//  OMP functions  //
-// ****************//
 
-#ifdef _OPENMP
-#include <omp.h>
-#define OMPMSG(...)
-#else
-#define omp_get_thread_num() 0
-#define omp_get_max_threads() 1
-#define OMPMSG(...) Rprintf("Package is not compiled with OpenMP (omp.h).\n")
-#endif
-
-#define ARMA_USE_OPENMP
+//#define ARMA_USE_OPENMP
 #define ARMA_NO_DEBUG
 //#define RLT_DEBUG
 
-#include <RcppArmadillo.h>
-#include <Rcpp.h>
+// header files
+# include <RcppArmadillo.h>
+# include <Rcpp.h>
 
+# include "Utility/Tree_Definition.h"
+# include "Utility/Utility.h"
+# include "Utility/Tree_Function.h"
 
+// regression
+# include "RegUni/Reg_Uni_Definition.h"
+# include "RegUni/Reg_Uni_Function.h"
 
-
-
-
+// survival
+# include "SurvUni/Surv_Uni_Definition.h"
+# include "SurvUni/Surv_Uni_Function.h"

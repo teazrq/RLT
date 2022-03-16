@@ -1,6 +1,6 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Utility Functions: check
+//  Utility Functions
 //  **********************************
 
 // my header file
@@ -8,18 +8,16 @@
 
 // check cores
 
-int checkCores(int usecores, int verbose)
+size_t checkCores(size_t usecores, size_t verbose)
 {
-  int use_cores = ( (usecores > 1) ? usecores:1 );
+  size_t use_cores = ( (usecores == 0) ? omp_get_max_threads():usecores);
 
-  if (use_cores > 0) OMPMSG(1);
+  if (use_cores > 1) OMPMSG(1);
 
-  int haveCores = omp_get_max_threads();
-
-  if(use_cores > haveCores)
+  if(use_cores > (size_t) omp_get_max_threads())
   {
-    if (verbose) Rprintf("Do not have %i cores, use maximum %i cores. \n", use_cores, haveCores);
-    use_cores = haveCores;
+    if (verbose) Rprintf("Do not have %i cores, use maximum %i cores. \n", use_cores, omp_get_max_threads());
+    use_cores = omp_get_max_threads();
   }
   
   return(use_cores);
@@ -39,13 +37,13 @@ void printLog(const char* mode, const char* x, const int n1, const double n2)
 }
 
 // generate random integer in [min, max]
-
+/*
 int intRand(const int & min, const int & max) {
   static thread_local std::mt19937 generator;
-  std::uniform_int_distribution<int> distribution(min, max);
+  std::uniform_int_distribution<int> distribution(min, max); 
   return distribution(generator);
 }
-
+*/
 // simple math
 
 template <class T> const T& max(const T& a, const T& b) {

@@ -1,9 +1,29 @@
 Package: RLT
 
+Version: 4.1.3
+
+---------------------------------------------------------------------------------
+Various updates including reproducibility, new models, and speed improvements. 
+Embedded model (in RLT) temporally removed. Will be added to next version.  
+---------------------------------------------------------------------------------
+
 Version: 4.0.0
 
 ---------------------------------------------------------------------------------
-Updated the entire package to C++
+Updated the entire package to Rcpp and Rcpparmadillo
+---------------------------------------------------------------------------------
+
+Version: 3.2.3
+
+---------------------------------------------------------------------------------
+Removed S.h header file
+---------------------------------------------------------------------------------
+
+Version: 3.2.3
+
+---------------------------------------------------------------------------------
+Changes header files to avoid confilict between Rinternals.h and clang 13.0.0.
+New verions of RLT (4.0.0+) are avaliable at https://github.com/teazrq/RLT
 ---------------------------------------------------------------------------------
 
 Version: 3.2.2
@@ -38,4 +58,3 @@ This is the first release of this package on CRAN. Previous versions (<= 3.0.0)
 were released on the author's personal website. There are some minor changes to
 the parameter names compared with previous versions.
 ---------------------------------------------------------------------------------
-
