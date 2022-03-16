@@ -19,12 +19,12 @@ install.packages("RLT")
 
 ## New features highlight
 
-    * Unbiased variance estimation (regression forest) based on [Xu, Zhu and Shao (2022+)](https://arxiv.org/abs/2202.09008)
-    * [to be implemented] Unbiased survival function confidence band estimation based on Formentini, Liang and Zhu (2022+)
-    * Reproducibility in parallel tree version with xoshiro256plus random number generator
-    * Speed and space improvement from eariler `c` version
-    * [to be implemented] Graph random forests
-    * [to be implemented] Python API
+  * Unbiased variance estimation (regression forest) based on [Xu, Zhu and Shao (2022+)](https://arxiv.org/abs/2202.09008)
+  * [to be implemented] Unbiased survival function confidence band estimation based on Formentini, Liang and Zhu (2022+)
+  * Reproducibility in parallel tree version with xoshiro256plus random number generator
+  * Speed and space improvement from eariler `c` version
+  * [to be implemented] Graph random forests
+  * [to be implemented] Python API
     
 
 
