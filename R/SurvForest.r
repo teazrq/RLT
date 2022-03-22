@@ -1,6 +1,6 @@
-#' @title RegForest
-#' @name RegForest
-#' @description Internal function for fitting regression forest
+#' @title SurvForest
+#' @name SurvForest
+#' @description Internal function for fitting survival forest
 #' @keywords internal
 
 SurvForest <- function(x, y, censor, ncat,
@@ -31,7 +31,7 @@ SurvForest <- function(x, y, censor, ncat,
   if (param$linear.comb == 1)
   {
     if (param$verbose > 0)
-      cat("Fitting Survival Forest IN DEVELOPMENT... \n")    
+      cat("Fitting Survival Forest... \n")    
       
     # check splitting rules
     if (is.null(param$"split.rule"))

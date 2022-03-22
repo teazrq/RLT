@@ -216,6 +216,7 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
     arma::mat tmp_diff;
     arma::cube Tree_Cov_Est(tmpts, tmpts, N, fill::zeros);
     arma::cube Cov_Est(tmpts, tmpts, N, fill::zeros);
+    arma::mat Var_Est(N, tmpts, fill::zeros);
     
     for(size_t n = 0; n < N; n++){
       tmp_slice = CumPred.slice(n);
@@ -238,10 +239,13 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
     Tree_Cov_Est/=B;
 
     arma::cube cov = Tree_Cov_Est - Cov_Est;
+    
+    for(size_t n=0; n<N; n++){
+      Var_Est.row(n)=cov.slice(n).diag();
+    }
 
-    ReturnList["cov.estimation"] = Cov_Est;
-    ReturnList["tree.cov"] = Tree_Cov_Est;
-    ReturnList["Covariance"] = cov;
+    ReturnList["Cov"] = cov;
+    ReturnList["Var"] = Var_Est;
   }
   
   return ReturnList;

@@ -128,8 +128,18 @@ start_time <- Sys.time()
 RLTPred <- predict(RLTfit, testX, ncores = ncores, var.est = TRUE, keep.all = TRUE)
 print(difftime(Sys.time(), start_time, units = "secs"))
 
-plot(diag(RLTPred$Covariance[,,5]))
-plot(diag(RLTPred$Covariance[,,4]))
-plot(diag(RLTPred$Covariance[,,3]))
-plot(diag(RLTPred$Covariance[,,2]))
-plot(diag(RLTPred$Covariance[,,1]))
+plot(diag(RLTPred$Cov[,,5]))
+plot(diag(RLTPred$Cov[,,4]))
+plot(diag(RLTPred$Cov[,,3]))
+plot(diag(RLTPred$Cov[,,2]))
+plot(diag(RLTPred$Cov[,,1]))
+
+RLTfit <- Surv_Cov_Forest(trainX, trainY, trainCensor, testx = testX,
+                          ntrees = ntrees, ncores = ncores, 
+              nmin = nmin, mtry = mtry, nsplit = nsplit,
+              split.gen = rule, resample.prob = 0.5,
+              importance = importance, param.control = list("alpha" = 0), 
+              verbose = TRUE)
+plot(diag(RLTfit$Cov[,,5]))
+RLTPred <- predict(RLTfit$Fit, testX, ncores = ncores, var.est = TRUE, keep.all = TRUE)
+plot(diag(RLTfit$Cov[,,5]), diag(RLTPred$Cov[,,5]))
