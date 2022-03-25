@@ -104,11 +104,13 @@ Surv_Cov_Forest <- function(x, y, censor, testx,
     
     RLT.pred = predict(RLT.fit, testx, var.est = TRUE, ncores = ncores)
     
-    resultMat = list("Prediction" = RLT.pred$Prediction,
+    resultMat = list("Survival" = RLT.pred$Survival,
+                     "CumHazard" = RLT.pred$CumHazard,
+                     "hazard" = RLT.pred$hazard,
                      "Cov" = RLT.pred$Cov, 
                      "Var" = RLT.pred$Var, 
                      "Fit" = RLT.fit)
-    
+
     class(resultMat) <- c("RLT", "Var", "surv")
     
     return(resultMat)
