@@ -8,6 +8,7 @@
 #'                 The original forest must be fitted with \code{var.ready = TRUE}.
 #' @param keep.all whether to keep the prediction from all trees
 #' @param ncores   number of cores
+#' @param calc.cv  For survival forests only: calculate the critical value. IN DEVELOPMENT
 #' @param ... ...
 #'
 #' @return 
@@ -26,6 +27,7 @@ predict.RLT<- function(object,
                        keep.all = FALSE,
                        ncores = 1,
                        verbose = 0,
+                       calc.cv = FALSE,
                        ...)
 {
 
@@ -103,6 +105,85 @@ predict.RLT<- function(object,
                               keep.all,
                               ncores,
                               verbose)
+    
+    if(calc.cv){
+      alpha_options = seq(1.5, 12, by=0.25)
+      MarginalVar <- matrix(0, nrow = dim(testx)[1], 
+                            ncol=length(object$timepoints))
+      MarginalVarSmooth <- matrix(0, nrow = dim(testx)[1], 
+                                  ncol=length(object$timepoints))
+      CVproj <- numeric(dim(testx)[1])
+      CVprojSmooth <- numeric(dim(testx)[1])
+      
+      for(n in 1:dim(testx)[1]){
+        require(Matrix)
+        pd_proj <- nearPD(as.matrix(pred$Cov[,,n]), maxit = 100,
+                          ensureSymmetry = FALSE,
+                          conv.norm.type = "F", trace = FALSE,
+                          base.matrix = TRUE, corr = FALSE)
+        MarginalVar[n,] <- diag(pd_proj$mat)
+        
+        require(MASS)
+        norm_samps <- mvrnorm(10000, pred$CumHazard[n,], pd_proj$mat)
+        cvg_list <- matrix(0, nrow = length(alpha_options), 
+                           ncol = dim(norm_samps)[1])
+        
+        for(i in 1:length(alpha_options)){
+          high <- alpha_options[i] * sqrt(MarginalVar[n,]) + pred$CumHazard[n,]
+          low <- -alpha_options[i] * sqrt(MarginalVar[n,]) + pred$CumHazard[n,]
+          for(k in 1:dim(norm_samps)[1]){#length(object$timepoints)
+            cvg_list[i,k] <- mean(high >= pmax(norm_samps[k,],0) &
+                                    low <=
+                                    pmax(norm_samps[k,],0))
+          }
+        }
+        full_coverage <- apply(cvg_list, 1, function(x)
+          mean(x==1))  
+        if(any(full_coverage>=0.95)){
+          CVproj[n] <- alpha_options[min(which(full_coverage>=0.95))]
+        }else{
+          CVproj[n] <- 8.25
+        }
+        
+        b <- bw.nrd(c(1:length(object$timepoints)))
+        MarginalVarSmooth[n,] <- ksmooth(x=c(1:length(object$timepoints)),
+                                         y=MarginalVar[n,],
+                                         "normal",
+                                         bandwidth = b,
+                                         x.points = c(1:length(object$timepoints))
+        )$y
+        diag(pd_proj$mat) <- MarginalVarSmooth[n,]
+        pd_proj_sm <- nearPD(pd_proj$mat, maxit = 100,
+                             ensureSymmetry = FALSE,
+                             conv.norm.type = "F", trace = FALSE,
+                             base.matrix = TRUE, corr = FALSE)
+        norm_samps <- mvrnorm(1000, pred$CumHazard[n,], pd_proj_sm$mat)
+        
+        for(i in 1:length(alpha_options)){
+          high <- alpha_options[i] * sqrt(MarginalVarSmooth[n,]) + pred$CumHazard[n,]
+          low <- -alpha_options[i] * sqrt(MarginalVarSmooth[n,]) + pred$CumHazard[n,]
+          for(k in 1:length(object$timepoints)){
+            cvg_list[i,k] <- mean(high[k] >= pmax(norm_samps[,k],0) &
+                                    low[k] <=
+                                    pmax(norm_samps[,k],0))
+          }
+        }
+        full_coverage <- apply(cvg_list, 1, function(x)
+          mean(x==1))  
+        if(any(full_coverage>=0.95)){
+          CVprojSmooth[n] <- alpha_options[min(which(full_coverage>=0.95))]
+        }else{
+          CVprojSmooth[n] <- 8.25
+        }
+      }
+      
+      pred$MarginalVar <- MarginalVar
+      pred$MarginalVarSmooth <- MarginalVarSmooth
+      pred$CVproj <- CVproj
+      pred$CVprojSmooth <- CVprojSmooth
+      
+    }
+    
     
     class(pred) <- c("RLT", "pred", "surv")
     return(pred)

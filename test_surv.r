@@ -125,14 +125,18 @@ RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores,
               verbose = TRUE, resample.replace=FALSE, var.ready = TRUE)
 print(difftime(Sys.time(), start_time, units = "secs"))
 start_time <- Sys.time()
-RLTPred <- predict(RLTfit, testX, ncores = ncores, var.est = TRUE, keep.all = TRUE)
+RLTPred <- predict(RLTfit, testX, ncores = ncores, var.est = TRUE, 
+                   keep.all = TRUE, calc.cv = TRUE)
 print(difftime(Sys.time(), start_time, units = "secs"))
 
 plot(diag(RLTPred$Cov[,,5]))
-plot(diag(RLTPred$Cov[,,4]))
-plot(diag(RLTPred$Cov[,,3]))
-plot(diag(RLTPred$Cov[,,2]))
-plot(diag(RLTPred$Cov[,,1]))
+matplot(RLTfit$timepoints, t(RLTPred$MarginalVar), type="l")
+matplot(RLTfit$timepoints, t(RLTPred$MarginalVarSmooth), type="l")
+plot(RLTfit$timepoints, RLTPred$CumHazard[1,]+RLTPred$CVprojSmooth[1]*sqrt(RLTPred$MarginalVarSmooth[1,]), type="l", 
+     ylim = c(0,max(RLTPred$CumHazard[1,]+RLTPred$CVprojSmooth[1]*sqrt(RLTPred$MarginalVarSmooth[1,]))),
+     ylab="Cumulative Hazard", xlab="Time")
+lines(RLTfit$timepoints, RLTPred$CumHazard[1,]-RLTPred$CVprojSmooth[1]*sqrt(RLTPred$MarginalVarSmooth[1,]), type="l")
+lines(RLTfit$timepoints, RLTPred$CumHazard[1,], type="l")
 
 RLTfit <- Surv_Cov_Forest(trainX, trainY, trainCensor, testx = testX,
                           ntrees = ntrees, ncores = ncores, 
