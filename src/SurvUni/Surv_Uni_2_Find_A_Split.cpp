@@ -22,10 +22,16 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   size_t N = obs_id.n_elem;
   double alpha = Param.alpha;
   bool useobsweight = Param.useobsweight;
-  //bool usevarweight = Param.usevarweight;
+  bool usevarweight = Param.usevarweight;
   size_t nsplit = Param.nsplit;
   size_t split_gen = Param.split_gen;
   size_t split_rule = Param.split_rule;
+  //Define CoxGrad parameters
+  vec z_etaF;
+  vec z_etaC;
+  vec z_eta(N);
+  z_eta.zeros();
+  
   
   // sort obs_id based on Y values 
   const uvec& Y = SURV_DATA.Y;
@@ -70,6 +76,51 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
     All_Risk(k) = N;
   }
   
+  vec Temp_Vec(NFail+1, fill::zeros);
+  
+  // if suplogrank, calculate the cc/temp*vterms
+  if(split_rule == 2){
+    Temp_Vec = 1.0 - conv_to< vec >::from(All_Fail - 1.0)/(All_Risk-1.0); 
+    Temp_Vec = Temp_Vec % All_Fail/All_Risk;
+    
+    for (size_t i =0; i < All_Risk.n_elem; i++)
+      if (All_Risk(i) < 2)
+        Temp_Vec(i) = 0;
+  }
+
+  uvec obs_id_uni = find_unique(obs_id);
+  uvec omega(obs_id_uni.n_elem);
+  uvec y_uni(obs_id_uni.n_elem);
+  uvec censor_uni(obs_id_uni.n_elem);
+  omega.zeros();
+  uvec ind;
+  
+  if(split_rule == 3) //Calculate z & w.  Pass into split function Surv_..._Cont_Pseudo. 
+  {
+    vec etaj = All_Risk;
+    
+    vec tmp = All_Fail/etaj;
+    tmp = cumsum(tmp);
+    tmp(All_Risk.n_elem-1) = 0;
+    tmp = shift(tmp, 1);
+    
+    z_etaF = (1 - tmp);
+    z_etaF.elem( find_nonfinite(z_etaF) ).zeros();
+    z_etaC = (0 - tmp);
+    z_etaC.elem( find_nonfinite(z_etaC) ).zeros();
+    
+    for (size_t i = 0; i<obs_id.n_elem; i++)
+    {
+      
+      if (Censor_collapse(i) == 1){
+        z_eta(i) = z_etaF(Y_collapse(i));
+      }else{
+        z_eta(i) = z_etaC(Y_collapse(i));
+      }
+    }
+    
+  }
+  
   
   // Choose the variables to try
   uvec var_try = rngl.sample(var_id, mtry);
@@ -106,23 +157,42 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
       
     }else{ // continuous variable
       
-      Surv_Uni_Split_Cont(TempSplit,
-                         obs_id,
-                         SURV_DATA.X.unsafe_col(j), 
-                         Y_collapse, 
-                         Censor_collapse, 
-                         NFail,
-                         All_Fail,
-                         All_Risk,
-                         SURV_DATA.obsweight,
-                         0.0, // penalty
-                         split_gen,
-                         split_rule,
-                         nsplit,
-                         alpha,
-                         useobsweight,
-                         rngl);
+      if(split_rule==3){
+        Surv_Uni_Split_Cont_Pseudo(TempSplit, 
+                                   obs_id, 
+                                   SURV_DATA.X.unsafe_col(j), 
+                                   Y_collapse, 
+                                   Censor_collapse, 
+                                   NFail,
+                                   z_eta,
+                                   SURV_DATA.obsweight,
+                                   1.0, // penalty, set to 1 until penalties read in
+                                   split_gen, 
+                                   nsplit, 
+                                   alpha,
+                                   useobsweight,
+                                   rngl);
+      }else{
+        Surv_Uni_Split_Cont(TempSplit,
+                            obs_id,
+                            SURV_DATA.X.unsafe_col(j), 
+                            Y_collapse, 
+                            Censor_collapse, 
+                            NFail,
+                            All_Fail,
+                            All_Risk,
+                            Temp_Vec,
+                            SURV_DATA.obsweight,
+                            0.0, // penalty
+                            split_gen,
+                            split_rule,
+                            nsplit,
+                            alpha,
+                            useobsweight,
+                            rngl);
+      }
       
+
     }
     
     //If this variable is better than the last one tried
