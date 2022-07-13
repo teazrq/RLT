@@ -172,8 +172,11 @@ mean((pred$Prediction - testy)^2)
 
 RLTfit <- RLT(X, y, ntrees = 1000, ncores = 6, nmin = 10,
               mtry = p, resample.prob = 0.85, 
-              importance = TRUE)
+              importance = TRUE, resample.track = TRUE)
 mean((RLTfit$OOBPrediction - y)^2, na.rm = TRUE)
 pred = predict(RLTfit, testX)
 mean((pred$Prediction - testy)^2)
 barplot(as.vector(RLTfit$VarImp[1:50]), main = "RLT")
+
+# rf kernel
+K = forest.kernel(RLTfit, X1 = X[1, , drop = FALSE], X2 = X)

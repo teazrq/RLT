@@ -11,7 +11,14 @@ The goal of `RLT` is to provide new functionalities of random forest models. Thi
 
 ## Installation
 
-You can install the released version (currently <= 3.2.2) of `RLT` from [CRAN](https://CRAN.R-project.org/package=RLT) with:
+You can install this version using 
+
+```{r}
+    # install.packages("devtools")
+    devtools::install_github("teazrq/RLT")
+```
+
+If you want to use the embedded model feature, you need to install the released version (currently <= 3.2.2) of `RLT` from [CRAN](https://CRAN.R-project.org/package=RLT) with:
 
 ``` r
 install.packages("RLT")
@@ -20,7 +27,7 @@ install.packages("RLT")
 ## New features highlight
 
   * Unbiased variance estimation (regression forest) based on [Xu, Zhu and Shao (2022+)](https://arxiv.org/abs/2202.09008)
-  * [to be implemented] Unbiased survival function confidence band estimation based on Formentini, Liang and Zhu (2022+)
+  * Unbiased survival function confidence band estimation based on [Formentini, Liang and Zhu (2022+)](https://arxiv.org/abs/2204.12038)
   * Reproducibility in parallel tree version with xoshiro256plus random number generator
   * Speed and space improvement from eariler `c` version
   * [to be implemented] Graph random forests

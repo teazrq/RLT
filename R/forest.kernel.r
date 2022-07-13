@@ -38,7 +38,8 @@ forest.kernel <- function(object,
     stop("self-kernel is not implemented yet.")
 
   if (!is.matrix(X1) & !is.data.frame(X1)) stop("X1 must be a matrix or a data.frame")
-  {
+
+    
     # check X1 data 
     if (is.null(colnames(X1))){
       if (ncol(X1) != object$parameters$p) 
@@ -65,8 +66,11 @@ forest.kernel <- function(object,
                           X1,
                           object$ncat,
                           verbose)
+      
+      class(K) <- c("RLT", "kernel", "self")
+      
     }else{
-
+    
       # check X2
       
       if (!is.null(X2))
@@ -91,7 +95,7 @@ forest.kernel <- function(object,
       if (!vs.train)
       {
         # cross-kernel of X1 and X2
-
+    
         K <- Kernel_Cross(object$FittedForest$SplitVar,
                              object$FittedForest$SplitValue,
                              object$FittedForest$LeftNode,
@@ -100,7 +104,9 @@ forest.kernel <- function(object,
                              X2,
                              object$ncat,
                              verbose)
-
+    
+        class(K) <- c("RLT", "kernel", "cross")
+        
       }else{
         
         # kernel matrix as to the training process 
@@ -123,11 +129,11 @@ forest.kernel <- function(object,
                              ObsTrack,
                              verbose)
         
+        class(K) <- c("RLT", "kernel", "train")
+        
       }
     }
-  }
-
-  class(K) <- c("RLT", "kernel")
+    
   
   return(K)
 }
