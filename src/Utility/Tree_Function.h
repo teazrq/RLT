@@ -64,7 +64,7 @@ bool unpack_goright(double pack, const size_t cat);
 
 // sample both inbag and oobag samples
 
-void set_obstrack(arma::umat& ObsTrack,
+void set_obstrack(arma::imat& ObsTrack,
                   const size_t nt,
                   const size_t size,
                   const bool replacement,
@@ -73,7 +73,7 @@ void set_obstrack(arma::umat& ObsTrack,
 void get_samples(arma::uvec& inbagObs,
                  arma::uvec& oobagObs,
                  const arma::uvec& subj_id,
-                 const arma::uvec& ObsTrack_nt);
+                 const arma::ivec& ObsTrack_nt);
 
 
 //void move_cont_index(size_t& lowindex, size_t& highindex, 

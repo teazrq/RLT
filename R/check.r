@@ -67,8 +67,23 @@ check_input <- function(x, y, censor, model)
 #' 
 #' \code{split.rule} specifies the splitting rule for comparisons. For regression, 
 #' variance reduction `"var"` is used; for classification, `"gini"` index is used.
-#' For survival, `"logrank"`, `"suplogrank"`, `"LL"` and `"penLL"` are available. When 
-#' `"penLL"` is used, variable weights `"var.w"` are used as the penalty. 
+#' For survival, `"logrank"`, `"suplogrank"`, and `"coxgrad"` are available. When 
+#' `"coxgrad"` is used, variable weights `"var.w"` are used as the penalty. 
+#' 
+#' \code{CIvar.ready}=TRUE will calculate a critical value for confidence bands 
+#' for survival prediction curves. Ignored otherwise.
+#' 
+#' \code{VI.var}=TRUE will calculate variance for variable importance.
+#' If  \code{VI.var}=TRUE, \code{resamp.prob}\times(1-\code{oob.prop}) observations
+#' will be used for building each tree, \code{resamp.prob}\times\code{oob.prop}
+#' observations will be used for the out-of-bag sample, and 1-\code{resamp.prob}
+#' observations will not be used as in-bag or out-of-bag samples for that tree at
+#' all. Only implemented for survival forests. Ignored otherwise.
+#' 
+#' \code{oob.prop} only used when \code{VI.var}=TRUE.
+#' Specifies the proportion of resamp.prob that will be assigned to the out-of-bag 
+#' sample. Default is \code{oob.prop}=0.5. See \code{VI.var} for more details.
+#' Only implemented for survival forests. Ignored otherwise.
 #' 
 #' @keywords internal
 

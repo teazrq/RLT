@@ -14,11 +14,13 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
                           const PARAM_GLOBAL& Param,
                           const uvec& obs_id,
                           const uvec& var_id,
-                          umat& ObsTrack,
+                          imat& ObsTrack,
                           bool do_prediction,
                           mat& Prediction,
                           mat& OOBPrediction,
-                          vec& VarImp)
+                          vec& VarImp,
+                          mat& AllImp,
+                          vec& cindex_tree)
 {
   // parameters to use
   size_t ntrees = Param.ntrees;
@@ -54,12 +56,6 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
     OOBPrediction.zeros(N, NFail+1);
     oob_count.zeros(N);
   }
-  
-  // importance
-  mat AllImp;
-    
-  if (importance)
-    AllImp.zeros(ntrees, P);
   
   #pragma omp parallel num_threads(usecores)
   {
@@ -136,6 +132,22 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
               oob_count(i) += 1;
             }
           }
+          
+          size_t NTest = oobagObs.n_elem;
+          
+          uvec oobY = SURV_DATA.Y(oobagObs);
+          uvec oobCensor = SURV_DATA.Censor(oobagObs);
+          vec oobpred(NTest);
+          
+          uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
+          uvec TermNode(NTest, fill::zeros);
+          
+          Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, oobagObs, TermNode);
+          
+          for (size_t i = 0; i < NTest; i++)
+            oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+          
+          cindex_tree(nt) = 1-cindex_i( oobY, oobCensor, oobpred );
         }
       }
 
@@ -160,6 +172,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
           oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
         
         double baseImp = 1-cindex_i( oobY, oobCensor, oobpred );  
+        cindex_tree(nt) = 1-cindex_i( oobY, oobCensor, oobpred );
         
         for (size_t j = 0; j < P; j++)
         {
@@ -173,7 +186,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
 
           uvec oob_ind = rngl.shuffle(oobagObs);
           vec tildex = SURV_DATA.X.col(suffle_var_j);
-          tildex = tildex.elem( oob_ind );  //shuffle( REG_DATA.X.unsafe_col(j).elem( oobagObs ) );
+          tildex = tildex.elem( oob_ind );  
           
           Find_Terminal_Node_ShuffleJ(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, oobagObs, TermNode, tildex, suffle_var_j);
           
@@ -199,8 +212,9 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
     }
   }
   
-  if (importance)
+  if (importance){
     VarImp = mean(AllImp, 0).t();
+  }
   
 
 }

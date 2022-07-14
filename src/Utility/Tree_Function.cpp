@@ -41,7 +41,7 @@ bool unpack_goright(double pack, const size_t cat)
 // for resampling
 // set ObsTrack
 
-void set_obstrack(arma::umat& ObsTrack,
+void set_obstrack(arma::imat& ObsTrack,
                   const size_t nt,
                   const size_t size,
                   const bool replacement,
@@ -59,14 +59,15 @@ void set_obstrack(arma::umat& ObsTrack,
 }
 
 // get inbag and oobag samples from ObsTrackPre
-
+// Adjusted for new ObsTrack format
 void get_samples(arma::uvec& inbagObs,
                  arma::uvec& oobagObs,
                  const arma::uvec& subj_id,
-                 const arma::uvec& ObsTrack_nt)
+                 const arma::ivec& ObsTrack_nt)
 {
-	size_t N = sum(ObsTrack_nt);
-	
+  arma::ivec ObsTrack_ntu = ObsTrack_nt.elem( find(ObsTrack_nt > 0) );
+	size_t N = sum(ObsTrack_ntu);
+
 	oobagObs = subj_id.elem( find(ObsTrack_nt == 0) );
 	
 	inbagObs.set_size(N);

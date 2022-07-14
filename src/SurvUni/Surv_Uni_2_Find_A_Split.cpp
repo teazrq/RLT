@@ -23,6 +23,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   double alpha = Param.alpha;
   bool useobsweight = Param.useobsweight;
   bool usevarweight = Param.usevarweight;
+  double penalty;
   size_t nsplit = Param.nsplit;
   size_t split_gen = Param.split_gen;
   size_t split_rule = Param.split_rule;
@@ -31,6 +32,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   vec z_etaC;
   vec z_eta(N);
   z_eta.zeros();
+  
   
   
   // sort obs_id based on Y values 
@@ -133,6 +135,12 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
     TempSplit.var = j;
     TempSplit.value = 0;
     TempSplit.score = -1;
+    
+    if(usevarweight){
+      penalty = SURV_DATA.varweight(j);
+    }else{
+      penalty = 1;
+    }
       
     if (SURV_DATA.Ncat(j) > 1) // categorical variable 
     {
@@ -166,7 +174,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
                                    NFail,
                                    z_eta,
                                    SURV_DATA.obsweight,
-                                   1.0, // penalty, set to 1 until penalties read in
+                                   penalty, // penalty, set to 1 until penalties read in
                                    split_gen, 
                                    nsplit, 
                                    alpha,
@@ -183,7 +191,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
                             All_Risk,
                             Temp_Vec,
                             SURV_DATA.obsweight,
-                            0.0, // penalty
+                            penalty, // penalty
                             split_gen,
                             split_rule,
                             nsplit,

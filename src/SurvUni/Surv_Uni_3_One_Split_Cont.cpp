@@ -405,7 +405,7 @@ void Surv_Uni_Split_Cont_Pseudo(Split_Class& TempSplit,
     
     uvec Pseudo_X(N);
     Pseudo_X.zeros();
-    
+
     if (split_gen == 1) // random split
     {
       for (int k = 0; k < nsplit; k++)
@@ -426,12 +426,12 @@ void Surv_Uni_Split_Cont_Pseudo(Split_Class& TempSplit,
           }
         }       
         
-        temp_score = CoxGrad(Pseudo_X, z_eta);
+        temp_score = CoxGrad(Pseudo_X, z_eta)*penalty;
         
         if (temp_score > TempSplit.score)
         {
           TempSplit.value = temp_cut;
-          TempSplit.score = temp_score*penalty;
+          TempSplit.score = temp_score;
         }
       }
       return;
@@ -487,12 +487,12 @@ void Surv_Uni_Split_Cont_Pseudo(Split_Class& TempSplit,
           Pseudo_X(obs_ranked(i)) = 1;
         }
         
-        temp_score = CoxGrad(Pseudo_X, z_eta);
+        temp_score = CoxGrad(Pseudo_X, z_eta)*penalty;
         
         if (temp_score > TempSplit.score)
         {
           TempSplit.value = (x(indices(temp_ind)) + x(indices(temp_ind+1)))/2 ;
-          TempSplit.score = temp_score*penalty;
+          TempSplit.score = temp_score;
         }
       }
       
@@ -519,12 +519,12 @@ void Surv_Uni_Split_Cont_Pseudo(Split_Class& TempSplit,
           Pseudo_X(obs_ranked(i)) = 1;
         }
         
-        temp_score = CoxGrad(Pseudo_X, z_eta);
-        
+        temp_score = CoxGrad(Pseudo_X, z_eta)*penalty;
+
         if (temp_score > TempSplit.score)
         {
           TempSplit.value = (x(indices(i)) + x(indices(i+1)))/2;
-          TempSplit.score = temp_score*penalty;
+          TempSplit.score = temp_score;
           
         }
         

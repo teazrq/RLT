@@ -23,7 +23,7 @@ List SurvUniForestFit(mat& X,
           	         uvec& Ncat,
           		       vec& obsweight,
           		       vec& varweight,
-          		       umat& ObsTrackPre,
+          		       imat& ObsTrackPre,
           		       List& param);
 
 void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
@@ -31,11 +31,13 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
                           const PARAM_GLOBAL& Param,
                           const uvec& obs_id,
                           const uvec& var_id,
-                          umat& ObsTrack,
+                          imat& ObsTrack,
                           bool do_prediction,
                           mat& Prediction,
                           mat& OOBPrediction,
-                          vec& VarImp);
+                          vec& VarImp,
+                          mat& AllImp,
+                          vec& cindex_tree);
 
 void Surv_Uni_Split_A_Node(size_t Node,
                           Surv_Uni_Tree_Class& OneTree,
@@ -221,6 +223,9 @@ double suplogrank(const uvec& Left_Fail,
 
 double CoxGrad(uvec& Pseudo_X,
                const vec& z_eta);
+
+arma::mat Cov_Tree(arma::mat& tmp_slice,
+                   size_t& B);
 
 
 // #############################

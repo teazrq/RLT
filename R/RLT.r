@@ -179,8 +179,8 @@ RLT <- function(x, y, censor = NULL, model = NULL,
     
     if (any(resample.preset < 0))
     {
-      warning("Negative entries in resample.preset are truncated to 0")
-      resample.preset[resample.preset < 0] = 0;
+      warning("Negative entries in resample.preset will not be used as in-bag or out-of-bag samples.")
+      #resample.preset[resample.preset < 0] = 0;
     }
     
     if ( any(colSums(resample.preset) > n) )
@@ -196,6 +196,12 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   }  
   
   # set resample.preset if variance estimation is needed
+  
+  if(!is.null(param.control$CIvar.ready)){
+    if(param.control$CIvar.ready){
+      var.ready <- TRUE
+    }
+  }
   
   if (var.ready)
   {
@@ -277,6 +283,67 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                            ncores, verbose,
                            reinforcement,
                            param.control)
+  
+  
+  if (!is.null(param.control$CIvar.ready)) {
+    if(!is.logical(param.control$CIvar.ready)){
+      cat("CIvar.ready must be TRUE or FALSE. Setting to FALSE. \n")
+      param.control$CIvar.ready <- FALSE
+    }
+  }
+  
+  if (!is.null(param.control$VI.var)) {
+    if(!is.logical(param.control$VI.var)){
+      cat("VI.var must be TRUE or FALSE. Setting to FALSE. \n")
+      param.control$VI.var <- FALSE
+    }
+  }else{
+    param.control$VI.var <- FALSE
+  }
+  
+  if (is.null(param.control$oob.prop) & param.control$VI.var==TRUE) {
+    param.control$oob.prop <- 0.5
+  }else if(param.control$VI.var==TRUE){
+    if(param.control$oob.prop>0 & param.control$oob.prop<1){
+    }else{
+      cat("oob.prop must be in (0,1). Setting to default. \n")
+      param.control$oob.prop <- 0.5
+    }
+  }
+  
+  if(importance==TRUE){
+    if(param.control$VI.var & resample.prob<=0.5){
+      
+      k = as.integer(resample.prob*n)
+      koob <- round(k*param.control$oob.prop)
+      kinb <- k-koob
+
+      
+      if(dim(resample.preset)[1]==0){
+        resample.preset = matrix(0, n, ntrees)
+        for (i in 1:as.integer(ntrees/2) )
+        {
+          ab = sample(1:n, 2*k)
+          a = ab[1:k]
+          b = ab[-(1:k)]
+          
+          resample.preset[a, i] = 1
+          resample.preset[b, i+ (ntrees/2)] = 1
+        }
+      }  
+      
+      for(i in 1:ntrees){
+        resample.preset[,i] <- ifelse(resample.preset[,i]==0, -1, 
+                                      resample.preset[,i])
+        inbag <- c(1:n)[resample.preset[,i]==1]
+        newoob <- sample(inbag, koob)
+        resample.preset[newoob,i] <- 0
+    }
+    }else if(param.control$VI.var){
+      cat(" Will not calculate importance variance when resamp.prob>0.5. \n ")
+    }
+
+  }
 
   # random seed 
   

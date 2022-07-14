@@ -18,7 +18,7 @@ List RegUniCombForestFit(arma::mat& X,
 						 arma::uvec& Ncat,
 						 arma::vec& obsweight,
 						 arma::vec& varweight,
-						 arma::umat& ObsTrack,
+						 arma::imat& ObsTrack,
 						 List& param)
 {
   // reading parameters 

@@ -19,9 +19,10 @@ List SurvUniForestFit(arma::mat& X,
                      arma::uvec& Ncat,
                      arma::vec& obsweight,
                      arma::vec& varweight,
-                     arma::umat& ObsTrack,
+                     arma::imat& ObsTrack,
                      List& param_r)
 {
+  
   // reading parameters 
   PARAM_GLOBAL Param;
   Param.PARAM_READ_R(param_r);
@@ -57,6 +58,8 @@ List SurvUniForestFit(arma::mat& X,
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);
   uvec var_id = linspace<uvec>(0, P-1, P);
+  vec cindex_tree;
+  cindex_tree.zeros(ntrees);
   
   // Initiate prediction objects
   mat Prediction; // initialization means they will be calculated
@@ -64,8 +67,17 @@ List SurvUniForestFit(arma::mat& X,
   
   // VarImp
   vec VarImp;
-  if (importance)
+  vec VarImpVar;
+  if (importance){
     VarImp.zeros(P);
+    VarImpVar.zeros(P);
+  }
+  
+  // importance
+  mat AllImp;
+  
+  if (importance)
+    AllImp.zeros(ntrees, P);
   
   // Run model fitting
   Surv_Uni_Forest_Build((const RLT_SURV_DATA&) SURV_DATA,
@@ -77,7 +89,9 @@ List SurvUniForestFit(arma::mat& X,
                        true,
                        Prediction,
                        OOBPrediction,
-                       VarImp);
+                       VarImp,
+                       AllImp,
+                       cindex_tree);
   
   //initialize return objects
   List ReturnList;
@@ -97,9 +111,31 @@ List SurvUniForestFit(arma::mat& X,
   
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
+  if (importance) ReturnList["VarImpAll"] = AllImp;
+  
+  if(any(ObsTrack.col(0)<0)){
+    
+    size_t B = (size_t) ntrees/2;
+    
+    uvec firsthalf = linspace<uvec>(0, B-1, B);
+    uvec secondhalf = linspace<uvec>(B, 2*B-1, B);
+    
+    mat AllImpt = AllImp.t();
+    
+    arma::mat tmp_diff;
+    arma::mat Cov_Est(P, P, fill::zeros);
+
+    arma::mat Tree_Cov_Est = Cov_Tree(AllImpt, B);
+    
+    Cov_Est=cov(AllImpt.t(), 1);
+
+    arma::mat cov = Tree_Cov_Est - Cov_Est;
+    ReturnList["VarImpCov"] = cov;
+  }
   
   ReturnList["Prediction"] = Prediction;
   ReturnList["OOBPrediction"] = OOBPrediction;
+  ReturnList["cindex_tree"] = cindex_tree;
   
   
   // c index for model fitting 
@@ -220,24 +256,11 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
     
     for(size_t n = 0; n < N; n++){
       tmp_slice = CumPred.slice(n);
-      for(size_t nt = 0; nt < B; nt++){
-        for(size_t tm = 0; tm < tmpts; tm++){
-          for(size_t tm2 = tm; tm2 < tmpts; tm2++){
-            Tree_Cov_Est(tm, tm2, n) += (tmp_slice(tm, nt) - tmp_slice(tm, nt+B)) *
-              (tmp_slice(tm2, nt) - tmp_slice(tm2, nt+B))/2;
-            if(tm==tm2){
-            }else{
-              Tree_Cov_Est(tm2, tm, n) += (tmp_slice(tm, nt) - tmp_slice(tm, nt+B)) *
-                (tmp_slice(tm2, nt) - tmp_slice(tm2, nt+B))/2;
-            }
-          }
-        }
-      }
-      Cov_Est.slice(n)=cov(tmp_slice.t());
+
+      Tree_Cov_Est.slice(n)=Cov_Tree(tmp_slice, B);
+      Cov_Est.slice(n)=cov(tmp_slice.t(), 1);
     }
     
-    Tree_Cov_Est/=B;
-
     arma::cube cov = Tree_Cov_Est - Cov_Est;
     
     for(size_t n=0; n<N; n++){
@@ -250,3 +273,25 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
   
   return ReturnList;
   }
+
+arma::mat Cov_Tree(arma::mat& tmp_slice,
+                   size_t& B){
+  size_t rw = tmp_slice.n_rows;
+  arma::mat Tree_Cov_Est(rw, rw, fill::zeros);
+  
+  for(size_t nt = 0; nt < B; nt++){
+    for(size_t r1 = 0; r1 < rw; r1++){
+      for(size_t r2 = r1; r2 < rw; r2++){
+        Tree_Cov_Est(r1, r2) += (tmp_slice(r1, nt) - tmp_slice(r1, nt+B)) *
+          (tmp_slice(r2, nt) - tmp_slice(r2, nt+B))/2;
+        if(r1==r2){
+        }else{
+          Tree_Cov_Est(r2, r1) += (tmp_slice(r1, nt) - tmp_slice(r1, nt+B)) *
+            (tmp_slice(r2, nt) - tmp_slice(r2, nt+B))/2;
+        }
+      }
+    }
+  }
+  
+  return Tree_Cov_Est/B;
+}

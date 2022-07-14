@@ -60,7 +60,7 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   size_t P = Embed_Param.P;
   size_t ntrees = Embed_Param.ntrees;
 
-  umat ObsTrack;
+  imat ObsTrack;
     
   // initiate forest argument objects
   arma::field<arma::ivec> SplitVar(ntrees);

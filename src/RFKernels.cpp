@@ -123,7 +123,7 @@ List Kernel_Train(arma::field<arma::ivec>& SplitVar,
                      arma::mat& X1,
                      arma::mat& X2,
                      arma::uvec& Ncat,
-                     arma::umat& ObsTrack,
+                     arma::imat& ObsTrack,
                      size_t verbose)
 {
   size_t N1 = X1.n_rows;
@@ -158,7 +158,7 @@ List Kernel_Train(arma::field<arma::ivec>& SplitVar,
     
     // record
     uvec UniqueNode = intersect(unique(TermNode1), unique(TermNode2));
-    uvec intreent = ObsTrack.col(nt);
+    ivec intreent = ObsTrack.col(nt);
     
     for (auto j : UniqueNode)
     {
