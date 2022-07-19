@@ -113,6 +113,8 @@ Reg_Var_Forest <- function(x, y, testx,
     
   }else{
 
+    cat("Variance estimation with `resample.prob` > 0.5, this may not be accurate...")
+      
     RLT.fit <- RLT(x = x, y = y,
                    ntrees = ntrees,
                    mtry = mtry,
