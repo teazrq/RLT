@@ -6,9 +6,11 @@
 #'                 training samples
 #' @param var.est  Whether to estimate the variance of each testing data. 
 #'                 The original forest must be fitted with \code{var.ready = TRUE}.
+#'                 For survival forests, calculates the covariance matrix over all
+#'                 observed time points and calculates critical value for the confidence 
+#'                 band.
 #' @param keep.all whether to keep the prediction from all trees
 #' @param ncores   number of cores
-#' @param calc.cv  For survival forests only: calculate the critical value. IN DEVELOPMENT
 #' @param ... ...
 #'
 #' @return 
@@ -27,7 +29,6 @@ predict.RLT<- function(object,
                        keep.all = FALSE,
                        ncores = 1,
                        verbose = 0,
-                       calc.cv = FALSE,
                        ...)
 {
 
@@ -106,14 +107,17 @@ predict.RLT<- function(object,
                               ncores,
                               verbose)
     
-    if(calc.cv){
-      alpha_options = seq(1.5, 12, by=0.25)
+    if(var.est){
+      #alpha_options = seq(1.5, 12, by=0.25)
+      cv_seq <- c(seq(0.5,0.95,.05),.99)
       MarginalVar <- matrix(0, nrow = dim(testx)[1], 
                             ncol=length(object$timepoints))
       MarginalVarSmooth <- matrix(0, nrow = dim(testx)[1], 
                                   ncol=length(object$timepoints))
-      CVproj <- numeric(dim(testx)[1])
-      CVprojSmooth <- numeric(dim(testx)[1])
+      CVproj <- matrix(0, nrow=dim(testx)[1],ncol=length(cv_seq))
+      CVprojSmooth <- matrix(0, nrow=dim(testx)[1],ncol=length(cv_seq))
+      
+      colnames(CVproj) <- colnames(CVprojSmooth) <- paste0("CV", cv_seq)
       
       for(n in 1:dim(testx)[1]){
         require(Matrix)
@@ -125,25 +129,13 @@ predict.RLT<- function(object,
         
         require(MASS)
         norm_samps <- mvrnorm(10000, pred$CumHazard[n,], pd_proj$mat)
-        cvg_list <- matrix(0, nrow = length(alpha_options), 
-                           ncol = dim(norm_samps)[1])
+
+        norm_samps_pos <- apply(norm_samps, 1, function(r) ifelse(r>0,r,0))
         
-        for(i in 1:length(alpha_options)){
-          high <- alpha_options[i] * sqrt(MarginalVar[n,]) + pred$CumHazard[n,]
-          low <- -alpha_options[i] * sqrt(MarginalVar[n,]) + pred$CumHazard[n,]
-          for(k in 1:dim(norm_samps)[1]){#length(object$timepoints)
-            cvg_list[i,k] <- mean(high >= pmax(norm_samps[k,],0) &
-                                    low <=
-                                    pmax(norm_samps[k,],0))
-          }
-        }
-        full_coverage <- apply(cvg_list, 1, function(x)
-          mean(x==1))  
-        if(any(full_coverage>=0.95)){
-          CVproj[n] <- alpha_options[min(which(full_coverage>=0.95))]
-        }else{
-          CVproj[n] <- 8.25
-        }
+        centered_mat <- apply(norm_samps_pos, 2, function(r) r-pred$CumHazard[n,])
+        cent_scaled_mat <- apply(centered_mat, 2, function(co) co/sqrt(MarginalVar[n,]))
+        cover_cv <- apply(cent_scaled_mat, 2, function(r) max(abs(r)))
+        CVproj[n,] <- quantile(cover_cv, )
         
         b <- bw.nrd(c(1:length(object$timepoints)))
         MarginalVarSmooth[n,] <- ksmooth(x=c(1:length(object$timepoints)),
@@ -158,25 +150,15 @@ predict.RLT<- function(object,
                              conv.norm.type = "F", trace = FALSE,
                              base.matrix = TRUE, corr = FALSE)
         norm_samps <- mvrnorm(1000, pred$CumHazard[n,], pd_proj_sm$mat)
+
+        norm_samps_pos <- apply(norm_samps, 1, function(r) ifelse(r>0,r,0))
         
-        for(i in 1:length(alpha_options)){
-          high <- alpha_options[i] * sqrt(MarginalVarSmooth[n,]) + pred$CumHazard[n,]
-          low <- -alpha_options[i] * sqrt(MarginalVarSmooth[n,]) + pred$CumHazard[n,]
-          for(k in 1:length(object$timepoints)){
-            cvg_list[i,k] <- mean(high[k] >= pmax(norm_samps[,k],0) &
-                                    low[k] <=
-                                    pmax(norm_samps[,k],0))
-          }
-        }
-        full_coverage <- apply(cvg_list, 1, function(x)
-          mean(x==1))  
-        if(any(full_coverage>=0.95)){
-          CVprojSmooth[n] <- alpha_options[min(which(full_coverage>=0.95))]
-        }else{
-          CVprojSmooth[n] <- 8.25
-        }
+        centered_mat <- apply(norm_samps_pos, 2, function(r) r-pred$CumHazard[n,])
+        cent_scaled_mat <- apply(centered_mat, 2, function(co) co/sqrt(MarginalVarSmooth[n,]))
+        cover_cv <- apply(cent_scaled_mat, 2, function(r) max(abs(r)))
+        CVprojSmooth[n,] <- quantile(cover_cv, c(seq(0.5,0.95,.05),.99))
       }
-      
+        
       pred$MarginalVar <- MarginalVar
       pred$MarginalVarSmooth <- MarginalVarSmooth
       pred$CVproj <- CVproj

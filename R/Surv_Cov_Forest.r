@@ -1,7 +1,5 @@
-#' @title                 Survival random forest with variance estimation
-#' @description           This function provides some experimental features 
-#'                        to estimate the variance of random forests. 
-#'                        These trees will always be sampled without replacement.
+#' @title                 Survival random forest with covariance estimation
+#' @description           These trees will always be sampled without replacement.
 #'                        The choices of tuning parameters will be limited.
 #'                        Use at your own risk.
 #'                        
@@ -44,7 +42,7 @@
 #'                        
 #' @param ...             Additional arguments.
 #' 
-#' @return                Prediction and variance estimation of the testing data
+#' @return                Prediction and covariance estimation of the testing data
 #' 
 #' @export Surv_Cov_Forest
 Surv_Cov_Forest <- function(x, y, censor, testx,
@@ -102,7 +100,8 @@ Surv_Cov_Forest <- function(x, y, censor, testx,
                    verbose = verbose,
                    seed = seed, ...)
     
-    RLT.pred = predict(RLT.fit, testx, var.est = TRUE, ncores = ncores)
+    RLT.pred = predict(RLT.fit, testx, var.est = TRUE,
+                       ncores = ncores)
     
     resultMat = list("Survival" = RLT.pred$Survival,
                      "CumHazard" = RLT.pred$CumHazard,

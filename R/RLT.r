@@ -197,12 +197,6 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   
   # set resample.preset if variance estimation is needed
   
-  if(!is.null(param.control$CIvar.ready)){
-    if(param.control$CIvar.ready){
-      var.ready <- TRUE
-    }
-  }
-  
   if (var.ready)
   {
     if (resample.replace)
@@ -283,14 +277,6 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                            ncores, verbose,
                            reinforcement,
                            param.control)
-  
-  
-  if (!is.null(param.control$CIvar.ready)) {
-    if(!is.logical(param.control$CIvar.ready)){
-      cat("CIvar.ready must be TRUE or FALSE. Setting to FALSE. \n")
-      param.control$CIvar.ready <- FALSE
-    }
-  }
   
   if (!is.null(param.control$VI.var)) {
     if(!is.logical(param.control$VI.var)){

@@ -70,9 +70,6 @@ check_input <- function(x, y, censor, model)
 #' For survival, `"logrank"`, `"suplogrank"`, and `"coxgrad"` are available. When 
 #' `"coxgrad"` is used, variable weights `"var.w"` are used as the penalty. 
 #' 
-#' \code{CIvar.ready}=TRUE will calculate a critical value for confidence bands 
-#' for survival prediction curves. Ignored otherwise.
-#' 
 #' \code{VI.var}=TRUE will calculate variance for variable importance.
 #' If  \code{VI.var}=TRUE, \code{resamp.prob}\times(1-\code{oob.prop}) observations
 #' will be used for building each tree, \code{resamp.prob}\times\code{oob.prop}
