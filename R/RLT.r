@@ -123,6 +123,15 @@
 #' \item{ObsTrack}{An \eqn{n \times} \code{ntrees} matrix that indicates which observations 
 #'                 are used in each tree. Provided if \code{resample.preset}
 #'                 is used or \code{resample.track = TRUE}.}
+#'                 
+#'  \strong{For Survival Forests}               
+#'  \item{NFail}{The number of observed failure times}
+#'  \item{VarImpCov}{if \code{VI.var=TRUE}, estimated covariance matrix for the variable importance}
+#'  \item{cindex_tree}{Out-of-bag c-index for each tree}
+#'  \item{cindex}{Out-of-bag c-index for the forest}
+#'  \item{timepoints}{ordered observed failure times}
+#'  \item{y.point}{order of \eqn{y} by observed failure times}               
+#'                 
 #' 
 #' @references Zhu, R., Zeng, D., & Kosorok, M. R. (2015) "Reinforcement Learning Trees." Journal of the American Statistical Association. 110(512), 1770-1784.
 #' 

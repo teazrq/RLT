@@ -1,6 +1,6 @@
 #' @title C-index
 #' @name cindex
-#' @description calculate c-index for survival data
+#' @description Calculate c-index for survival data
 #' @param y survival time
 #' @param censor The censoring indicator if survival model is used
 #' @param pred the predicted value for each subject

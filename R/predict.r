@@ -20,6 +20,39 @@
 #' \item{Prediction}{Prediction}
 #' \item{Variance}{if \code{var.est = TRUE} and the fitted object is 
 #'                 \code{var.ready = TRUE}}
+#'                 
+#'  \strong{For Survival Forests}               
+#' \item{hazard}{predicted hazard functions}
+#' \item{CumHazard}{predicted cumulative hazard function}
+#' \item{Survival}{predicted survival function}
+#' \item{Allhazard}{if \code{keep.all = TRUE}, the predicted hazard function for each 
+#'                 observation and each tree}
+#' \item{AllCHF}{if \code{keep.all = TRUE}, the predicted cumulative hazard function for each 
+#'                 observation and each tree}
+#' \item{Cov}{if \code{var.est = TRUE} and the fitted object is 
+#'                 \code{var.ready = TRUE}. For each test subject, a matrix of size NFail\eqn{\times}NFail
+#'                 where NFail is the number of observed failure times in the training data}
+#' \item{Var}{if \code{var.est = TRUE} and the fitted object is 
+#'                 \code{var.ready = TRUE}. Marginal variance for each subject}
+#'  \item{timepoints}{ordered observed failure times from the training data}               
+#' \item{MarginalVar}{if \code{var.est = TRUE} and the fitted object is 
+#'                 \code{var.ready = TRUE}. Marginal variance for each subject
+#'                 from the Cov matrix projected to the nearest positive definite
+#'                 matrix}
+#' \item{MarginalVarSmooth}{if \code{var.est = TRUE} and the fitted object is 
+#'                 \code{var.ready = TRUE}. Marginal variance for each subject
+#'                 from the Cov matrix projected to the nearest positive definite
+#'                 matrix and then smoothed using Gaussian kernel smoothing}
+#' \item{CVproj}{if \code{var.est = TRUE} and the fitted object is 
+#'                 \code{var.ready = TRUE}. Critical values to calculate confidence bands around
+#'                 cumulative hazard predictions at several confidence levels. Calculated using 
+#'                 \code{MarginalVar}}
+#' \item{CVprojSmooth}{if \code{var.est = TRUE} and the fitted object is 
+#'                 \code{var.ready = TRUE}. Critical values to calculate confidence bands around
+#'                 cumulative hazard predictions at several confidence levels. Calculated using 
+#'                 \code{MarginalVarSmooth}}
+#'                 
+#'                 
 #'
 #' @export
 
@@ -106,6 +139,8 @@ predict.RLT<- function(object,
                               keep.all,
                               ncores,
                               verbose)
+    
+    pred$timepoints <- object$timepoints
     
     if(var.est){
       #alpha_options = seq(1.5, 12, by=0.25)
