@@ -35,20 +35,20 @@ void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Cla
     if ( lowindex > highindex ) lowindex = highindex;
     
     return;
-    DEBUG_Rcout << "        --- case 1 with lowindex " << lowindex << " highindex " << highindex << std::endl;
+    //DEBUG_Rcout << "        --- case 1 with lowindex " << lowindex << " highindex " << highindex << std::endl;
   }
   
   if ( lowcount >= nmin and highcount < nmin ) // only need to fix highindex
   {
     while( highcount < nmin and lowindex <= highindex ){
-      DEBUG_Rcout << "        --- adding " << cat_reduced[highindex].count << " count to highcount " << highcount << std::endl;
+      //DEBUG_Rcout << "        --- adding " << cat_reduced[highindex].count << " count to highcount " << highcount << std::endl;
       highcount += cat_reduced[highindex].count;
       highindex--;
     }
     
     if (highindex < lowindex or highindex > true_cat - 2 ) highindex = lowindex; // sometimes highindex will be negative and turned into very large number 
     
-    DEBUG_Rcout << "        --- case 2 with lowindex " << lowindex << " highindex " << highindex << std::endl;    
+    //DEBUG_Rcout << "        --- case 2 with lowindex " << lowindex << " highindex " << highindex << std::endl;    
     
     return;
   }
@@ -71,7 +71,7 @@ void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Cla
       
       if (highindex < lowindex or highindex > true_cat - 2 ) highindex = lowindex;
       
-      DEBUG_Rcout << "        --- case 3 with lowindex " << lowindex << " highindex " << highindex << std::endl;
+      //DEBUG_Rcout << "        --- case 3 with lowindex " << lowindex << " highindex " << highindex << std::endl;
       return;
       
     }else{ // fix highindex first
@@ -89,7 +89,7 @@ void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Cla
       
       if (lowindex > highindex) lowindex = highindex;
       
-      DEBUG_Rcout << "        --- case 4 with lowindex " << lowindex << " highindex " << highindex << std::endl;
+      //DEBUG_Rcout << "        --- case 4 with lowindex " << lowindex << " highindex " << highindex << std::endl;
       return;
     }
   }

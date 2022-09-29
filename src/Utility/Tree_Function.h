@@ -12,8 +12,8 @@
 using namespace Rcpp;
 using namespace arma;
 
-# include "Tree_Definition.h"
 # include "Utility.h"
+# include "Tree_Definition.h"
 
 // ********************//
 // functions for trees //

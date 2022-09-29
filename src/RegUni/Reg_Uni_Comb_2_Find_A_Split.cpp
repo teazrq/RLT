@@ -18,7 +18,7 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
                                Rand& rngl)
 {
   
-  Rcout << "Reg_Uni_Comb_Find_A_Split:" << std::endl;
+  RLTcout << "Reg_Uni_Comb_Find_A_Split:" << std::endl;
   
   // preset
   OneSplit.var.zeros();
@@ -53,8 +53,8 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   split_score = split_score(indices);
   //split_value = split_value(indices);
   
-  Rcout << "best vars \n" << split_var << std::endl;
-  Rcout << "best scores \n" << split_score << std::endl;
+  RLTcout << "best vars \n" << split_var << std::endl;
+  RLTcout << "best scores \n" << split_score << std::endl;
 
   // if the best variable is categorical
   // do single categorical split
@@ -63,7 +63,7 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   {
     size_t var_j = split_var(0);
     
-    Rcout << "Use single cat split" <<  var_j << std::endl;
+    RLTcout << "Use single cat split" <<  var_j << std::endl;
     
     //Initialize objects
     Split_Class TempSplit;
@@ -112,7 +112,7 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   {
     size_t var_j = split_var(0);
     
-    Rcout << "Use single cont split" <<  var_j << std::endl;
+    RLTcout << "Use single cont split" <<  var_j << std::endl;
     
     //Initialize objects
     Split_Class TempSplit;

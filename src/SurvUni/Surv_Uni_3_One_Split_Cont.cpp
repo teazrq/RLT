@@ -33,7 +33,7 @@ void Surv_Uni_Split_Cont(Split_Class& TempSplit,
   arma::vec temp_cut_arma;
   double temp_cut;
   size_t temp_ind;
-  double temp_score;
+  double temp_score = -1;
   
   if (split_gen == 1) // random split
   {
@@ -45,7 +45,7 @@ void Surv_Uni_Split_Cont(Split_Class& TempSplit,
       
       // calculate score
       if (useobsweight)
-        Rcout << "Weighting not implemented" << std::endl;
+        RLTcout << "Weighting not implemented" << std::endl;
       else
         temp_score = surv_cont_score_at_cut(obs_id, x, Y, Censor, NFail, 
                                             All_Fail, All_Risk, Temp_Vec, temp_cut,
@@ -92,7 +92,7 @@ void Surv_Uni_Split_Cont(Split_Class& TempSplit,
     
     if (lowindex > highindex)
     {
-      Rcout << "lowindex > highindex... this shouldn't happen." << std::endl;
+      RLTcout << "lowindex > highindex... this shouldn't happen." << std::endl;
       return;
     }
   }
@@ -105,7 +105,7 @@ void Surv_Uni_Split_Cont(Split_Class& TempSplit,
       temp_ind = rngl.rand_sizet( lowindex, highindex); //intRand(lowindex, highindex);
       
       if (useobsweight)
-        Rcout << "Weighting not implemented" << std::endl;
+        RLTcout << "Weighting not implemented" << std::endl;
       else
         temp_score = surv_cont_score_at_index(indices, obs_ranked, Y, Censor, NFail,
                                               All_Fail, All_Risk,  Temp_Vec, temp_ind,
@@ -125,7 +125,7 @@ void Surv_Uni_Split_Cont(Split_Class& TempSplit,
   {
     // get score
     if (useobsweight)
-      Rcout << "Weighting not implemented" << std::endl;
+      RLTcout << "Weighting not implemented" << std::endl;
     else
       surv_cont_score_best(indices, obs_ranked, x, Y, Censor,  NFail,
                            All_Fail, All_Risk, Temp_Vec, lowindex, highindex, 
@@ -150,7 +150,7 @@ double surv_cont_score_at_cut(const uvec& obs_id,
                         int split_rule)
 {
   size_t N = obs_id.size();
-  double temp_score;
+  double temp_score = -1;
   
   uvec Left_Risk(NFail+1);
   uvec Left_Fail(NFail+1);
@@ -197,7 +197,7 @@ double surv_cont_score_at_index(uvec& indices,
                                size_t a_random_ind,
                                int split_rule)
 {
-  double temp_score;
+  double temp_score = -1;
   uvec Left_Risk(NFail+1);
   uvec Left_Fail(NFail+1);
   
@@ -239,7 +239,7 @@ void surv_cont_score_best(uvec& indices,
                     int split_rule)
 {
 
-  double score;
+  double score = -1;
   uvec Left_Risk(NFail+1);
   uvec Left_Fail(NFail+1);
   
@@ -467,7 +467,7 @@ void Surv_Uni_Split_Cont_Pseudo(Split_Class& TempSplit,
       
       if (lowindex > highindex)
       {
-        Rcout << "lowindex > highindex... this shouldn't happen." << std::endl;
+        RLTcout << "lowindex > highindex... this shouldn't happen." << std::endl;
         return;
       }
     }

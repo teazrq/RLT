@@ -18,7 +18,7 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
                              Rand& rngl)
 {
   
-  Rcout << "Use comb cont split with variables \n" << use_var << std::endl;
+  RLTcout << "Use comb cont split with variables \n" << use_var << std::endl;
  
   // construct some new data 
   bool useobsweight = Param.useobsweight;
@@ -40,7 +40,7 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
   
   if (split_rule == 1 and N >= 15) // default sir
   {
-    Rcout << "using SIR split --- not done yet, switching to pca \n" << std::endl;
+    RLTcout << "using SIR split --- not done yet, switching to pca \n" << std::endl;
     split_rule = 3;
     
     //mat M = sir(newX, newY, newW, useobsweight, sqrt(N));
@@ -57,7 +57,7 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
   
   if (split_rule == 2 and N >= 15) // save
   {
-    Rcout << "using SAVE split --- not done yet, switching to pca \n" << std::endl;
+    RLTcout << "using SAVE split --- not done yet, switching to pca \n" << std::endl;
     split_rule = 3;
     
     //mat M = save(newX, newY, newW, useobsweight, sqrt(N));
@@ -72,7 +72,7 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
   
   if (split_rule == 3 or N < 15) // pca
   {
-    Rcout << "using PCA split \n" << std::endl;
+    RLTcout << "using PCA split \n" << std::endl;
 
     mat coeff = princomp(newX);
     
@@ -90,7 +90,7 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
   
   if (split_gen == 1) // random split
   {
-    Rcout << "random splitting \n" << std::endl;
+    RLTcout << "random splitting \n" << std::endl;
     
     for (size_t k = 0; k < nsplit; k++)
     {
@@ -104,7 +104,7 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
       else
         temp_score = reg_uni_cont_score_cut_full(U1, newY, temp_cut);
       
-      Rcout << "Try cut " << temp_cut << " with score " << temp_score << std::endl;
+      RLTcout << "Try cut " << temp_cut << " with score " << temp_score << std::endl;
       
       if (temp_score > OneSplit.score)
       {
@@ -151,20 +151,20 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
     
     if (lowindex > highindex)
     {
-      Rcout << "lowindex > highindex... this shouldn't happen." << std::endl;
+      RLTcout << "lowindex > highindex... this shouldn't happen." << std::endl;
       return;
     }
   }
   
   if (split_gen == 2) // rank split
   {
-    Rcout << "Rank split\n" << std::endl;
+    RLTcout << "Rank split\n" << std::endl;
     
     for (size_t k = 0; k < nsplit; k++)
     {
       
       if ( U1(lowindex) == U1(lowindex+1) or U1(highindex) == U1(highindex+1) )
-        Rcout << "still something wrong here " << std::endl;
+        RLTcout << "still something wrong here " << std::endl;
       
       // generate a cut off
       size_t temp_ind = rngl.rand_sizet( lowindex, highindex );
@@ -200,7 +200,7 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
   
   if (split_gen == 3) // best split
   {
-    Rcout << "Best split\n" << std::endl;
+    RLTcout << "Best split\n" << std::endl;
     return;
   }
 
@@ -481,13 +481,13 @@ arma::mat save(arma::mat& newX,
       // next slice
       rownum += nh;
       
-      Rcout << "k= " << k << std::endl;
+      RLTcout << "k= " << k << std::endl;
       
       // slice cov and M
       mat C = Diag - arma::cov(xslice);
       M += C * C.t();
       
-      Rcout << "complete " << k << std::endl;
+      RLTcout << "complete " << k << std::endl;
     }
   }
   

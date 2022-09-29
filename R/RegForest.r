@@ -12,12 +12,10 @@ RegForest <- function(x, y, ncat,
   # prepare y
   storage.mode(y) <- "double"
   
-
-  
   if (param$linear.comb == 1)
   {
     if (param$verbose > 0)
-      cat("Fitting Regression Forest ... \n")    
+      cat("Fitting Regression Forest ... \n")
       
     # check splitting rules
     all.split.rule = c("default")
@@ -44,7 +42,7 @@ RegForest <- function(x, y, ncat,
     
     # check splitting rules
     # default is sir
-    all.split.rule = c("default", "save", "pca")
+    all.split.rule = c("default", "save", "pca", "naive")
     param$"split.rule" <- match.arg(param$"split.rule", all.split.rule)
     param$"split.rule" <- as.integer(match(param$"split.rule", all.split.rule))
     

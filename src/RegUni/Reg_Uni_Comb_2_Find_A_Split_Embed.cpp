@@ -17,7 +17,7 @@ void Reg_Uni_Comb_Find_A_Split_Embed(Comb_Split_Class& OneSplit,
                                   Rand& rngl)
 {
   
-  Rcout << "Reg_Uni_Comb_Find_A_Split_Embed" << std::endl;
+  RLTcout << "Reg_Uni_Comb_Find_A_Split_Embed" << std::endl;
   
   PARAM_GLOBAL Embed_Param = Param;
   

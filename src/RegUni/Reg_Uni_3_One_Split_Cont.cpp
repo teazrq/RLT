@@ -87,7 +87,7 @@ void Reg_Uni_Split_Cont(Split_Class& TempSplit,
     
     if (lowindex > highindex)
     {
-      Rcout << "lowindex > highindex... this shouldn't happen." << std::endl;
+      RLTcout << "lowindex > highindex... this shouldn't happen." << std::endl;
       return;
     }
   }

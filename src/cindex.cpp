@@ -15,7 +15,7 @@ double cindex_d(arma::vec& Y,
               arma::vec& pred)
 {
 
-  DEBUG_Rcout << "-- calculate cindex (int Y) " << std::endl;
+  //DEBUG_Rcout << "-- calculate cindex (int Y) " << std::endl;
   size_t P = 0;
   double C = 0;
   
@@ -86,7 +86,7 @@ double cindex_i(arma::uvec& Y,
               arma::vec& pred)
 {
   
-  DEBUG_Rcout << "-- calculate cindex (int Y) " << std::endl;
+  //DEBUG_Rcout << "-- calculate cindex (int Y) " << std::endl;
   size_t P = 0;
   double C = 0;
   

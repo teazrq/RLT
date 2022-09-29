@@ -36,7 +36,7 @@ void Surv_Uni_Split_Cat(Split_Class& TempSplit,
   }
   
   if (useobsweight){
-    Rcout << "Weighting not implemented" << std::endl;
+    RLTcout << "Weighting not implemented" << std::endl;
   }else{
     /*
      for (size_t i = 0; i < obs_id.size(); i++)

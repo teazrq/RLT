@@ -11,6 +11,8 @@
 using namespace Rcpp;
 using namespace arma;
 
+#include "Utility.h"
+
 #ifndef RLT_TREE_DEFINITION
 #define RLT_TREE_DEFINITION
 
@@ -121,75 +123,85 @@ public:
 
   void print() {
     
-      Rcout << "---------- Parameters Summary ----------" << std::endl;
-      Rcout << "              (N, P) = (" << N << ", " << P << ")" << std::endl;
-      Rcout << "          # of trees = " << ntrees << std::endl;
-      Rcout << "        (mtry, nmin) = (" << mtry << ", " << nmin << ")" << std::endl;
+      RLTcout << "---------- Parameters Summary ----------" << std::endl;
+      RLTcout << "              (N, P) = (" << N << ", " << P << ")" << std::endl;
+      RLTcout << "          # of trees = " << ntrees << std::endl;
+      RLTcout << "        (mtry, nmin) = (" << mtry << ", " << nmin << ")" << std::endl;
       
       if (split_gen == 3)
-        Rcout << "      splitting rule = Best" << std::endl;
+        RLTcout << "      splitting rule = Best" << std::endl;
       
       if (split_gen < 3)
-        Rcout << "      splitting rule = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+        RLTcout << "      splitting rule = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
 
-      Rcout << "            sampling = " << resample_prob << (replacement ? " w/ replace" : " w/o replace") << std::endl;
+      RLTcout << "            sampling = " << resample_prob << (replacement ? " w/ replace" : " w/o replace") << std::endl;
       
-      Rcout << "  (Obs, Var) weights = (" << (useobsweight ? "Yes" : "No") << ", " << (usevarweight ? "Yes" : "No") << ")" << std::endl;
+      RLTcout << "  (Obs, Var) weights = (" << (useobsweight ? "Yes" : "No") << ", " << (usevarweight ? "Yes" : "No") << ")" << std::endl;
 
       if (alpha > 0)
-        Rcout << "               alpha = " << alpha << std::endl;
+        RLTcout << "               alpha = " << alpha << std::endl;
       
-      Rcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
-      Rcout << "----------------------------------------" << std::endl;
+      if (linear_comb > 1)
+        RLTcout << "  linear combination = " << linear_comb << std::endl;
+      
+      RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
+      RLTcout << "----------------------------------------" << std::endl;
+      if (reinforcement) rlt_print();
   };
   
   void print() const {
     
-    Rcout << "---------- Parameters Summary ----------" << std::endl;
-    Rcout << "              (N, P) = (" << N << ", " << P << ")" << std::endl;
-    Rcout << "          # of trees = " << ntrees << std::endl;
-    Rcout << "        (mtry, nmin) = (" << mtry << ", " << nmin << ")" << std::endl;
+    RLTcout << "---------- Parameters Summary ----------" << std::endl;
+    RLTcout << "              (N, P) = (" << N << ", " << P << ")" << std::endl;
+    RLTcout << "          # of trees = " << ntrees << std::endl;
+    RLTcout << "        (mtry, nmin) = (" << mtry << ", " << nmin << ")" << std::endl;
     
     if (split_gen == 3)
-      Rcout << "      splitting rule = Best" << std::endl;
+        RLTcout << "      splitting rule = Best" << std::endl;
     
     if (split_gen < 3)
-      Rcout << "      splitting rule = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+        RLTcout << "      splitting rule = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
     
-    Rcout << "            sampling = " << resample_prob << (replacement ? " w/ replace" : " w/o replace") << std::endl;
+    RLTcout << "            sampling = " << resample_prob << (replacement ? " w/ replace" : " w/o replace") << std::endl;
     
-    Rcout << "  (Obs, Var) weights = (" << (useobsweight ? "Yes" : "No") << ", " << (usevarweight ? "Yes" : "No") << ")" << std::endl;
+    RLTcout << "  (Obs, Var) weights = (" << (useobsweight ? "Yes" : "No") << ", " << (usevarweight ? "Yes" : "No") << ")" << std::endl;
     
     if (alpha > 0)
-      Rcout << "               alpha = " << alpha << std::endl;
+        RLTcout << "               alpha = " << alpha << std::endl;
     
-    Rcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
-    Rcout << "----------------------------------------" << std::endl;
+    if (linear_comb > 1)
+        RLTcout << "  linear combination = " << linear_comb << std::endl;
+    
+    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
+    RLTcout << "----------------------------------------" << std::endl;
+    if (reinforcement) rlt_print();
   };
   
   void rlt_print() {
     
-    Rcout << " embed.ntrees        = " << embed_ntrees << std::endl;
-    Rcout << " embed.resample_prob = " << embed_resample_prob << std::endl;
-    Rcout << " embed.mtry          = " << embed_mtry << std::endl;
-    Rcout << " embed.nmin          = " << embed_nmin << std::endl;
-    Rcout << " embed.split_gen     = " << embed_split_gen << std::endl;
-    Rcout << " embed.nsplit        = " << embed_nsplit << std::endl;
-    Rcout << " embed.mute          = " << embed_mute << std::endl;
-    Rcout << " embed.protect       = " << embed_protect << std::endl;
+    RLTcout << " embed.ntrees        = " << embed_ntrees << std::endl;
+    RLTcout << " embed.resample_prob = " << embed_resample_prob << std::endl;
+    RLTcout << " embed.mtry          = " << embed_mtry << std::endl;
+    RLTcout << " embed.nmin          = " << embed_nmin << std::endl;
+    RLTcout << " embed.split_gen     = " << embed_split_gen << std::endl;
+    RLTcout << " embed.nsplit        = " << embed_nsplit << std::endl;
+    RLTcout << " embed.mute          = " << embed_mute << std::endl;
+    RLTcout << " embed.protect       = " << embed_protect << std::endl;
+    RLTcout << "----------------------------------------" << std::endl;
     
   };
   
   void rlt_print() const {
     
-    Rcout << " embed.ntrees        = " << embed_ntrees << std::endl;
-    Rcout << " embed.resample_prob = " << embed_resample_prob << std::endl;
-    Rcout << " embed.mtry          = " << embed_mtry << std::endl;
-    Rcout << " embed.nmin          = " << embed_nmin << std::endl;
-    Rcout << " embed.split_gen     = " << embed_split_gen << std::endl;
-    Rcout << " embed.nsplit        = " << embed_nsplit << std::endl;
-    Rcout << " embed.mute          = " << embed_mute << std::endl;
-    Rcout << " embed.protect       = " << embed_protect << std::endl;
+    RLTcout << " embed.ntrees        = " << embed_ntrees << std::endl;
+    RLTcout << " embed.resample_prob = " << embed_resample_prob << std::endl;
+    RLTcout << " embed.mtry          = " << embed_mtry << std::endl;
+    RLTcout << " embed.nmin          = " << embed_nmin << std::endl;
+    RLTcout << " embed.split_gen     = " << embed_split_gen << std::endl;
+    RLTcout << " embed.nsplit        = " << embed_nsplit << std::endl;
+    RLTcout << " embed.mute          = " << embed_mute << std::endl;
+    RLTcout << " embed.protect       = " << embed_protect << std::endl;
+    RLTcout << "----------------------------------------" << std::endl;
 
   };
 };
@@ -242,7 +254,7 @@ public:
   
   void print() {
     
-    Rcout << "This tree has length " << get_tree_length() << std::endl;
+    RLTcout << "This tree has length " << get_tree_length() << std::endl;
     
   }
   
@@ -289,7 +301,7 @@ public:
   
   void print() {
     
-    Rcout << "This tree has length " << get_tree_length() << std::endl;
+    RLTcout << "This tree has length " << get_tree_length() << std::endl;
 
   }
   
@@ -307,7 +319,7 @@ public:
   double score = -1;
   
   void print(void) {
-    Rcout << "Splitting variable is " << var << " value is " << value << " score is " << score << std::endl;
+      RLTcout << "Splitting variable is " << var << " value is " << value << " score is " << score << std::endl;
   }
 };
 
@@ -324,7 +336,7 @@ public:
     load(load) {}
   
   void print(void) {
-    Rcout << "Splitting variable is\n" << var << "load is\n" << load << "value is " << value << "; score is " << score << std::endl;
+    RLTcout << "Splitting variable is\n" << var << "load is\n" << load << "value is " << value << "; score is " << score << std::endl;
   }
 };
 
@@ -341,7 +353,7 @@ public:
     double score = 0; // for sorting
     
     void print() {
-        Rcout << "Category is " << cat << " count is " << count << " weight is " << weight << " score is " << score << std::endl;
+        RLTcout << "Category is " << cat << " count is " << count << " weight is " << weight << " score is " << score << std::endl;
     }
 };
 

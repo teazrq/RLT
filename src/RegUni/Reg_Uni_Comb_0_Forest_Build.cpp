@@ -107,7 +107,7 @@ void Reg_Uni_Comb_Forest_Build(const RLT_REG_DATA& REG_DATA,
       TreeLength = OneTree.get_tree_length();
       OneTree.trim(TreeLength);
 
-      Rcout << "print tree ..." << std::endl;
+      RLTcout << "print tree ..." << std::endl;
       
       OneTree.print();
 

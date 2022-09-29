@@ -59,7 +59,7 @@ List RegUniCombForestFit(arma::mat& X,
   
   // Initiate prediction objects
   vec Prediction;
-  vec OOBPrediction;  
+  vec OOBPrediction;
   
   // VarImp
   vec VarImp;

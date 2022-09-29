@@ -68,11 +68,16 @@ check_input <- function(x, y, censor, model)
 #' \code{split.rule} specifies the splitting rule for comparisons. For regression, 
 #' variance reduction `"var"` is used; for classification, `"gini"` index is used.
 #' For survival, `"logrank"`, `"suplogrank"`, and `"coxgrad"` are available. When 
-#' `"coxgrad"` is used, variable weights `"var.w"` are used as the penalty. 
+#' `"coxgrad"` is used, variable weights `"var.w"` are used as the penalty. For linear
+#' combination splitting with embedded model screening \code{linear.comb > 1}, 
+#' variance reduction is always used for screening and \code{split.rule} specifies 
+#' the method for calculating the linear combination coefficient: `"sir"` (default) 
+#' for sliced inverse regression, `"pca"`, `"save"` and `"naive"` for the original 
+#' method in the RLT paper.
 #' 
 #' \code{VI.var=TRUE} will calculate variance for variable importance.
-#' If  \code{VI.var=TRUE}, \code{resamp.prob}\times(1-\code{oob.prop}) observations
-#' will be used for building each tree, \code{resamp.prob}\times\code{oob.prop}
+#' If \code{VI.var=TRUE}, \code{resamp.prob}\eqn{\times}(1-\code{oob.prop}) observations
+#' will be used for building each tree, \code{resamp.prob}\eqn{\times}\code{oob.prop}
 #' observations will be used for the out-of-bag sample, and 1-\code{resamp.prob}
 #' observations will not be used as in-bag or out-of-bag samples for that tree at
 #' all. Only implemented for survival forests. Ignored otherwise.

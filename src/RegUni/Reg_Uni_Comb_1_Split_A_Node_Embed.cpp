@@ -19,5 +19,5 @@ void Reg_Uni_Comb_Split_A_Node_Embed(size_t Node,
                                   const uvec& var_protect,
                                   Rand& rngl)
 {
-  Rcout << "Reg_Uni_Comb_Split_A_Node_Embed" << std::endl;
+  RLTcout << "Reg_Uni_Comb_Split_A_Node_Embed" << std::endl;
 }

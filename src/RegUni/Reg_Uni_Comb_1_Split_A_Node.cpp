@@ -24,7 +24,7 @@ void Reg_Uni_Comb_Split_A_Node(size_t Node,
   size_t linear_comb = Param.linear_comb;
   
   if (Param.verbose)
-    Rcout << "at node" << Node << " ..." << std::endl;
+    RLTcout << "at node" << Node << " ..." << std::endl;
   
   if (N <= nmin)
   {
@@ -42,7 +42,7 @@ void Reg_Uni_Comb_Split_A_Node(size_t Node,
     //Figure out where to split the node
     Reg_Uni_Comb_Find_A_Split(OneSplit, REG_DATA, Param, obs_id, var_id, rngl);
     
-    Rcout << " back to Reg_Uni_Comb_Split_A_Node ... " << std::endl;
+    RLTcout << " back to Reg_Uni_Comb_Split_A_Node ... " << std::endl;
     OneSplit.print();
     
 goto TERMINATENODE;

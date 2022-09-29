@@ -101,8 +101,8 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       if (reinforcement)
       {
         uvec var_protect;
-        Rcout <<"Reinforced survival trees not yet implemented"<<std::endl;
-        Rcout <<"Ignoring command and using standard trees."<<std::endl;
+        RLTcout <<"Reinforced survival trees not yet implemented"<<std::endl;
+        RLTcout <<"Ignoring command and using standard trees."<<std::endl;
       }
         Surv_Uni_Split_A_Node(0, OneTree, SURV_DATA, 
                              Param, inbag_id, var_id, rngl);

@@ -13,6 +13,12 @@
 using namespace Rcpp;
 using namespace arma;
 
+// print function for R / python 
+
+#ifndef RLT_PRINT
+#define RLTcout Rcout
+#endif
+
 // ****************//
 //  OMP functions  //
 // ****************//
@@ -23,7 +29,7 @@ using namespace arma;
 #else
 #define omp_get_thread_num() 0
 #define omp_get_max_threads() 1
-#define OMPMSG(...) Rprintf("Package is not compiled with OpenMP (omp.h).\n")
+#define OMPMSG(...) RLTcout << "Package is not compiled with OpenMP (omp.h).\n" << std::endl;
 #endif
 
 // ******* //
@@ -31,11 +37,11 @@ using namespace arma;
 // ******* //
 
 // this debug function will output to R
-#ifdef RLT_DEBUG
-#define DEBUG_Rcout Rcout
-#else
-#define DEBUG_Rcout 0 && Rcout
-#endif
+//#ifdef RLT_DEBUG
+//#define DEBUG_Rcout Rcout
+//#else
+//#define DEBUG_Rcout 0 && Rcout
+//#endif
 
 // this debug function will output results to a .txt file
 /* void printLog(const char*, const char*, const int, const double);
@@ -148,7 +154,7 @@ public:
     
     if (Num > N) 
     {
-      Rcout << "Num = " << Num << " N = " << N << " min = " << min << " max = " << max << std::endl;
+      RLTcout << "Num = " << Num << " N = " << N << " min = " << min << " max = " << max << std::endl;
       Num = N;
     }
 

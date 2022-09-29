@@ -233,7 +233,7 @@ public:
   }
 
   void print(void) {
-    Rcout << "Category is " << cat << " count is " << count << " weight is " << weight << " y sum is " << y << " score is " << score << std::endl;
+    RLTcout << "Category is " << cat << " count is " << count << " weight is " << weight << " y sum is " << y << " score is " << score << std::endl;
   }
 };
 

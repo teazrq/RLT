@@ -28,8 +28,8 @@
 # include <RcppArmadillo.h>
 # include <Rcpp.h>
 
-# include "Utility/Tree_Definition.h"
 # include "Utility/Utility.h"
+# include "Utility/Tree_Definition.h"
 # include "Utility/Tree_Function.h"
 
 // regression
