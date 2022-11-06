@@ -152,8 +152,6 @@ predict.RLT<- function(object,
       CVproj <- matrix(0, nrow=dim(testx)[1],ncol=length(cv_seq))
       CVprojSmooth <- matrix(0, nrow=dim(testx)[1],ncol=length(cv_seq))
       
-      colnames(CVproj) <- colnames(CVprojSmooth) <- paste0("CV", cv_seq)
-      
       for(n in 1:dim(testx)[1]){
         require(Matrix)
         pd_proj <- nearPD(as.matrix(pred$Cov[,,n]), maxit = 100,
@@ -163,14 +161,9 @@ predict.RLT<- function(object,
         MarginalVar[n,] <- diag(pd_proj$mat)
         
         require(MASS)
-        norm_samps <- mvrnorm(10000, pred$CumHazard[n,], pd_proj$mat)
 
-        norm_samps_pos <- apply(norm_samps, 1, function(r) ifelse(r>0,r,0))
-        
-        centered_mat <- apply(norm_samps_pos, 2, function(r) r-pred$CumHazard[n,])
-        cent_scaled_mat <- apply(centered_mat, 2, function(co) co/sqrt(MarginalVar[n,]))
-        cover_cv <- apply(cent_scaled_mat, 2, function(r) max(abs(r)))
-        CVproj[n,] <- quantile(cover_cv, )
+        CVproj[n,] <- quantile(MvnCV(1000, pred$CumHazard[n,], pd_proj$mat,
+                                           MarginalVar[n,]), cv_seq)
         
         b <- bw.nrd(c(1:length(object$timepoints)))
         MarginalVarSmooth[n,] <- ksmooth(x=c(1:length(object$timepoints)),
@@ -184,18 +177,14 @@ predict.RLT<- function(object,
                              ensureSymmetry = FALSE,
                              conv.norm.type = "F", trace = FALSE,
                              base.matrix = TRUE, corr = FALSE)
-        norm_samps <- mvrnorm(1000, pred$CumHazard[n,], pd_proj_sm$mat)
 
-        norm_samps_pos <- apply(norm_samps, 1, function(r) ifelse(r>0,r,0))
-        
-        centered_mat <- apply(norm_samps_pos, 2, function(r) r-pred$CumHazard[n,])
-        cent_scaled_mat <- apply(centered_mat, 2, function(co) co/sqrt(MarginalVarSmooth[n,]))
-        cover_cv <- apply(cent_scaled_mat, 2, function(r) max(abs(r)))
-        CVprojSmooth[n,] <- quantile(cover_cv, c(seq(0.5,0.95,.05),.99))
+        CVprojSmooth[n,] <- quantile(MvnCV(1000, pred$CumHazard[n,], pd_proj_sm$mat,
+                                           MarginalVarSmooth[n,]), cv_seq)
       }
-        
+
       pred$MarginalVar <- MarginalVar
       pred$MarginalVarSmooth <- MarginalVarSmooth
+      colnames(CVproj) <- colnames(CVprojSmooth) <- paste0("CV", cv_seq)
       pred$CVproj <- CVproj
       pred$CVprojSmooth <- CVprojSmooth
       

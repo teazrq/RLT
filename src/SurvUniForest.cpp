@@ -254,18 +254,24 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
     arma::cube Cov_Est(tmpts, tmpts, N, fill::zeros);
     arma::mat Var_Est(N, tmpts, fill::zeros);
     
+  #pragma omp parallel num_threads(usecores)
+  {
+    #pragma omp for schedule(static)
     for(size_t n = 0; n < N; n++){
-      tmp_slice = CumPred.slice(n);
-
-      Tree_Cov_Est.slice(n)=Cov_Tree(tmp_slice, B);
-      Cov_Est.slice(n)=cov(tmp_slice.t(), 1);
-    }
+        Tree_Cov_Est.slice(n)=Cov_Tree(CumPred.slice(n), B);
+        Cov_Est.slice(n)=cov(CumPred.slice(n).t(), 1);
+      }
+  }
     
     arma::cube cov = Tree_Cov_Est - Cov_Est;
     
+  #pragma omp parallel num_threads(usecores)
+  {
+  #pragma omp for schedule(static)
     for(size_t n=0; n<N; n++){
-      Var_Est.row(n)=cov.slice(n).diag();
-    }
+        Var_Est.row(n)=cov.slice(n).diag();
+      }
+  }
 
     ReturnList["Cov"] = cov;
     ReturnList["Var"] = Var_Est;
@@ -276,22 +282,16 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
 
 arma::mat Cov_Tree(arma::mat& tmp_slice,
                    size_t& B){
-  size_t rw = tmp_slice.n_rows;
-  arma::mat Tree_Cov_Est(rw, rw, fill::zeros);
-  
-  for(size_t nt = 0; nt < B; nt++){
-    for(size_t r1 = 0; r1 < rw; r1++){
-      for(size_t r2 = r1; r2 < rw; r2++){
-        Tree_Cov_Est(r1, r2) += (tmp_slice(r1, nt) - tmp_slice(r1, nt+B)) *
-          (tmp_slice(r2, nt) - tmp_slice(r2, nt+B))/2;
-        if(r1==r2){
-        }else{
-          Tree_Cov_Est(r2, r1) += (tmp_slice(r1, nt) - tmp_slice(r1, nt+B)) *
-            (tmp_slice(r2, nt) - tmp_slice(r2, nt+B))/2;
-        }
-      }
-    }
-  }
-  
-  return Tree_Cov_Est/B;
+  mat tmp_slice2 = tmp_slice.cols(0,B-1)-tmp_slice.cols(B,2*B);
+  return tmp_slice2*tmp_slice2.t()/(2*B);
+}
+
+// [[Rcpp::export()]]
+arma::vec MvnCV(size_t& N, arma::vec& mean_vec, arma::mat& Cov_mat, arma::vec& var_vec){
+  arma::mat X = mvnrnd(mean_vec, Cov_mat, N);
+  X.clamp(0, arma::datum::inf);
+  X.each_col() -= mean_vec;
+  X.each_col() /= sqrt(var_vec);
+  arma::rowvec cv = max(abs(X),0);
+  return(cv.t());
 }
