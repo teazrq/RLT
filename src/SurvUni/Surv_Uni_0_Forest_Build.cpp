@@ -104,13 +104,19 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         RLTcout <<"Reinforced survival trees not yet implemented"<<std::endl;
         RLTcout <<"Ignoring command and using standard trees."<<std::endl;
       }
-        Surv_Uni_Split_A_Node(0, OneTree, SURV_DATA, 
+      
+      // const clock_t time_point = clock(); 
+
+      Surv_Uni_Split_A_Node(0, OneTree, SURV_DATA, 
                              Param, inbag_id, var_id, rngl);
+      
+      // RLTcout << "Core " << omp_get_thread_num() << " Tree " << nt << "; Time Cost: P1 " << 
+      //      float(clock() - time_point)/CLOCKS_PER_SEC << std::endl;
       
       // trim tree 
       TreeLength = OneTree.get_tree_length();
       OneTree.trim(TreeLength);
-
+      
       // inbag and oobag predictions for all subjects
       if (do_prediction)
       {
@@ -150,7 +156,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
           cindex_tree(nt) = 1-cindex_i( oobY, oobCensor, oobpred );
         }
       }
-
+      
       // calculate importance 
       
       if (importance and oobagObs.n_elem > 1)
@@ -198,15 +204,14 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
           AllImp(nt, j) =  1-cindex_i( oobY, oobCensor, oobpred) - baseImp;
         }
       }
-      
     }
   }  
   
   if (do_prediction)
   {
-    Prediction.shed_col(0);    
+    Prediction.shed_col(0);
     Prediction /= ntrees;
-    OOBPrediction.shed_col(0);   
+    OOBPrediction.shed_col(0);
     for(size_t i = 0; i < N; i++){
       OOBPrediction.row(i)/=oob_count(i);
     }

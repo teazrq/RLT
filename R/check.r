@@ -76,8 +76,8 @@ check_input <- function(x, y, censor, model)
 #' method in the RLT paper.
 #' 
 #' \code{VI.var=TRUE} will calculate variance for variable importance.
-#' If \code{VI.var=TRUE}, \code{resamp.prob}\eqn{\times}(1-\code{oob.prop}) observations
-#' will be used for building each tree, \code{resamp.prob}\eqn{\times}\code{oob.prop}
+#' If \code{VI.var=TRUE}, \eqn{\texttt{resamp.prob} \times (1- \texttt{oob.prop})} observations
+#' will be used for building each tree, \eqn{\texttt{resamp.prob} \times \texttt{oob.prop}}
 #' observations will be used for the out-of-bag sample, and 1-\code{resamp.prob}
 #' observations will not be used as in-bag or out-of-bag samples for that tree at
 #' all. Only implemented for survival forests. Ignored otherwise.

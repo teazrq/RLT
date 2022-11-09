@@ -29,7 +29,7 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   
   // parameters
   size_t mtry = Param.mtry;
-  size_t nmin = Param.nmin;
+  //size_t nmin = Param.nmin;
   double alpha = Param.alpha;
   bool useobsweight = Param.useobsweight;
   //bool usevarweight = Param.usevarweight;

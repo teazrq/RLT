@@ -243,7 +243,7 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
   {
 
     size_t N = CumPred.n_slices;
-    size_t ntrees = CumPred.n_cols;
+    //size_t ntrees = CumPred.n_cols;
     size_t tmpts = CumPred.n_rows;
     size_t B = (size_t) SURV_FOREST.SplitVarList.size()/2;
 
