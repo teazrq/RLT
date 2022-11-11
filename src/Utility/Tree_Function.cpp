@@ -249,16 +249,20 @@ void field_vec_resize(arma::field<arma::vec>& A, size_t size)
   arma::field<arma::vec> B(size);
   
   size_t common_size = (A.n_elem > size) ? size : A.n_elem;
-
+  
   for (size_t i = 0; i < common_size; i++)
   {
-    B[i] = vec(A[i].begin(), A[i].size(), false, true);
+    //Was false, true. Triggered an error with new version of RcppArmadillo
+    //Less efficient than false, true but works
+    B[i] = vec(A[i].begin(), A[i].size(), true, false);
   }
   
   A.set_size(size);
   for (size_t i = 0; i < common_size; i++)
   {
-    A[i] = vec(B[i].begin(), B[i].size(), false, true);
+    //Was false, true. Triggered an error with new version of RcppArmadillo
+    //Less efficient than false, true but works
+    A[i] = vec(B[i].begin(), B[i].size(), true, false);
   }
 }
 
@@ -270,13 +274,17 @@ void field_vec_resize(arma::field<arma::uvec>& A, size_t size)
   
   for (size_t i = 0; i < common_size; i++)
   {
-    B[i] = uvec(A[i].begin(), A[i].size(), false, true);
+    //Was false, true. Triggered an error with new version of RcppArmadillo
+    //Less efficient than false, true but works
+    B[i] = uvec(A[i].begin(), A[i].size(), true, false);
   }
   
   A.set_size(size);
   for (size_t i = 0; i < common_size; i++)
   {
-    A[i] = uvec(B[i].begin(), B[i].size(), false, true);
+    //Was false, true. Triggered an error with new version of RcppArmadillo
+    //Less efficient than false, true but works
+    A[i] = uvec(B[i].begin(), B[i].size(), true, false);
   }
 }
 
@@ -284,33 +292,33 @@ void field_vec_resize(arma::field<arma::uvec>& A, size_t size)
 
 bool cat_reduced_compare(Cat_Class& a, Cat_Class& b)
 {
-    if (a.count == 0 and b.count == 0)
-        return 0;
-    
-    if (a.count > 0 and b.count == 0)
-        return 1;
-    
-    if (a.count == 0 and b.count > 0)
-        return 0;
-    
-    return ( a.score < b.score );
+  if (a.count == 0 and b.count == 0)
+    return 0;
+  
+  if (a.count > 0 and b.count == 0)
+    return 1;
+  
+  if (a.count == 0 and b.count > 0)
+    return 0;
+  
+  return ( a.score < b.score );
 }
 
 bool cat_reduced_collapse(Cat_Class& a, Cat_Class& b)
 {
-    if (a.count > 0 and b.count == 0)
-        return 1;
+  if (a.count > 0 and b.count == 0)
+    return 1;
   
-    return 0;
+  return 0;
 }
 
 
 /*
-bool cat_reduced_compare_score(Cat_Class& a, Cat_Class& b)
-{
-    return ( a.score < b.score );
-}
-*/
+ bool cat_reduced_compare_score(Cat_Class& a, Cat_Class& b)
+ {
+ return ( a.score < b.score );
+ }
+ */
 
 void goright_roller(arma::uvec& goright_cat)
 {
