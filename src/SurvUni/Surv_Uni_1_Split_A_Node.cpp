@@ -23,7 +23,8 @@ void Surv_Uni_Split_A_Node(size_t Node,
   bool useobsweight = Param.useobsweight;
 
   // in srf, it is N <= 2nmin
-  if (N <= 2*nmin)
+  // corrected to nmin by RZ
+  if (N <= nmin)
   {
     TERMINATENODE:
     Surv_Uni_Terminate_Node(Node, OneTree, obs_id, 
@@ -62,7 +63,7 @@ void Surv_Uni_Split_A_Node(size_t Node,
     }
 
     // if this happens something about the splitting rule is wrong
-    if (left_id.n_elem == N or obs_id.n_elem == N)
+    if (left_id.n_elem == N or left_id.n_elem == 0)
       goto TERMINATENODE;
     
     // record internal node to tree 
@@ -73,7 +74,10 @@ void Surv_Uni_Split_A_Node(size_t Node,
     // if not, extend the current tree
     
     if ( OneTree.SplitVar( OneTree.SplitVar.n_elem - 2) != -2 )
+    {
+      RLTcout << "extension needed ..." << std::endl;
       OneTree.extend();
+    }  
     
     // get ready find the locations of next left and right nodes     
     size_t NextLeft = Node;
@@ -126,14 +130,16 @@ void Surv_Uni_Terminate_Node(size_t Node,
     //NOT IMPLEMENETED
     
   }else{
-    OneTree.NodeHaz(Node).zeros(NFail + 1);
+
+    vec NodeHazard(NFail + 1, fill::zeros);
     uvec NodeCensor(NFail + 1, fill::zeros);
+    
     for (size_t i = 0; i < obs_id.n_elem; i++)
     {
       if (Censor(obs_id(i)) == 0)
         NodeCensor( Y(obs_id(i)) )++;
       else
-        OneTree.NodeHaz(Node)( Y(obs_id(i)) )++;
+        NodeHazard( Y(obs_id(i)) )++;
     }
     
     size_t N = obs_id.n_elem - NodeCensor(0);
@@ -143,9 +149,32 @@ void Surv_Uni_Terminate_Node(size_t Node,
     {
       if (N <= 0) break;
       
-      h = OneTree.NodeHaz(Node)(j) / N;
-      N -= OneTree.NodeHaz(Node)(j) + NodeCensor(j);
-      OneTree.NodeHaz(Node)(j) = h;
+      h = NodeHazard(j) / N;
+      N -= NodeHazard(j) + NodeCensor(j);
+      NodeHazard(j) = h;
     }
+
+    OneTree.NodeHaz(Node) = NodeHazard;
+
+    // uvec NodeCensor(NFail + 1, fill::zeros);
+    // for (size_t i = 0; i < obs_id.n_elem; i++)
+    // {
+    //   if (Censor(obs_id(i)) == 0)
+    //     NodeCensor( Y(obs_id(i)) )++;
+    //   else
+    //     OneTree.NodeHaz(Node)( Y(obs_id(i)) )++;
+    // }
+    // 
+    // size_t N = obs_id.n_elem - NodeCensor(0);
+    // double h = 1;
+    // 
+    // for (size_t j = 1; j < NFail + 1; j++)
+    // {
+    //   if (N <= 0) break;
+    //   
+    //   h = OneTree.NodeHaz(Node)(j) / N;
+    //   N -= OneTree.NodeHaz(Node)(j) + NodeCensor(j);
+    //   OneTree.NodeHaz(Node)(j) = h;
+    // }
   }
 }
