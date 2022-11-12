@@ -8,10 +8,10 @@ library(survival)
 
 set.seed(1)
 
-trainn = 250
+trainn = 400
 testn = 1000
 n = trainn + testn
-p = 400
+p = 200
 X1 = matrix(rnorm(n*p/2), n, p/2)
 X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
 C = rexp(n, 1)
@@ -30,7 +30,7 @@ ncores = 10
 nmin = 25
 mtry = p/2
 sampleprob = 0.85
-rule = "best"
+rule = "random"
 nsplit = ifelse(rule == "best", 0, 3)
 importance = TRUE
 

@@ -40,9 +40,7 @@
 #'                        internal node.
 #'                        
 #' @param nmin            Terminal node size. Splitting will stop when the internal 
-#'                        node size is less than twice of \code{nmin}. This is 
-#'                        almost equivalent to setting \code{nodesize} \eqn{= 2 \times}
-#'                        \code{nmin} in the `randomForest` package.
+#'                        node size is less equal to \code{nmin}.
 #'                        
 #' @param split.gen       How the cutting points are generated: `"random"`, 
 #'                        `"rank"` or `"best"`. If minimum child node size is 

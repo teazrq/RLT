@@ -37,6 +37,68 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   if (NFail == 0)
     return;   
   
+  // Choose the variables to try
+  uvec var_try = rngl.sample(var_id, mtry);
+  
+  //Initialize objects
+  Split_Class TempSplit; 
+  
+  if (split_rule == 1 and split_gen == 1 and nsplit <= 5 and false) // testing
+  {
+    
+    //For each variable in var_try
+    for (auto j : var_try)
+    {
+      // reset splitting rule
+      TempSplit.var = j;
+      TempSplit.value = 0;
+      TempSplit.score = -1;
+      
+      if (SURV_DATA.Ncat(j) > 1) // categorical variable 
+      {
+        // need to insert code 
+      }else{   
+        Surv_Uni_Logrank_Random_Cont(TempSplit,
+                                    obs_id,
+                                    SURV_DATA.X.unsafe_col(j),
+                                    Y_collapse,
+                                    Censor_collapse,
+                                    NFail,
+                                    split_gen,
+                                    nsplit,
+                                    alpha,
+                                    rngl);
+      }
+      
+      //If the score is better than default
+      if (TempSplit.score > OneSplit.score)
+      {
+        //Change to this variable
+        OneSplit.var = TempSplit.var;
+        OneSplit.value = TempSplit.value;
+        OneSplit.score = TempSplit.score;
+      }
+    }
+    
+    return;
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   // initiate the failure and at-risk counts
   vec All_Risk(NFail+1, fill::zeros);
   uvec All_Fail(NFail+1, fill::zeros);
@@ -58,12 +120,6 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
     last_count = All_Risk(k);
     All_Risk(k) = all_count;
   }
-  
-  // Choose the variables to try
-  uvec var_try = rngl.sample(var_id, mtry);
-  
-  //Initialize objects
-  Split_Class TempSplit; 
 
   // only for suplogrank, need to move later 
   vec Temp_Vec;
@@ -108,17 +164,17 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
                             useobsweight,
                             rngl);
       }
+      
+      //If the score is better than default
+      if (TempSplit.score > OneSplit.score)
+      {
+        //Change to this variable
+        OneSplit.var = TempSplit.var;
+        OneSplit.value = TempSplit.value;
+        OneSplit.score = TempSplit.score;
+      }
     }
-    
-    //If the score is better than default
-    if (TempSplit.score > OneSplit.score)
-    {
-      //Change to this variable
-      OneSplit.var = TempSplit.var;
-      OneSplit.value = TempSplit.value;
-      OneSplit.score = TempSplit.score;
-    }
-    
+
     return;
   }
   
@@ -174,15 +230,15 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
                             useobsweight,
                             rngl);
       }
-    }
-    
-    //If the score is better than default
-    if (TempSplit.score > OneSplit.score)
-    {
-      //Change to this variable
-      OneSplit.var = TempSplit.var;
-      OneSplit.value = TempSplit.value;
-      OneSplit.score = TempSplit.score;
+      
+      //If the score is better than default
+      if (TempSplit.score > OneSplit.score)
+      {
+        //Change to this variable
+        OneSplit.var = TempSplit.var;
+        OneSplit.value = TempSplit.value;
+        OneSplit.score = TempSplit.score;
+      }
     }
     
     return;
@@ -256,17 +312,16 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
                                    useobsweight,
                                    rngl);
       }
+      
+      //If the score is better than default
+      if (TempSplit.score > OneSplit.score)
+      {
+        //Change to this variable
+        OneSplit.var = TempSplit.var;
+        OneSplit.value = TempSplit.value;
+        OneSplit.score = TempSplit.score;
+      }
     }
-    
-    //If the score is better than default
-    if (TempSplit.score > OneSplit.score)
-    {
-      //Change to this variable
-      OneSplit.var = TempSplit.var;
-      OneSplit.value = TempSplit.value;
-      OneSplit.score = TempSplit.score;
-    }
-    
   }
 }
 

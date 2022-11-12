@@ -232,13 +232,25 @@ arma::mat Cov_Tree(arma::mat& tmp_slice,
 // ## new splitting functions
 // #############################
 
-//Calculate logrank at a random cut
-double logrank_cont_atcut(const uvec& obs_id,
-                          const vec& x,
-                          const uvec& Y, //collapsed
-                          const uvec& Censor, //collapsed
-                          size_t NFail,
-                          double a_random_cut);
+// logrank splitting rule
+void Surv_Uni_Logrank_Random_Cont(Split_Class& TempSplit,
+                                   const uvec& obs_id,
+                                   const vec& x,
+                                   const uvec& Y, // Y is collapsed
+                                   const uvec& Censor, // Censor is collapsed
+                                   const size_t NFail,
+                                   int split_gen,
+                                   int nsplit,
+                                   double alpha,
+                                   Rand& rngl);
+    
+//Calculate logrank score at x value cut, sequential calculation without vector
+double logrank_at_x_cut(const uvec& obs_id,
+                        const vec& x,
+                        const uvec& Y, //collapsed
+                        const uvec& Censor, //collapsed
+                        size_t NFail,
+                        double a_random_cut);
 
 // #############################
 // ## Combination Split Trees - NOT IMPLEMENTED##
