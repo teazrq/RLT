@@ -94,9 +94,8 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
                                  SURV_FOREST.RightNodeList(nt),
                                  SURV_FOREST.NodeHazList(nt));
       
-      size_t TreeLength = 3 + size/nmin*3;
-      OneTree.initiate(TreeLength);
-
+      OneTree.initiate(50 + 4*size/nmin);
+      
       // build the tree
       if (reinforcement)
       {
@@ -104,7 +103,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         RLTcout <<"Reinforced survival trees not yet implemented"<<std::endl;
         RLTcout <<"Ignoring command and using standard trees."<<std::endl;
       }
-      
+
       // const clock_t time_point = clock(); 
 
       Surv_Uni_Split_A_Node(0, OneTree, SURV_DATA, 
@@ -113,9 +112,14 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       // RLTcout << "Core " << omp_get_thread_num() << " Tree " << nt << "; Time Cost: P1 " << 
       //      float(clock() - time_point)/CLOCKS_PER_SEC << std::endl;
       
+      // const clock_t begin_time = clock();
+      
       // trim tree 
-      TreeLength = OneTree.get_tree_length();
+      size_t TreeLength = OneTree.get_tree_length();
       OneTree.trim(TreeLength);
+
+      // RLTcout << "Tree size reduce from " << 50 + 4*size/nmin << " to " << TreeLength << 
+      //  " cost time " << 1000 * float( clock() - begin_time ) / CLOCKS_PER_SEC << std::endl;
       
       // inbag and oobag predictions for all subjects
       if (do_prediction)

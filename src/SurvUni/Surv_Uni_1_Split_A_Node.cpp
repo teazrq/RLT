@@ -155,26 +155,5 @@ void Surv_Uni_Terminate_Node(size_t Node,
     }
 
     OneTree.NodeHaz(Node) = NodeHazard;
-
-    // uvec NodeCensor(NFail + 1, fill::zeros);
-    // for (size_t i = 0; i < obs_id.n_elem; i++)
-    // {
-    //   if (Censor(obs_id(i)) == 0)
-    //     NodeCensor( Y(obs_id(i)) )++;
-    //   else
-    //     OneTree.NodeHaz(Node)( Y(obs_id(i)) )++;
-    // }
-    // 
-    // size_t N = obs_id.n_elem - NodeCensor(0);
-    // double h = 1;
-    // 
-    // for (size_t j = 1; j < NFail + 1; j++)
-    // {
-    //   if (N <= 0) break;
-    //   
-    //   h = OneTree.NodeHaz(Node)(j) / N;
-    //   N -= OneTree.NodeHaz(Node)(j) + NodeCensor(j);
-    //   OneTree.NodeHaz(Node)(j) = h;
-    // }
   }
 }

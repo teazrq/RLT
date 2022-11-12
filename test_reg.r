@@ -8,10 +8,10 @@ library(parallel)
 
 set.seed(1)
 
-trainn = 1000
+trainn = 10000
 testn = 1000
 n = trainn + testn
-p = 400
+p = 40
 X1 = matrix(rnorm(n*p/2), n, p/2)
 X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
 
@@ -67,7 +67,7 @@ rsfpred = predict(rsffit, data.frame(testX))
 metric[2, 2] = difftime(Sys.time(), start_time, units = "secs")
 metric[2, 3] = mean((rsfpred$predicted - testY)^2)
 metric[2, 4] = object.size(rsffit)
-metric[2, 5] = rsffit$forest$totalNodeCount / rsffit$ntree
+metric[2, 5] = rsffit$forest$totalNodeCount / rsffit$forest$ntree
 
 start_time <- Sys.time()
 rf.fit <- randomForest(trainX, trainY, ntree = ntrees, 

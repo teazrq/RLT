@@ -28,23 +28,11 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   size_t split_gen = Param.split_gen;
   size_t split_rule = Param.split_rule;
 
-  // sort obs_id based on Y values 
-  const uvec& Y = SURV_DATA.Y;
-  const uvec& Censor = SURV_DATA.Censor;
-  
-  std::sort(obs_id.begin(), obs_id.end(), [Y, Censor](size_t i, size_t j)
-  {
-    if (Y(i) == Y(j))
-      return(Censor(i) > Censor(j));
-    else
-      return Y(i) < Y(j);
-  });
-  
   // collapse Y into contiguous integers 
   size_t NFail;
   uvec Y_collapse(N);
   uvec Censor_collapse(N);
-  collapse(Y, Censor, Y_collapse, Censor_collapse, obs_id, NFail);
+  collapse(SURV_DATA.Y, SURV_DATA.Censor, Y_collapse, Censor_collapse, obs_id, NFail);
   
   if (NFail == 0)
     return;   
@@ -62,13 +50,13 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   }
   
   size_t last_count = 0;
-  vec All_Censor = All_Risk-All_Fail; //The number of times censored observations are repeated
-  
+  size_t all_count = N;
+
   for (size_t k = 0; k <= NFail; k++)
   {
-    N -= last_count;
+    all_count -= last_count;
     last_count = All_Risk(k);
-    All_Risk(k) = N;
+    All_Risk(k) = all_count;
   }
   
   // Choose the variables to try
@@ -78,7 +66,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   Split_Class TempSplit; 
 
   // only for suplogrank, need to move later 
-  vec Temp_Vec(NFail+1, fill::zeros);
+  vec Temp_Vec;
   
   if (split_rule == 1) // logrank test
   {
@@ -135,6 +123,8 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   }
   
   // if suplogrank, calculate the cc/temp*vterms
+  Temp_Vec.zeros(NFail+1);
+
   if(split_rule == 2){
     Temp_Vec = 1.0 - conv_to< vec >::from(All_Fail - 1.0)/(All_Risk-1.0); 
     Temp_Vec = Temp_Vec % All_Fail/All_Risk;

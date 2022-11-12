@@ -125,7 +125,6 @@ metric[4, 5] = object.size(RLTfitp)
 metric[4, 6] = mean(unlist(lapply(RLTfitp$FittedForest$SplitVar, length)))
 
 
-
 options(rf.cores = ncores)
 start_time <- Sys.time()
 rsffit <- rfsrc(Surv(trainY, trainCensor) ~ ., data = data.frame(trainX, trainY, trainCensor), ntree = ntrees, nodesize = nmin, mtry = mtry,
@@ -139,7 +138,7 @@ metric[5, 2] = difftime(Sys.time(), start_time, units = "secs")
 metric[5, 3] = 1- cindex(testY, testCensor, rowSums(rsfpred$chf))
 metric[5, 4] = mean(colMeans(abs(rsfpred$survival - SurvMat)))
 metric[5, 5] = object.size(rsffit)
-metric[5, 6] = sum(is.na(rsffit$forest$nativeArray[,4]))/ntrees
+metric[5, 6] = rsffit$forest$totalNodeCount / rsffit$forest$ntree
 
 start_time <- Sys.time()
 rangerfit <- ranger(Surv(trainY, trainCensor) ~ ., data = data.frame(trainX, trainY, trainCensor), num.trees = ntrees, 
@@ -152,6 +151,7 @@ metric[6, 2] = difftime(Sys.time(), start_time, units = "secs")
 metric[6, 3] = 1- cindex(testY, testCensor, rowSums(rangerpred$chf))
 metric[6, 4] = mean(colMeans(abs(rangerpred$survival[, yloc] - SurvMat)))
 metric[6, 5] = object.size(rangerfit)
+metric[6, 6] = mean(unlist(lapply(rangerfit$forest$split.varIDs, length)))
 
 metric
 
