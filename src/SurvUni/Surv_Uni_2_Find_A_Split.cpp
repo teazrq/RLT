@@ -65,7 +65,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
     All_Risk_u(k) = all_count;
   }  
   
-  if (split_rule == 1 and true) // testing
+  if (split_rule == 1) // testing
   {
     
     //For each variable in var_try
