@@ -8,7 +8,7 @@ library(survival)
 
 # set.seed(1)
 
-trainn = 2000
+trainn = 300
 testn = 1000
 n = trainn + testn
 p = 200
@@ -25,12 +25,12 @@ y = pmin(FT, CT)
 Censor = as.numeric(FT <= CT)
 mean(Censor)
 
-ntrees = 200
+ntrees = 500
 ncores = 10
 nmin = 25
 mtry = p/3
 sampleprob = 0.85
-rule = "best"
+rule = "random"
 nsplit = ifelse(rule == "best", 0, 3)
 importance = TRUE
 

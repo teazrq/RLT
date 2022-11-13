@@ -54,10 +54,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   }
   
   // cumulative at risk counts for left
-  for (size_t j = NFail-1; j >0; j--)
-    All_Risk_u(j) += All_Risk_u(j+1);
-  
-  All_Risk_u(0) += All_Risk_u(1);
+  cumsum_rev(All_Risk_u);
   
   if (split_rule == 1) // testing
   {
@@ -102,7 +99,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
     
     return;
   }
-  
+
   // initiate the failure and at-risk counts
   vec All_Risk(NFail+1, fill::zeros);
   All_Fail.zeros();

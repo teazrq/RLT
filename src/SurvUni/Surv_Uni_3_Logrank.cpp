@@ -149,10 +149,7 @@ double logrank_at_x_cut(const uvec& obs_id,
   }
   
   // cumulative at risk counts for left
-  for (size_t j = NFail-1; j >0; j--)
-    Left_Risk(j) += Left_Risk(j+1);
-  
-  Left_Risk(0) += Left_Risk(1);
+  cumsum_rev(Left_Risk);
   
   return logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
 
@@ -178,10 +175,7 @@ double logrank_at_id_index(const uvec& indices, // index for Y, sorted by x
   }
   
   // cumulative at risk counts for left
-  for (size_t j = NFail-1; j >0; j--)
-    Left_Risk(j) += Left_Risk(j+1);
-  
-  Left_Risk(0) += Left_Risk(1);
+  cumsum_rev(Left_Risk);
   
   return logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
 }
@@ -224,14 +218,9 @@ void logrank_best(const uvec& indices, // index for Y, sorted by x
     {
       // calculate cumulative risk of left
       Left_Risk_Cum = Left_Risk;
+      cumsum_rev(Left_Risk_Cum);
       
-      // cumulative at risk counts for left
-      for (size_t j = NFail-1; j >0; j--)
-        Left_Risk_Cum(j) += Left_Risk_Cum(j+1);
-      
-      Left_Risk_Cum(0) += Left_Risk_Cum(1);
-      
-      
+      // get scores
       if (Left_Risk_Cum(0) == 0 or Left_Risk_Cum(0) == All_Risk(0))
         score = -1;
       else

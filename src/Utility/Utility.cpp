@@ -60,10 +60,10 @@ void cumsum_rev(arma::uvec& seq)
   // cumulative at risk counts for left
   size_t N = seq.n_elem;
   
-  if (N == 1)
+  if (N <= 1)
     return;
   
-  for (size_t i = N-1; i>0; i--)
+  for (size_t i = N-2; i>0; i--)
     seq(i) += seq(i+1);
   
   seq(0) += seq(1);
