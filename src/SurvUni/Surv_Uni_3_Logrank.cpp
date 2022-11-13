@@ -317,21 +317,21 @@ double logrank(const uvec& Left_Fail,
   // cumulative at risk counts for left
   size_t NFail = All_Risk.n_elem - 1;
 
-  uvec Left_Risk_Cum = Left_Risk;
-  Left_Risk_Cum(0) = accu(Left_Risk_Cum);
+  // uvec Left_Risk_Cum = Left_Risk;
+  // Left_Risk_Cum(0) = accu(Left_Risk_Cum);
+  
+  // for (size_t k = 0; k < NFail; k++)
+  //   Left_Risk_Cum(k+1) = Left_Risk_Cum(k) - Left_Risk(k);
+  
+  uvec Left_Risk_Cum(NFail + 1, fill::zeros);
+  Left_Risk_Cum(NFail) = Left_Risk(NFail);
+  
+  for (size_t j = NFail-1; j > 0; j--) // cannot go j = -1
+    Left_Risk_Cum(j) = Left_Risk_Cum(j+1) + Left_Risk(j);
+  Left_Risk_Cum(0) = Left_Risk_Cum(1) + Left_Risk(0);
   
   if (Left_Risk_Cum(0) == 0 or Left_Risk_Cum(0) == All_Risk(0))
-    return -1;  
-  
-  for (size_t k = 0; k < NFail; k++)
-    Left_Risk_Cum(k+1) = Left_Risk_Cum(k) - Left_Risk(k);  
-  
-  // doesnt work...
-  // uvec Left_Risk_Cum(NFail + 1, fill::zeros);
-  // Left_Risk_Cum(NFail) = Left_Risk(NFail);
-  // 
-  // for (size_t j = NFail-1; j >= 0; j--)
-  //   Left_Risk_Cum(j) = Left_Risk_Cum(j+1) + Left_Risk(j);
+    return -1;
 
   double Oj = 0, Eij = 0;
   double Nj = 0, Nij = 0;
@@ -361,7 +361,6 @@ double logrank(const uvec& Left_Fail,
 
   return Z*Z / V;
 }
-
 
 //Calculate logrank score at x value cut, sequential calculation without vector
 // this is not validated yet, not currently used, maybe for later?
