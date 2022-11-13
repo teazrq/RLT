@@ -50,20 +50,14 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   for (size_t i = 0; i<N; i++)
   {
     All_Risk_u(Y_collapse(i)) ++;
-    
-    if (Censor_collapse(i) == 1)
-      All_Fail(Y_collapse(i)) ++;
+    All_Fail(Y_collapse(i)) += Censor_collapse(i);
   }
   
-  size_t last_count = 0;
-  size_t all_count = N;
+  // cumulative at risk counts for left
+  for (size_t j = NFail-1; j >0; j--)
+    All_Risk_u(j) += All_Risk_u(j+1);
   
-  for (size_t k = 0; k <= NFail; k++)
-  {
-    all_count -= last_count;
-    last_count = All_Risk_u(k);
-    All_Risk_u(k) = all_count;
-  }  
+  All_Risk_u(0) += All_Risk_u(1);
   
   if (split_rule == 1) // testing
   {
@@ -109,10 +103,6 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
     return;
   }
   
-  
-
-  
-  
   // initiate the failure and at-risk counts
   vec All_Risk(NFail+1, fill::zeros);
   All_Fail.zeros();
@@ -120,89 +110,23 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   for (size_t i = 0; i<N; i++)
   {
     All_Risk(Y_collapse(i)) ++;
-    
-    if (Censor_collapse(i) == 1)
-      All_Fail(Y_collapse(i)) ++;
+    All_Fail(Y_collapse(i)) += Censor_collapse(i);
   }
   
-  last_count = 0;
-  all_count = N;
-
-  for (size_t k = 0; k <= NFail; k++)
-  {
-    all_count -= last_count;
-    last_count = All_Risk(k);
-    All_Risk(k) = all_count;
-  }
-
-  // only for suplogrank, need to move later 
-  vec Temp_Vec;
-  
-  if (split_rule == 1) // logrank test
-  {
-    //For each variable in var_try
-    for (auto j : var_try)
-    {
-      // reset splitting rule
-      TempSplit.var = j;
-      TempSplit.value = 0;
-      TempSplit.score = -1;      
-        
-      // get variable weight (is this used?)
-      if(usevarweight){
-        penalty = SURV_DATA.varweight(j);
-      }else{
-        penalty = 1;
-      }
-      
-      if (SURV_DATA.Ncat(j) > 1) // categorical variable 
-      {
-        // need to insert code 
-      }else{
-        
-        Surv_Uni_Split_Cont(TempSplit,
-                            obs_id,
-                            SURV_DATA.X.unsafe_col(j), 
-                            Y_collapse, 
-                            Censor_collapse, 
-                            NFail,
-                            All_Fail,
-                            All_Risk,
-                            Temp_Vec,
-                            SURV_DATA.obsweight,
-                            penalty, // penalty
-                            split_gen,
-                            split_rule,
-                            nsplit,
-                            alpha,
-                            useobsweight,
-                            rngl);
-      }
-      
-      //If the score is better than default
-      if (TempSplit.score > OneSplit.score)
-      {
-        //Change to this variable
-        OneSplit.var = TempSplit.var;
-        OneSplit.value = TempSplit.value;
-        OneSplit.score = TempSplit.score;
-      }
-    }
-
-    return;
-  }
+  // cumulative at risk counts for left
+  for (size_t j = NFail-1; j >0; j--)
+    All_Risk(j) += All_Risk(j+1);
+  All_Risk(0) += All_Risk(1);
   
   // if suplogrank, calculate the cc/temp*vterms
-  Temp_Vec.zeros(NFail+1);
-
-  if(split_rule == 2){
-    Temp_Vec = 1.0 - conv_to< vec >::from(All_Fail - 1.0)/(All_Risk-1.0); 
-    Temp_Vec = Temp_Vec % All_Fail/All_Risk;
-    
-    for (size_t i =0; i < All_Risk.n_elem; i++)
-      if (All_Risk(i) < 2)
-        Temp_Vec(i) = 0;
-  }
+  vec Temp_Vec(NFail+1, fill::zeros);
+  
+  Temp_Vec = 1.0 - conv_to< vec >::from(All_Fail - 1.0)/(All_Risk-1.0); 
+  Temp_Vec = Temp_Vec % All_Fail/All_Risk;
+  
+  for (size_t i =0; i < All_Risk.n_elem; i++)
+    if (All_Risk(i) < 2)
+      Temp_Vec(i) = 0;
   
   if (split_rule == 2) // suplogrank test
   {

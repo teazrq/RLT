@@ -149,49 +149,12 @@ double logrank_at_x_cut(const uvec& obs_id,
   }
   
   // cumulative at risk counts for left
-  size_t last_count = 0;
-  size_t all_count = accu(Left_Risk);
+  for (size_t j = NFail-1; j >0; j--)
+    Left_Risk(j) += Left_Risk(j+1);
   
-  if (all_count == 0 or all_count == All_Risk(0))
-    return -1;
+  Left_Risk(0) += Left_Risk(1);
   
-  for (size_t j = 0; j <= NFail; j++)
-  {
-    all_count -= last_count;
-    last_count = Left_Risk(j);
-    Left_Risk(j) = all_count;
-  }
-  
-  double Oj = 0, Eij = 0;
-  double Nj = 0, Nij = 0;
-  double Z = 0, V = 0;
-  
-  for (size_t j = 1; j < NFail; j++)
-  {
-    Oj = All_Fail(j);
-    Nij = Left_Risk(j);
-    Nj = All_Risk(j);
-    Eij = Oj * Nij / Nj;
-    Z += Left_Fail(j) - Eij;
-    V += Eij * (1 - Oj / Nj) * (Nj - Nij) / (Nj - 1);
-  }
-
-  Oj = All_Fail(NFail);
-  
-  // last time point
-  if (Oj > 1)
-  {
-    Nij = Left_Risk(NFail);
-    Nj = All_Risk(NFail);
-    Eij = Oj * Nij / Nj;
-    Z += Left_Fail(NFail) - Eij;
-    V += Eij * (1 - Oj / Nj) * (Nj - Nij) / (Nj - 1);
-  }
-  
-  // RLTcout << "z is " << Z << " v is " << V << std::endl;  
-  // RLTcout << "score is " << Z*Z / V << std::endl;  
-
-  return Z*Z / V;
+  return logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
 
 }
 
@@ -215,49 +178,12 @@ double logrank_at_id_index(const uvec& indices, // index for Y, sorted by x
   }
   
   // cumulative at risk counts for left
-  size_t last_count = 0;
-  size_t all_count = accu(Left_Risk);
+  for (size_t j = NFail-1; j >0; j--)
+    Left_Risk(j) += Left_Risk(j+1);
   
-  if (all_count == 0 or all_count == All_Risk(0))
-    return -1;
+  Left_Risk(0) += Left_Risk(1);
   
-  for (size_t j = 0; j <= NFail; j++)
-  {
-    all_count -= last_count;
-    last_count = Left_Risk(j);
-    Left_Risk(j) = all_count;
-  }
-  
-  double Oj = 0, Eij = 0;
-  double Nj = 0, Nij = 0;
-  double Z = 0, V = 0;
-  
-  for (size_t j = 1; j < NFail; j++)
-  {
-    Oj = All_Fail(j);
-    Nij = Left_Risk(j);
-    Nj = All_Risk(j);
-    Eij = Oj * Nij / Nj;
-    Z += Left_Fail(j) - Eij;
-    V += Eij * (1 - Oj / Nj) * (Nj - Nij) / (Nj - 1);
-  }
-  
-  Oj = All_Fail(NFail);
-  
-  // last time point
-  if (Oj > 1)
-  {
-    Nij = Left_Risk(NFail);
-    Nj = All_Risk(NFail);
-    Eij = Oj * Nij / Nj;
-    Z += Left_Fail(NFail) - Eij;
-    V += Eij * (1 - Oj / Nj) * (Nj - Nij) / (Nj - 1);
-  }
-  
-  // RLTcout << "z is " << Z << " v is " << V << std::endl;  
-  // RLTcout << "score is " << Z*Z / V << std::endl;  
-  
-  return Z*Z / V;  
+  return logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
 }
 
 
@@ -279,6 +205,7 @@ void logrank_best(const uvec& indices, // index for Y, sorted by x
   double score = -1;
   uvec Left_Risk(NFail+1, fill::zeros);
   uvec Left_Fail(NFail+1, fill::zeros);
+  uvec Left_Risk_Cum;
   
   // initiate the failure and censoring counts
   for (size_t i = 0; i< lowindex; i++)
@@ -295,7 +222,20 @@ void logrank_best(const uvec& indices, // index for Y, sorted by x
     
     if(x(obs_id_sorted(i)) < x(obs_id_sorted(i+1))) // if not a tie location
     {
-      score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+      // calculate cumulative risk of left
+      Left_Risk_Cum = Left_Risk;
+      
+      // cumulative at risk counts for left
+      for (size_t j = NFail-1; j >0; j--)
+        Left_Risk_Cum(j) += Left_Risk_Cum(j+1);
+      
+      Left_Risk_Cum(0) += Left_Risk_Cum(1);
+      
+      
+      if (Left_Risk_Cum(0) == 0 or Left_Risk_Cum(0) == All_Risk(0))
+        score = -1;
+      else
+        score = logrank(Left_Fail, Left_Risk_Cum, All_Fail, All_Risk);
       
       if (score > temp_score)
       {
@@ -308,30 +248,14 @@ void logrank_best(const uvec& indices, // index for Y, sorted by x
 
 
 // logrank score given pre-processed vectors
-double logrank(const uvec& Left_Fail,
-               const uvec& Left_Risk,
+double logrank(const uvec& Left_Fail, 
+               const uvec& Left_Risk, // left Fail is already cumulative
                const uvec& All_Fail,
                const uvec& All_Risk)
 {
 
   // cumulative at risk counts for left
   size_t NFail = All_Risk.n_elem - 1;
-
-  // uvec Left_Risk_Cum = Left_Risk;
-  // Left_Risk_Cum(0) = accu(Left_Risk_Cum);
-  
-  // for (size_t k = 0; k < NFail; k++)
-  //   Left_Risk_Cum(k+1) = Left_Risk_Cum(k) - Left_Risk(k);
-  
-  uvec Left_Risk_Cum(NFail + 1, fill::zeros);
-  Left_Risk_Cum(NFail) = Left_Risk(NFail);
-  
-  for (size_t j = NFail-1; j > 0; j--) // cannot go j = -1
-    Left_Risk_Cum(j) = Left_Risk_Cum(j+1) + Left_Risk(j);
-  Left_Risk_Cum(0) = Left_Risk_Cum(1) + Left_Risk(0);
-  
-  if (Left_Risk_Cum(0) == 0 or Left_Risk_Cum(0) == All_Risk(0))
-    return -1;
 
   double Oj = 0, Eij = 0;
   double Nj = 0, Nij = 0;
@@ -340,7 +264,7 @@ double logrank(const uvec& Left_Fail,
   for (size_t j = 1; j < NFail; j++) // failure times start from 1
   {
     Oj = All_Fail(j);
-    Nij = Left_Risk_Cum(j);
+    Nij = Left_Risk(j);
     Nj = All_Risk(j);
     Eij = Oj * Nij / Nj;
     Z += Left_Fail(j) - Eij;
@@ -352,7 +276,7 @@ double logrank(const uvec& Left_Fail,
   // last time point
   if (Oj > 1)
   {
-    Nij = Left_Risk_Cum(NFail);
+    Nij = Left_Risk(NFail);
     Nj = All_Risk(NFail);
     Eij = Oj * Nij / Nj;
     Z += Left_Fail(NFail) - Eij;

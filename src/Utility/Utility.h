@@ -68,7 +68,7 @@ size_t checkCores(size_t, size_t);
 template <class T> const T& max (const T& a, const T& b);
 template <class T> const T& min (const T& a, const T& b);
 
-template <class T> T& cumsum_rev(const T& seq);
+void cumsum_rev(arma::uvec& seq);
 
 // ************************//
 // Random Number Generator //

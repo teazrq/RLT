@@ -65,7 +65,7 @@ RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores,
               nmin = nmin, mtry = mtry, nsplit = nsplit,
               split.gen = rule, resample.prob = sampleprob,
               importance = importance, 
-              param.control = list(split.rule = "logrank", "alpha" = 0.3), 
+              param.control = list(split.rule = "logrank", "alpha" = 0.2), 
               verbose = TRUE, resample.replace=FALSE)
 metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
 start_time <- Sys.time()

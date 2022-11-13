@@ -53,3 +53,22 @@ template <class T> const T& max(const T& a, const T& b) {
 template <class T> const T& min(const T& a, const T& b) {
   return (a<b)?a:b;
 }
+
+// vector in-place reverse cumsum
+void cumsum_rev(arma::uvec& seq)
+{
+  // cumulative at risk counts for left
+  size_t N = seq.n_elem;
+  
+  if (N == 1)
+    return;
+  
+  for (size_t i = N-1; i>0; i--)
+    seq(i) += seq(i+1);
+  
+  seq(0) += seq(1);
+}
+
+
+
+
