@@ -37,6 +37,9 @@ SurvForest <- function(x, y, censor, ncat,
     if (is.null(param$"split.rule"))
       param$"split.rule" = "logrank"
     
+    if (param$"split.rule" == "default")
+      param$"split.rule" = "logrank"
+    
     all.split.rule = c("logrank", "suplogrank", "coxgrad")
     
     #param$"split.rule" <- match.arg(param$"split.rule", all.split.rule)

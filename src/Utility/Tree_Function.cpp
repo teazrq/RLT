@@ -147,19 +147,30 @@ void check_cont_index_sub(size_t& lowindex,
   // also x must contain different elements
   size_t N = indices.n_elem;
   
-  // check with extremes
-  // make sure lowindex has space to move up
-  while ( x(indices(lowindex)) == x(indices(N-1)) ) lowindex--;
+  // as long as lowindex does not give min, push it lower to a non-tie
+  if ( x(indices(lowindex)) > x(indices(0)) )
+    while ( x(indices(lowindex)) == x(indices(lowindex+1)) ) lowindex--;
+  else // otherwise, move up
+    while ( x(indices(lowindex)) == x(indices(lowindex+1)) ) lowindex++;
   
-  // make sure highindex has space to move down
-  while ( x(indices(highindex+1)) == x(indices(0)) ) highindex++;
-  
-  // make sure lowindex is not at a tie, o.w. move up
-  while ( x(indices(lowindex)) == x(indices(lowindex+1)) ) lowindex++;
-  
-  // make sure highindex is not at a tie, o.w. move down
-  while ( x(indices(highindex)) == x(indices(highindex+1)) ) highindex--;  
-  
+  // as long as highindex does not give max, push it higher to a non-tie
+  if ( x(indices(highindex)) < x(indices(N-1)) )
+      while ( x(indices(highindex)) == x(indices(highindex+1)) ) highindex++;
+  else // otherwise move down
+      while ( x(indices(highindex)) == x(indices(highindex+1)) ) highindex--;
+
+  // // check with extremes
+  // // make sure lowindex has space to move up
+  // while ( x(indices(lowindex)) == x(indices(N-1)) ) lowindex--;
+  // 
+  // // make sure highindex has space to move down
+  // while ( x(indices(highindex+1)) == x(indices(0)) ) highindex++;
+  // 
+  // // make sure lowindex is not at a tie, o.w. move up
+  // while ( x(indices(lowindex)) == x(indices(lowindex+1)) ) lowindex++;
+  // 
+  // // make sure highindex is not at a tie, o.w. move down
+  // while ( x(indices(highindex)) == x(indices(highindex+1)) ) highindex--;  
 }
 
 
@@ -191,53 +202,41 @@ void check_cont_index(size_t& lowindex,
 
 void split_id(const vec& x, double value, uvec& left_id, uvec& obs_id) // obs_id will be treated as the right node
 {
-  size_t RightN = obs_id.n_elem - 1;
   size_t LeftN = 0;
-  size_t i = 0;
+  size_t RightN = 0;
   
-  while( i <= RightN ){
-    
-    if ( x(obs_id(i)) <= value )
-    {
-      // move subject to left 
-      left_id(LeftN++) = obs_id(i);
-      
-      // remove subject from right 
-      obs_id(i) = obs_id( RightN--);
-    }else{
-      i++;
-    }
+  for (size_t i = 0; i < obs_id.n_elem; i++)
+  {
+      if ( x(obs_id(i)) <= value )
+          left_id(LeftN++) = obs_id(i);
+      else
+          obs_id(RightN++) = obs_id(i);
   }
   
   left_id.resize(LeftN);
-  obs_id.resize(RightN+1);
+  obs_id.resize(RightN);
 }
 
 void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_t ncat) // obs_id will be treated as the right node
 {
-  uvec goright(ncat + 1, fill::zeros); // the first (0-th) element (category) of goright will always be set to 0 --- go left, but this category does not exist.
+  // the first (0-th) element (category) of goright will always be set to 0 --- go left, 
+  // but this category does not exist.
+  uvec goright(ncat + 1, fill::zeros);   
   unpack(value, ncat + 1, goright);
 
-  size_t RightN = obs_id.n_elem - 1;
   size_t LeftN = 0;
-  size_t i = 0;
+  size_t RightN = 0;
   
-  while( i <= RightN ){
-    
-    if ( goright[x(obs_id(i))] == 0 )
-    {
-      // move subject to left 
-      left_id(LeftN++) = obs_id(i);
-      
-      // remove subject from right 
-      obs_id(i) = obs_id( RightN--);
-    }else{
-      i++;
-    }
+  for (size_t i = 0; i < obs_id.n_elem; i++)
+  {
+      if ( goright[x(obs_id(i))] == 0 )
+          left_id(LeftN++) = obs_id(i);
+      else
+          obs_id(RightN++) = obs_id(i);
   }
-  
+
   left_id.resize(LeftN);
-  obs_id.resize(RightN+1);
+  obs_id.resize(RightN);
 }
 
 // ****************//

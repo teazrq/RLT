@@ -43,7 +43,29 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   //Initialize objects
   Split_Class TempSplit; 
   
-  if (split_rule == 1 and split_gen == 1 and nsplit <= 5 and false) // testing
+  // initiate the failure and at-risk counts
+  uvec All_Risk_u(NFail+1, fill::zeros);
+  uvec All_Fail(NFail+1, fill::zeros);
+  
+  for (size_t i = 0; i<N; i++)
+  {
+    All_Risk_u(Y_collapse(i)) ++;
+    
+    if (Censor_collapse(i) == 1)
+      All_Fail(Y_collapse(i)) ++;
+  }
+  
+  size_t last_count = 0;
+  size_t all_count = N;
+  
+  for (size_t k = 0; k <= NFail; k++)
+  {
+    all_count -= last_count;
+    last_count = All_Risk_u(k);
+    All_Risk_u(k) = all_count;
+  }  
+  
+  if (split_rule == 1 and true) // testing
   {
     
     //For each variable in var_try
@@ -57,17 +79,21 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
       if (SURV_DATA.Ncat(j) > 1) // categorical variable 
       {
         // need to insert code 
-      }else{   
-        Surv_Uni_Logrank_Random_Cont(TempSplit,
-                                    obs_id,
-                                    SURV_DATA.X.unsafe_col(j),
-                                    Y_collapse,
-                                    Censor_collapse,
-                                    NFail,
-                                    split_gen,
-                                    nsplit,
-                                    alpha,
-                                    rngl);
+      }else{
+
+        Surv_Uni_Logrank_Cont(TempSplit,
+                              obs_id,
+                              SURV_DATA.X.unsafe_col(j), 
+                              Y_collapse, 
+                              Censor_collapse, 
+                              NFail,
+                              All_Fail,
+                              All_Risk_u,
+                              split_gen,
+                              nsplit,
+                              alpha,
+                              rngl);
+
       }
       
       //If the score is better than default
@@ -84,24 +110,12 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   }
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
   
   
   // initiate the failure and at-risk counts
   vec All_Risk(NFail+1, fill::zeros);
-  uvec All_Fail(NFail+1, fill::zeros);
+  All_Fail.zeros();
   
   for (size_t i = 0; i<N; i++)
   {
@@ -111,8 +125,8 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
       All_Fail(Y_collapse(i)) ++;
   }
   
-  size_t last_count = 0;
-  size_t all_count = N;
+  last_count = 0;
+  all_count = N;
 
   for (size_t k = 0; k <= NFail; k++)
   {

@@ -232,25 +232,58 @@ arma::mat Cov_Tree(arma::mat& tmp_slice,
 // ## new splitting functions
 // #############################
 
-// logrank splitting rule
-void Surv_Uni_Logrank_Random_Cont(Split_Class& TempSplit,
-                                   const uvec& obs_id,
-                                   const vec& x,
-                                   const uvec& Y, // Y is collapsed
-                                   const uvec& Censor, // Censor is collapsed
-                                   const size_t NFail,
-                                   int split_gen,
-                                   int nsplit,
-                                   double alpha,
-                                   Rand& rngl);
-    
-//Calculate logrank score at x value cut, sequential calculation without vector
+// calculate logrank scores for all types of split.gen
+void Surv_Uni_Logrank_Cont(Split_Class& TempSplit,
+                           const uvec& obs_id,
+                           const vec& x,
+                           const uvec& Y, // Y is collapsed
+                           const uvec& Censor, // Censor is collapsed
+                           const size_t NFail,
+                           const uvec& All_Fail,
+                           const uvec& All_Risk,
+                           int split_gen,
+                           int nsplit,
+                           double alpha,
+                           Rand& rngl);
+
+// logrank score at random cut of x value, with pre-calculated at risk and fail
 double logrank_at_x_cut(const uvec& obs_id,
                         const vec& x,
                         const uvec& Y, //collapsed
                         const uvec& Censor, //collapsed
-                        size_t NFail,
+                        const size_t NFail,
+                        const uvec& All_Fail,
+                        const uvec& All_Risk,                        
                         double a_random_cut);
+
+// logrank score at a random index number, provided with sorted index
+double logrank_at_id_index(const uvec& indices, // index for Y, sorted by x
+                           const uvec& Y, //collapsed
+                           const uvec& Censor, //collapsed
+                           const size_t NFail,
+                           const uvec& All_Fail, 
+                           const uvec& All_Risk,
+                           size_t a_random_ind);
+
+// logrank test best score 
+void logrank_best(const uvec& indices, // index for Y, sorted by x
+                  const uvec& obs_id_sorted, // index for x, sorted by x
+                  const vec& x, 
+                  const uvec& Y, //collapsed
+                  const uvec& Censor, //collapsed
+                  const size_t NFail,
+                  const uvec& All_Fail, 
+                  const uvec& All_Risk, 
+                  size_t lowindex,
+                  size_t highindex,
+                  double& temp_cut, 
+                  double& temp_score);
+
+// logrank score 
+double logrank(const uvec& Left_Fail,
+               const uvec& Left_Risk,
+               const uvec& All_Fail,
+               const uvec& All_Risk);
 
 // #############################
 // ## Combination Split Trees - NOT IMPLEMENTED##

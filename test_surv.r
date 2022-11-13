@@ -6,9 +6,9 @@ library(randomForestSRC)
 library(ranger)
 library(survival)
 
-set.seed(1)
+# set.seed(1)
 
-trainn = 400
+trainn = 1000
 testn = 1000
 n = trainn + testn
 p = 200
@@ -25,14 +25,14 @@ y = pmin(FT, CT)
 Censor = as.numeric(FT <= CT)
 mean(Censor)
 
-ntrees = 500
-ncores = 10
+ntrees = 100
+ncores = 16
 nmin = 25
-mtry = p/2
+mtry = 10
 sampleprob = 0.85
-rule = "random"
+rule = "best"
 nsplit = ifelse(rule == "best", 0, 3)
-importance = TRUE
+importance = FALSE
 
 trainX = X[1:trainn, ]
 trainY = y[1:trainn]
@@ -60,11 +60,12 @@ colnames(metric) = c("fit.time", "pred.time", "pred.error", "L1",
                      "obj.size", "tree.size")
 
 start_time <- Sys.time()
+
 RLTfit <- RLT(trainX, trainY, trainCensor, ntrees = ntrees, ncores = ncores, 
               nmin = nmin, mtry = mtry, nsplit = nsplit,
               split.gen = rule, resample.prob = sampleprob,
               importance = importance, 
-              param.control = list(split.rule = "logrank", "alpha" = 0), 
+              param.control = list(split.rule = "logrank", "alpha" = 0.3), 
               verbose = TRUE, resample.replace=FALSE)
 metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
 start_time <- Sys.time()
@@ -155,8 +156,8 @@ metric[6, 6] = mean(unlist(lapply(rangerfit$forest$split.varIDs, length)))
 
 metric
 
-group <- factor(ifelse(c(1:(p/2)) %in% c(7, 16, 25, p), "Imp", "Not Imp"))
-plot(c(1:(p/2)),RLTfit$VarImp[1:200,1], pch=19, col=group, xlab="X",ylab="Avg. Diff in C-index Error")
+group <- factor(ifelse(c(1:p) %in% c(7, 16, 25, p), "Imp", "Not Imp"))
+plot(c(1:p),RLTfit$VarImp[1:200,1], pch=19, col=group, xlab="X",ylab="Avg. Diff in C-index Error")
 legend("topright",
        legend = levels(factor(group)),
        pch = 19,

@@ -272,18 +272,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
     var.w = var.w/sum(var.w)
   }
   
-  # check other RF parameters
-  param <- check_param_RLT(n, p, ntrees, mtry, nmin,
-                           split.gen, nsplit,
-                           resample.replace, resample.prob, 
-                           resample.track,
-                           use.obs.w, use.var.w,
-                           linear.comb,
-                           importance,
-                           var.ready,                           
-                           ncores, verbose,
-                           reinforcement,
-                           param.control)
+  # check control parameters
   
   if (!is.null(param.control$VI.var)) {
     if(!is.logical(param.control$VI.var)){
@@ -338,6 +327,19 @@ RLT <- function(x, y, censor = NULL, model = NULL,
 
   }
 
+  # set all parameters
+  param <- check_param_RLT(n, p, ntrees, mtry, nmin,
+                           split.gen, nsplit,
+                           resample.replace, resample.prob, 
+                           resample.track,
+                           use.obs.w, use.var.w,
+                           linear.comb,
+                           importance,
+                           var.ready,                           
+                           ncores, verbose,
+                           reinforcement,
+                           param.control)
+  
   # random seed 
   
   if (is.null(seed) | !is.numeric(seed))
