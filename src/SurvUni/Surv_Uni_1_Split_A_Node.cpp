@@ -75,9 +75,11 @@ void Surv_Uni_Split_A_Node(size_t Node,
     
     if ( OneTree.SplitVar( OneTree.SplitVar.n_elem - 2) != -2 )
     {
-      RLTcout << "extension needed ..." << std::endl;
+      if (Param.verbose)
+        RLTcout << "Tree extension needed. Terminal node size may not be well controlled." << std::endl;
+
       OneTree.extend();
-    }  
+    }
     
     // get ready find the locations of next left and right nodes     
     size_t NextLeft = Node;

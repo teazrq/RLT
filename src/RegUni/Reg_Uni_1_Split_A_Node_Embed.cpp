@@ -74,7 +74,12 @@ TERMINATENODE:
     // if not, extend the current tree
     
     if ( OneTree.SplitVar( OneTree.SplitVar.n_elem - 2) != -2 )
+    {
+      if (Param.verbose)
+        RLTcout << "Tree extension needed. Terminal node size may not be well controlled." << std::endl;
+      
       OneTree.extend();
+    }
 
     // get ready find the locations of next left and right nodes     
     size_t NextLeft = Node;

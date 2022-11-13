@@ -85,7 +85,7 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
                                  REG_FOREST.RightNodeList(nt),
                                  REG_FOREST.NodeAveList(nt));
       
-      size_t TreeLength = 3 + size/nmin*3;
+      size_t TreeLength = 100 + size/nmin*4;
       OneTree.initiate(TreeLength);
 
       // build the tree

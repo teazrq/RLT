@@ -94,7 +94,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
                                  SURV_FOREST.RightNodeList(nt),
                                  SURV_FOREST.NodeHazList(nt));
       
-      OneTree.initiate(100 + 4.5*size/nmin);
+      OneTree.initiate(100 + 6*size/nmin);
       
       // build the tree
       if (reinforcement)
