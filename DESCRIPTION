@@ -1,7 +1,7 @@
 Package: RLT
 Type: Package
 Title: Reinforcement Learning Trees
-Version: 4.1.3
+Version: 4.1.5
 Authors@R: c(
     person("Ruoqing", "Zhu",
            email = "teazrq@gmail.com", 
