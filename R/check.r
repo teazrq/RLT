@@ -204,13 +204,15 @@ check_param_RLT <- function(n, p, ntrees, mtry, nmin,
   # splitting rule 
   # reg: var
     # with linear comb: sir, save, pca
+  # quan: ks
   # cla: gini
   # surv: logrank, suplogrank
+  
   if (is.null(param.control$split.rule)) {
     split.rule <- "default"
   } else split.rule = as.character(param.control$split.rule)
   
-  if (split.rule %in% c("var", "gini", "logrank", "sir"))
+  if (split.rule %in% c("var", "gini", "logrank", "sir", "ks"))
     split.rule <- "default"
   
   storage.mode(split.rule) <- "character"

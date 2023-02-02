@@ -1,6 +1,6 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Regression
+//  Quantile
 //  **********************************
 
 // my header file
@@ -9,7 +9,7 @@
 using namespace Rcpp;
 using namespace arma;
 
-void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
+void Quan_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
                           Reg_Uni_Forest_Class& REG_FOREST,
                           const PARAM_GLOBAL& Param,
                           const uvec& obs_id,
@@ -96,7 +96,7 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
         Reg_Uni_Split_A_Node_Embed(0, OneTree, REG_DATA, 
                                    Param, inbag_id, var_id, var_protect, rngl);
       }else{
-        Reg_Uni_Split_A_Node(0, OneTree, REG_DATA, 
+        Quan_Uni_Split_A_Node(0, OneTree, REG_DATA, 
                              Param, inbag_id, var_id, rngl);
       }
       

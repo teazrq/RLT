@@ -89,4 +89,5 @@ bool cat_reduced_collapse(Cat_Class& a, Cat_Class& b);
 
 void goright_roller(arma::uvec& goright_cat);
 
+void surv_print(std::vector<Cat_Class*> surv_list);
 #endif

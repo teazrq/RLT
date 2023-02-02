@@ -337,4 +337,59 @@ double logrank_at_x_cut_novec(const uvec& obs_id,
 
 
 
+// logrank split scores
+void Surv_Uni_Logrank_Cat(Split_Class& TempSplit,
+                          const uvec& obs_id,
+                          const vec& x,
+                          const size_t ncat,
+                          const uvec& Y, // Y is collapsed
+                          const uvec& Censor, // Censor is collapsed
+                          const size_t NFail,
+                          const uvec& All_Fail,
+                          const uvec& All_Risk,
+                          int split_gen,
+                          int nsplit,
+                          double alpha,
+                          Rand& rngl)
+{
+  RLTcout << " use catigorical split" << std::endl;
+  
+  // categorical splitting class
+  // std::vector<Cat_Class_2*> cat_reduced(ncat + 1);  
+  
+  /*
+  // initiate 
+  for (size_t j = 0; j < cat_reduced.size(); j++)
+  {
+    Cat_Class_2 NewCat;
+    NewCat.cat = j;
+    NewCat.surv_value = 3;
+    cat_reduced[j] = &NewCat;
+  }
+  */
+  // test a function 
+  
+  // surv_print(cat_reduced);
+  
+  //RLTcout << "finished reducing" << std::endl;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

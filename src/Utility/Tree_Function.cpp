@@ -499,3 +499,12 @@ void Find_Terminal_Node_ShuffleJ(size_t Node,
   return;
   
 }
+
+// categorical class functions
+
+void surv_print(std::vector<Cat_Class*> surv_list)
+{
+    RLTcout << "print first one count " << 
+        surv_list[0]->count << std::endl;
+}
+

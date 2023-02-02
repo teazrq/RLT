@@ -54,6 +54,8 @@ for (j in 1:length(timepoints))
   SurvMat[, j] = 1 - pexp(timepoints[j], rate = 1/xlink(testX) )
 }
 
+for (j in (p/2 + 1):p) X[,j] = as.factor(X[,j])
+
 metric = data.frame(matrix(NA, 6, 6))
 rownames(metric) = c("rlt", "rltsup", "rltcox", "rltcoxpen", "rsf", "ranger")
 colnames(metric) = c("fit.time", "pred.time", "pred.error", "L1", 

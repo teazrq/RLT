@@ -45,7 +45,7 @@ start_time <- Sys.time()
 RLTfit <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, 
               nmin = nmin, mtry = mtry, nsplit = nsplit,
               split.gen = rule, resample.prob = sampleprob,
-              importance = importance, param.control = list("alpha" = 0),
+              importance = importance, param.control = list("alpha" = 0.2),
               verbose = TRUE)
 metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
 start_time <- Sys.time()

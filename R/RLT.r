@@ -24,8 +24,8 @@
 #'                        
 #' @param censor          The censoring indicator if survival model is used.
 #' 
-#' @param model           The model type: `"regression"`, `"classification"` 
-#'                        or `"survival"`.
+#' @param model           The model type: `"regression"`, `"classification"`, 
+#'                        `"quantile"` or `"survival"`.
 #'                        
 #' @param reinforcement   Should reinforcement splitting rule be used. Default
 #'                        is `"FALSE"`, i.e., regular random forests. When it
@@ -97,7 +97,7 @@
 #'                        model parameters for reinforcement splitting rules. 
 #'                        See \code{check_param_RLT} and \code{set_embed_param} for 
 #'                        more details. using \code{reinforcement = TRUE} will automatically
-#'                        generate some default tunings. However, they are not necessarily
+#'                        generate some default tuning. However, they are not necessarily
 #'                        good. 
 #' 
 #' @param ncores          Number of cores. Default is 0 (using all available cores).
@@ -391,7 +391,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                         resample.preset, 
                         param, ...)
   }
-  
+
   if (model == "survival")
   {
     if (verbose > 0) cat(" run survival forest ... \n ")
@@ -401,6 +401,16 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                          param, ...)
   }
 
+  
+  if (model == "quantile")
+  {
+      if (verbose > 0) cat(" run quantile forest ... \n ")
+      RLT.fit = QuanForest(x, y, ncat, 
+                           obs.w, var.w, 
+                           resample.preset, 
+                           param, ...)
+  }
+  
   RLT.fit$"xnames" = xnames
   
   if (importance == TRUE)

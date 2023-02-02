@@ -69,7 +69,21 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
       
       if (SURV_DATA.Ncat(j) > 1) // categorical variable 
       {
-        // need to insert code 
+        
+        Surv_Uni_Logrank_Cat(TempSplit,
+                             obs_id,
+                             SURV_DATA.X.unsafe_col(j),
+                             SURV_DATA.Ncat(j),
+                             Y_collapse, // Y is collapsed
+                             Censor_collapse, // Censor is collapsed
+                             NFail,
+                             All_Fail,
+                             All_Risk_u,
+                             split_gen,
+                             nsplit,
+                             alpha,
+                             rngl);
+        
       }else{
 
         Surv_Uni_Logrank_Cont(TempSplit,

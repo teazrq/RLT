@@ -238,7 +238,11 @@ public:
 };
 
 //Move categorical index
-void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin);
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Reg_Cat_Class>& cat_reduced, 
+                    size_t true_cat, 
+                    size_t nmin);
 
 //Record category
 double record_cat_split(std::vector<Reg_Cat_Class>& cat_reduced,

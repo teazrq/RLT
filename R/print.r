@@ -16,6 +16,9 @@ print.RLT<- function(x, ...)
   if (class(x)[3] == "cla")
     model = "classification"    
   
+  if (class(x)[3] == "quan")
+      model = "quantile"   
+  
   if(class(x)[2] == "fit")
     cat(paste("A RLT fitted", model, "forest.\n"))
     

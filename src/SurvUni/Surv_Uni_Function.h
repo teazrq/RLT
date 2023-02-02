@@ -285,6 +285,24 @@ double logrank(const uvec& Left_Fail,
                const uvec& All_Fail,
                const uvec& All_Risk);
 
+
+// categorical split 
+
+void Surv_Uni_Logrank_Cat(Split_Class& TempSplit,
+                          const uvec& obs_id,
+                          const vec& x,
+                          const size_t ncat,
+                          const uvec& Y, // Y is collapsed
+                          const uvec& Censor, // Censor is collapsed
+                          const size_t NFail,
+                          const uvec& All_Fail,
+                          const uvec& All_Risk,
+                          int split_gen,
+                          int nsplit,
+                          double alpha,
+                          Rand& rngl);
+    
+    
 // #############################
 // ## Combination Split Trees - NOT IMPLEMENTED##
 // #############################

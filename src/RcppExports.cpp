@@ -11,6 +11,23 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// QuanUniForestFit
+List QuanUniForestFit(arma::mat& X, arma::vec& Y, arma::uvec& Ncat, arma::vec& obsweight, arma::vec& varweight, arma::imat& ObsTrack, List& param_r);
+RcppExport SEXP _RLT_QuanUniForestFit(SEXP XSEXP, SEXP YSEXP, SEXP NcatSEXP, SEXP obsweightSEXP, SEXP varweightSEXP, SEXP ObsTrackSEXP, SEXP param_rSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Ncat(NcatSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type obsweight(obsweightSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type varweight(varweightSEXP);
+    Rcpp::traits::input_parameter< arma::imat& >::type ObsTrack(ObsTrackSEXP);
+    Rcpp::traits::input_parameter< List& >::type param_r(param_rSEXP);
+    rcpp_result_gen = Rcpp::wrap(QuanUniForestFit(X, Y, Ncat, obsweight, varweight, ObsTrack, param_r));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ARMA_EMPTY_UMAT
 arma::umat ARMA_EMPTY_UMAT();
 RcppExport SEXP _RLT_ARMA_EMPTY_UMAT() {
@@ -223,6 +240,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_RLT_QuanUniForestFit", (DL_FUNC) &_RLT_QuanUniForestFit, 7},
     {"_RLT_ARMA_EMPTY_UMAT", (DL_FUNC) &_RLT_ARMA_EMPTY_UMAT, 0},
     {"_RLT_ARMA_EMPTY_VEC", (DL_FUNC) &_RLT_ARMA_EMPTY_VEC, 0},
     {"_RLT_mysample", (DL_FUNC) &_RLT_mysample, 4},

@@ -39,3 +39,7 @@
 // survival
 # include "SurvUni/Surv_Uni_Definition.h"
 # include "SurvUni/Surv_Uni_Function.h"
+
+// quantile
+# include "QuanUni/Quan_Uni_Definition.h"
+# include "QuanUni/Quan_Uni_Function.h"

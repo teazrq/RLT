@@ -1,6 +1,6 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Regression
+//  Quantile
 //  **********************************
 
 // my header file
@@ -10,7 +10,7 @@ using namespace Rcpp;
 using namespace arma;
 
 //Split a node
-void Reg_Uni_Split_A_Node(size_t Node,
+void Quan_Uni_Split_A_Node(size_t Node,
                           Reg_Uni_Tree_Class& OneTree,
                           const RLT_REG_DATA& REG_DATA,
                           const PARAM_GLOBAL& Param,
@@ -34,7 +34,7 @@ TERMINATENODE:
     Split_Class OneSplit;
 
     //regular univariate split
-    Reg_Uni_Find_A_Split(OneSplit,
+    Quan_Uni_Find_A_Split(OneSplit,
                          REG_DATA,
                          Param,
                          (const uvec&) obs_id,
@@ -90,7 +90,7 @@ TERMINATENODE:
     OneTree.RightNode(Node) = NextRight;
 
     // split the left and right nodes 
-    Reg_Uni_Split_A_Node(NextLeft, 
+    Quan_Uni_Split_A_Node(NextLeft, 
                          OneTree,
                          REG_DATA,
                          Param,
@@ -98,7 +98,7 @@ TERMINATENODE:
                          var_id,
                          rngl);
     
-    Reg_Uni_Split_A_Node(NextRight,                          
+    Quan_Uni_Split_A_Node(NextRight,                          
                          OneTree,
                          REG_DATA,
                          Param,
@@ -109,26 +109,3 @@ TERMINATENODE:
   }
 }
 
-// terminate and record a node
-
-void Reg_Uni_Terminate_Node(size_t Node,
-                            Reg_Uni_Tree_Class& OneTree,
-                            uvec& obs_id,
-                            const vec& Y,
-                            const vec& obs_weight,
-                            bool useobsweight)
-{
-  
-  OneTree.SplitVar(Node) = -1; // -1 says this node is a terminal node. Ow, it would be the variable num
-  OneTree.LeftNode(Node) = obs_id.n_elem; // save node size on LeftNode
-  
-  //Find the average of the observations in the terminal node
-  if (useobsweight)
-  {
-    double allweight = arma::sum(obs_weight(obs_id));
-    OneTree.SplitValue(Node) = allweight; // save total weights on split value
-    OneTree.NodeAve(Node) = arma::sum(Y(obs_id) % obs_weight(obs_id)) / allweight;
-  }else{
-    OneTree.NodeAve(Node) = arma::mean(Y(obs_id));
-  }
-}

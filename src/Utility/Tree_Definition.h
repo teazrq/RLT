@@ -357,4 +357,9 @@ public:
     }
 };
 
+class Cat_Class_2: public Cat_Class{
+public: 
+    int surv_value;
+};
+
 #endif

@@ -10,7 +10,10 @@ using namespace Rcpp;
 using namespace arma;
 
 // Moved from Miscellaneous.cpp
-void move_cat_index(size_t& lowindex, size_t& highindex, std::vector<Reg_Cat_Class>& cat_reduced, size_t true_cat, size_t nmin)
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Reg_Cat_Class>& cat_reduced, 
+                    size_t true_cat, size_t nmin)
 {
   lowindex = 0;
   highindex = true_cat - 2;
