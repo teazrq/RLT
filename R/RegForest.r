@@ -9,19 +9,34 @@ RegForest <- function(x, y, ncat,
                       param,
                       ...)
 {
-  # prepare y
+  # prepare data
+  if (!is.vector(y)) stop("y must be a vector")
+  if (any(is.na(x))) stop("NA not permitted in x")
+  if (any(is.na(y))) stop("NA not permitted in y")
+  if (nrow(x) != length(y)) stop("number of observations does not match: x & y")
+  if (!is.numeric(y)) stop("y must be numerical for regression")
+  
   storage.mode(y) <- "double"
+  
+  # fit model
   
   if (param$linear.comb == 1)
   {
     if (param$verbose > 0)
-      cat("Fitting Regression Forest ... \n")
+      cat("Regression Random Forest ... \n")
       
     # check splitting rules
-    all.split.rule = c("default")
-    param$"split.rule" <- match.arg(param$"split.rule", all.split.rule)
-    param$"split.rule" <- as.integer(match(param$"split.rule", all.split.rule))
+    if (is.null(param$"split.rule"))
+      param$"split.rule" <- "var"
 
+    # existing splitting rule for regular regression
+    all.split.rule = c("var")
+
+    param$"split.rule" <- match(param$"split.rule", all.split.rule)
+    
+    if (param$"split.rule" == 0)
+      warning("split.rule is not compatiable with regression; reset")
+    
     # fit single variable split model
     fit = RegUniForestFit(x, y, ncat,
                           obs.w, var.w,
@@ -38,19 +53,23 @@ RegForest <- function(x, y, ncat,
   }else{
     
     if (param$verbose > 0)
-      cat("Fitting Regression Forest with Linear Combination Splitting... \n") 
+      cat("Regression Forest with Linear Combination Splits ... \n") 
     
     # check splitting rules
-    # default is sir
-    all.split.rule = c("default", "save", "pca", "naive")
-    param$"split.rule" <- match.arg(param$"split.rule", all.split.rule)
-    param$"split.rule" <- as.integer(match(param$"split.rule", all.split.rule))
+    if (is.null(param$"split.rule"))
+      param$"split.rule" <- "sir"
     
+    all.split.rule = c("sir", "save", "pca", "naive")
+    param$"split.rule" <- match.arg(param$"split.rule", all.split.rule)
+
+    if (param$"split.rule" == 0)
+      warning("split.rule is not compatiable with linear combination regression; reset")    
+
     # fit linear combination split model
     fit = RegUniCombForestFit(x, y, ncat,
-							  obs.w, var.w,
-							  resample.preset,
-							  param)
+              							  obs.w, var.w,
+              							  resample.preset,
+              							  param)
     
     fit[["parameters"]] = param
     fit[["ncat"]] = ncat

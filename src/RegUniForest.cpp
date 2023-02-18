@@ -9,9 +9,6 @@
 using namespace Rcpp;
 using namespace arma;
 
-// Fit function- must be in the main source folder, 
-// otherwise Rcpp won't find it
-
 // [[Rcpp::export()]]
 List RegUniForestFit(arma::mat& X,
           					 arma::vec& Y,

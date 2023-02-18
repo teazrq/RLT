@@ -2,12 +2,12 @@
 % Please edit documentation in R/sample.r
 \name{my_sample}
 \alias{my_sample}
-\title{\preformatted{            samples
-}}
+\title{\if{html}{\out{<div class="sourceCode">}}\preformatted{            samples
+}\if{html}{\out{</div>}}}
 \usage{
 my_sample(Num, min, max)
 }
 \description{
-\preformatted{      testing function
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{      testing function
+}\if{html}{\out{</div>}}
 }

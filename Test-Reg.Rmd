@@ -1,5 +1,5 @@
 ---
-title: "RLT Package Regression Test"
+title: "RLT Package Testing Regression Functions and Features"
 author: "Ruoqing Zhu"
 date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
 output:
@@ -9,7 +9,7 @@ output:
     toc: yes
     toc_float:
       collapsed: true
-      smooth_scroll: true
+      smooth_scroll: true 
     toc_depth: '2'
   pdf_document:
     toc: yes
@@ -61,7 +61,7 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   # tuning parameters
   ntrees = 100
   ncores = detectCores() - 1
-  nmin = 60
+  nmin = 30
   mtry = p/2
   sampleprob = 0.85
   rule = "best"
@@ -85,11 +85,12 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   
   # using RLT package 
   start_time <- Sys.time()
-  RLTfit <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, 
-                nmin = nmin, mtry = mtry, nsplit = nsplit,
-                split.gen = rule, resample.prob = sampleprob,
-                importance = importance, param.control = list("alpha" = 0),
-                verbose = TRUE)
+  RLTfit <- RLT(trainX, trainY, model = "regression", 
+                ntrees = ntrees, mtry = mtry, nmin = nmin, 
+                resample.prob = sampleprob, split.gen = rule, 
+                nsplit = nsplit, importance = importance, 
+                param.control = list("alpha" = 0),
+                ncores = ncores, verbose = TRUE)
   metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
   start_time <- Sys.time()
   RLTPred <- predict(RLTfit, testX, ncores = ncores)
@@ -174,24 +175,44 @@ You can use the `get.one.tree()` function to peek into a single tree.
 
 Let's generate a new dataset with 5 continuous variables. The true model depends on just the first two variables. 
 
-```{r class.source = NULL, out.width="90%", fig.width=16, fig.height=8}
+```{r class.source = NULL, out.width="90%", fig.width=12, fig.height=12}
   # generate data
   n = 1000; p = 5
   X = matrix(runif(n*p), n, p)
   y = X[, 1] + X[, 2] + rnorm(n)
 
   # fit model
-  RLTfit <- RLT(X, y, ntrees = 500, nmin = 4, mtry = 5,
+  RLTfit <- RLT(X, y, model = "regression", 
+                ntrees = 50, nmin = 4, mtry = 5,
                 split.gen = "best", resample.prob = 0.8,
                 resample.replace = FALSE,
-                resample.track = TRUE, importance = TRUE)
+                importance = TRUE, param.control = list("resample.track" = TRUE))
 
-  par(mfrow=c(1, 2))
+  par(mfrow=c(2, 2))
 
   # target point
   newX = matrix(c(0.5, 0.3, 0.5, 0.5, 0.5), 
                 1, 5)
   
+  # get kernel weights defined by the kernel function
+  KernelW = forest.kernel(RLTfit, X1 = newX, X2 = X)$Kernel
+  
+  par(mar = c(2, 2, 2, 2))
+  plot(X[, 1], X[, 2], col = "deepskyblue", pch = 19, cex = 0.5)
+  points(X[, 1], X[, 2], col = "darkorange", cex = 10*sqrt(KernelW/sqrt(sum(KernelW^2))), lwd = 2)
+  points(newX[1], newX[2], col = "black", pch = 4, cex = 4, lwd = 5)
+  legend("bottomright", "Target Point", pch = 4, col = "black", 
+         lwd = 5, lty = NA, cex = 1.5)
+    
+  # check against X3
+  plot(X[, 1], X[, 3], col = "deepskyblue", pch = 19, cex = 0.5)
+  points(X[, 1], X[, 3], col = "darkorange", cex = 10*sqrt(KernelW/sqrt(sum(KernelW^2))), lwd = 2)
+  points(newX[1], newX[3], col = "black", pch = 4, cex = 4, lwd = 5)
+  legend("bottomright", "Target Point", pch = 4, col = "black", 
+         lwd = 5, lty = NA, cex = 1.5)  
+  
+  # get kernel weights in the original forest
+  # this is slightly different since the original samples may or may not appear in each tree
   KernelW = forest.kernel(RLTfit, X1 = newX, X2 = X, vs.train = TRUE)$Kernel
   
   par(mar = c(2, 2, 2, 2))
@@ -207,6 +228,7 @@ Let's generate a new dataset with 5 continuous variables. The true model depends
   points(newX[1], newX[3], col = "black", pch = 4, cex = 4, lwd = 5)
   legend("bottomright", "Target Point", pch = 4, col = "black", 
          lwd = 5, lty = NA, cex = 1.5)
+
 ```
 
 ## Variance Estimation for Regression
@@ -234,12 +256,13 @@ We generate a set of data with 20 variables, and the true model depends only on 
   xorder = order(testX[, 1])
   testX = testX[xorder, ]
   testY = testY[xorder]
-  
+
   ## Variance Estimation Example
   
-  RLTfit <- RLT(trainX, trainY, ntrees = 20000, nmin = 8, 
-                mtry = p, split.gen = "random", nsplit = 3, resample.prob = 0.5, 
-                resample.replace = FALSE, var.ready = TRUE, resample.track = TRUE)
+  RLTfit <- RLT(trainX, trainY, model = "regression", ntrees = 20000, 
+                mtry = p, nmin = 40, split.gen = "best", resample.prob = 0.5,
+                param.control = list("var.ready" = TRUE, "resample.track" = TRUE),
+                verbose = TRUE)
   
   RLTPred <- predict(RLTfit, testX, var.est = TRUE, keep.all = TRUE)
 
@@ -250,12 +273,40 @@ We generate a set of data with 20 variables, and the true model depends only on 
   
   plot(1 + testX$X1, RLTPred$Prediction, pch = 19, 
        col = ifelse(is.na(cover), "red", ifelse(cover, "green", "black")),
-       xlab = "Truth", ylab = "Predicted")
+       xlab = "Truth", ylab = "Predicted", 
+       xlim = c(min(y)+1, max(y)-1), ylim = c(min(y)+1, max(y)-1))
   
   abline(0, 1, col = "darkorange", lwd = 2)
   
   for (i in 1:testn)
     segments(1+testX$X1[i], lower[i], 1+testX$X1[i], upper[i], 
              col = ifelse(is.na(cover[i]), "red", ifelse(cover[i], "green", "black")))
+  
+  legend("topleft", c("covered", "not covered"), col = c("green", "black"), 
+         lty = 1, pch = 19, ce = 2)
 ```
+
+
+## Setting random seed
+
+```{r}
+  ## Fitting a forest
+  RLTfit <- RLT(trainX, trainY, model = "regression", 
+                ntrees = 100, importance = TRUE, nmin = 1)
+
+  RLTfit2 <- RLT(trainX, trainY, model = "regression", 
+                 ntrees = 100, importance = TRUE, nmin = 1,
+                 seed = RLTfit$parameters$seed)
+  
+  # check if importance are identical
+  all(RLTfit$VarImp == RLTfit2$VarImp)
+  
+  # prediction
+  RLTPred <- predict(RLTfit, testX, keep.all = TRUE)
+  RLTPred2 <- predict(RLTfit2, testX, keep.all = TRUE)
+
+  # check predictions are identical
+  all(RLTPred$Prediction == RLTPred2$Prediction)
+```
+
 

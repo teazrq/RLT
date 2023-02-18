@@ -4,34 +4,25 @@
 #'                        The model reduces to regular random forests if 
 #'                        reinforcement is turned off.
 #'                      
-#' If \code{x} is a data.frame, then all factors are treated as categorical variables. 
-#' 
-#' To specify parameters of embedded models when \code{reinforcement = TRUE},
-#' users can supply the following in the \code{param.control} list:
-#' 
-#' \itemize{\item \code{embed.ntrees}: number of trees in the embedded model
-#' \item \code{embed.resample.prob}: proportion of samples (of the internal node)
-#' in the embedded model \item \code{embed.mtry}: number or proportion of variables
-#' \item \code{embed.nmin} terminal node size \item \code{embed.split.gen} random 
-#' cutting point search method (`"random"`, `"rank"` or `"best"`) \item \code{embed.nsplit} 
-#' number of random cutting points.}
-#' 
-#' For some other experimental features, please see \code{\link{check_param_RLT}}.
+#' To activate embedded model for splitting variable selection, use \code{reinforcement = TRUE}.
+#' To specify parameters of embedded models, see definition of \code{param.control}.
 #'                        
-#' @param x               A `matrix` or `data.frame` of features
+#' @param x               A `matrix` or `data.frame` of features. If \code{x} is a data.frame, 
+#'                        then all factors are treated as categorical variables.
 #' 
 #' @param y               Response variable. a `numeric`/`factor` vector.
 #'                        
-#' @param censor          The censoring indicator if survival model is used.
+#' @param censor          Censoring indicator if survival model is used.
 #' 
 #' @param model           The model type: `"regression"`, `"classification"`, 
-#'                        `"quantile"` or `"survival"`.
+#'                        `"quantile"`, `"survival"` or `"graph"`.
 #'                        
 #' @param reinforcement   Should reinforcement splitting rule be used. Default
-#'                        is `"FALSE"`, i.e., regular random forests. When it
-#'                        is activated, embedded model tuning parameters are 
-#'                        automatically chosen. They can also be specified in 
-#'                        `RLT.control`.
+#'                        is `"FALSE"`, i.e., regular random forests with marginal 
+#'                        search of splitting variable. When it is activated, an
+#'                        embedded model is fitted to find the best splitting variable
+#'                        or a linear combination of them, if \code{linear.comb} $> 1$. 
+#'                        They can also be specified in \code{param.control}.
 #'                        
 #' @param ntrees          Number of trees, `ntrees = 100` if reinforcement is
 #'                        used and `ntrees = 1000` otherwise.
@@ -57,52 +48,83 @@
 #' 
 #' @param resample.preset A pre-specified matrix for in-bag data indicator/count 
 #'                        matrix. It must be an \eqn{n \times} \code{ntrees}
-#'                        matrix and cannot contain negative values. Extremely 
-#'                        large counts are not recommended, and the sum of 
-#'                        each column cannot exceed \eqn{n}. If provided, then 
-#'                        resample.track will be set to `TRUE`. This is an feature 
-#'                        is mainly use when estimating variances of a random forest. 
-#'                        Use at your own risk. 
-#'                        
-#' @param resample.track  Whether to keep track of the observations used in each tree.
+#'                        matrix with integer entries. Positive number indicates 
+#'                        the number of copies of that observation (row) in the corresponding
+#'                        tree (column); zero indicates out-of-bag; negative values
+#'                        indicates not being used in either. Extremely large counts are not 
+#'                        recommended. The sum of each column should not exceed \eqn{n}. 
 #' 
-#' @param obs.w           Observation weights
+#' @param obs.w           Observation weights. The weights will be used for calculating 
+#'                        the splitting scores, but not for sampling observations. This is 
+#'                        An experimental feature currently only implemented for regression.
 #' 
 #' @param var.w           Variable weights. If this is supplied, the default is to 
 #'                        perform weighted sampling of \code{mtry} variables. For 
 #'                        other usage, see the details of \code{split.rule} in 
-#'                        \code{\link{check_param_RLT}}.
-#' 
-#' @param linear.comb     When \code{linear.comb} is larger than 1, a linear combination 
-#'                        split is used. When \code{reinforcement} is \code{TRUE}, the 
-#'                        variables with the highest potential at an internal node is used.
-#'                        When \code{reinforcement} is \code{FALSE}, a marginal screening is 
-#'                        used. In both cases, SIR and SAVE are used to determine the coefficients
-#'                        of the combination. When a categorical variable has the highest 
-#'                        potential, then a single variable is used. Currently restricted to
-#'                        less than 5 number of variables in the linear combination. 
+#'                        \code{param.control}.
 #'                        
 #' @param importance      Whether to calculate variable importance measures. The calculation 
 #'                        follows Breiman's original permutation strategy. 
-#' 
-#' @param var.ready       Construct \code{resample.preset} automatically to allow variance 
-#'                        estimations for prediction. If this is used, then \code{resample.replace} 
-#'                        will be set to `FALSE` and \code{resample.prob} should be no 
-#'                        larger than \eqn{n / 2}. It is recommended to use a very large
-#'                        \code{ntrees}, e.g, 10000 or larger. For \code{resample.prob} greater than 
-#'                        \eqn{n / 2}, one should use the \code{\link{Reg_Var_Forest}} function. 
 #'                        
 #' @param param.control   A list of additional parameters. This can be used to 
-#'                        specify other features in a random forest and set embedded 
+#'                        specify other features in a random forest or set embedded 
 #'                        model parameters for reinforcement splitting rules. 
-#'                        See \code{check_param_RLT} and \code{set_embed_param} for 
-#'                        more details. using \code{reinforcement = TRUE} will automatically
-#'                        generate some default tuning. However, they are not necessarily
-#'                        good. 
-#' 
+#'                        Using \code{reinforcement = TRUE} will automatically
+#'                        generate some default tuning. They are not necessarily optimized.
+#'                        \itemize{
+#'                        \item \code{embed.ntrees}: number of trees in the embedded model
+#'                        \item \code{embed.resample.prob}: proportion of samples (of the internal node) in the embedded model 
+#'                        \item \code{embed.mtry}: number or proportion of variables
+#'                        \item \code{embed.split.gen} random cutting point search method (`"random"`, `"rank"` or `"best"`) 
+#'                        \item \code{embed.nsplit} number of random cutting points.
+#'                        }
+#'                        
+#'                        \code{linear.comb} is a separate feature that can be activated 
+#'                        with or without using reinforcement. It creates linear combination of 
+#'                        features as the splitting rule. Currently only available for regression and classification. 
+#'                        \itemize{
+#'                        \item In reinforcement mode, a linear combination is created using the top continuous 
+#'                        variables from the embedded model. If a categorical variable is the best, then a regular 
+#'                        split will be used. The splitting point will be searched based on \code{split.rule} of the
+#'                        model. 
+#'                        \item In non-reinforcement mode, a marginal screening is performed and the top features 
+#'                        are used to construct the linear combination. This is an experimental feature. 
+#'                        }
+#'                        
+#'                        \code{split.rule} is used to specify the criteria used to compare different splittings.
+#'                        Here are the available choices. The first one is the default:
+#'                        \itemize{
+#'                        \item Regression: `"var"` (variance reduction); `"pca"` and `"sir"` can be used for linear combination splits
+#'                        \item Classification: `"gini"`
+#'                        \item Survival: `"logrank"`, `"suplogrank"`, `"coxgrad"`.
+#'                        \item Quantile: `"ks"` (Kolmogorov-Smirnov test)
+#'                        \item Graph: `"spectral"` (spectral embedding)
+#'                        }
+#'                        
+#'                        \code{resample.track} indicates whether to keep track of the observations used in each tree.
+#'                        
+#'                        \code{var.ready} this is a feature to calculate variance of the random forest prediction
+#'                        Currently only available for regression (Xu, Zhu & Shao, 2023) and survival models (Formentini, Liang & Zhu, 2023). 
+#'                        Specifying \code{var.ready = TRUE} has the following effect:
+#'                        \itemize{
+#'                        \item \code{resample.preset} is constructed automatically
+#'                        \item \code{resample.replace} is set to `FALSE`
+#'                        \item \code{resample.prob} is set to \eqn{n / 2}
+#'                        \item \code{resample.track} is set to `TRUE`
+#'                        }
+#'                        
+#'                        It is recommended to use a very large \code{ntrees}, e.g, 10000 or larger. 
+#'                        For \code{resample.prob} greater than \eqn{n / 2}, one should consider the approach in Xu, Zhu & Shao (2023).
+#'                        
+#'                        \code{alpha} force a minimum proportion of samples in each child node.
+#'                        
+#'                        \code{failcount} specifies the unique number of failure time points used in survival model. 
+#'                        By default, all failure time points will be used. A smaller number may speed up the computation. 
+#'                        The time points will be chosen uniformly on the quantiles of failure times. 
+#'                        
 #' @param ncores          Number of cores. Default is 0 (using all available cores).
 #' 
-#' @param verbose         Whether fitting info should be printed.
+#' @param verbose         Whether info should be printed.
 #' 
 #' @param seed            Random seed number to replicate a previously fitted forest. 
 #'                        Internally, the `xoshiro256++` generator is used. If not specified, 
@@ -112,30 +134,38 @@
 #' 
 #' @return 
 #' 
-#' A \code{RLT} object, constructed as a list consisting
-#' 
+#' A \code{RLT} fitted object, constructed as a list consisting
+#' \itemize{
 #' \item{FittedForest}{Fitted tree structures}
 #' \item{VarImp}{Variable importance measures, if \code{importance = TRUE}}
 #' \item{Prediction}{In-bag prediction values}
 #' \item{OOBPrediction}{Out-of-bag prediction values}
-#' \item{ObsTrack}{An \eqn{n \times} \code{ntrees} matrix that indicates which observations 
-#'                 are used in each tree. Provided if \code{resample.preset}
-#'                 is used or \code{resample.track = TRUE}.}
-#'                 
-#'  \strong{For Survival Forests}               
-#'  \item{NFail}{The number of observed failure times}
-#'  \item{VarImpCov}{if \code{VI.var=TRUE}, estimated covariance matrix for the variable importance}
-#'  \item{cindex_tree}{Out-of-bag c-index for each tree}
-#'  \item{cindex}{Out-of-bag c-index for the forest}
-#'  \item{timepoints}{ordered observed failure times}
-#'  \item{y.point}{order of \eqn{y} by observed failure times}               
-#'                 
+#' \item{resample.preset}{An \code{n} \eqn{\times} \code{ntrees} matrix that indicates 
+#'                        which observations are used in each tree. Provided if 
+#'                        \code{resample.preset} was supplied, \code{resample.track = TRUE}, 
+#'                        or \code{var.ready = TRUE}}
+#' }
 #' 
-#' @references Zhu, R., Zeng, D., & Kosorok, M. R. (2015) "Reinforcement Learning Trees." Journal of the American Statistical Association. 110(512), 1770-1784.
+#' For survival forests, these items are further provided
+#' \itemize{
+#' \item{NFail}{The number of observed failure times}
+#' \item{VarImpCov}{if \code{VI.var=TRUE}, estimated covariance matrix for the variable importance}
+#' \item{cindex_tree}{Out-of-bag c-index for each tree}
+#' \item{cindex}{Out-of-bag c-index for the forest}
+#' \item{timepoints}{ordered observed failure times}
+#' \item{y.point}{order of \eqn{y} by observed failure times}
+#' }
 #' 
-#' \dontrun{}
+#' @references 
+#' \itemize{
+#'  \item Zhu, R., Zeng, D., & Kosorok, M. R. (2015) "Reinforcement Learning Trees." Journal of the American Statistical Association. 110(512), 1770-1784.
+#'  \item Xu, T., Zhu, R., & Shao, X. (2023) "On Variance Estimation of Random Forests with Infinite-Order U-statistics." arXiv preprint arXiv:2202.09008.
+#'  \item Formentini, S. E., Wei L., & Zhu, R. (2022) "Confidence Band Estimation for Survival Random Forests." arXiv preprint arXiv:2204.12038.
+#' }
 #' 
-#' @export RLT
+#' \donttest{}
+#' 
+#' @export
 RLT <- function(x, y, censor = NULL, model = NULL,
         				ntrees = if (reinforcement) 100 else 500,
         				mtry = max(1, as.integer(ncol(x)/3)),
@@ -145,12 +175,9 @@ RLT <- function(x, y, censor = NULL, model = NULL,
         				resample.replace = TRUE,
         				resample.prob = if(resample.replace) 1 else 0.8,
         				resample.preset = NULL,
-        				resample.track = FALSE,
         				obs.w = NULL,
         				var.w = NULL,
-        				linear.comb = 1,
          				importance = FALSE,
-        				var.ready = FALSE,
         				reinforcement = FALSE,
         				param.control = list(),
         				ncores = 0,
@@ -158,197 +185,120 @@ RLT <- function(x, y, censor = NULL, model = NULL,
         				seed = NULL,
         				...)
 {
-  # check inputs
-  
-  if (missing(x)) stop("x is missing")
-  if (missing(y)) stop("y is missing")
-  
   # check model type
-  model = check_input(x, y, censor, model)
-
+  if (is.null(model))
+    stop("Please specify the model type")
+  
+  if (!match(model, c("regression", "classification", "quantile", 
+                     "survival", "graph"), nomatch = 0))
+    stop("model type not recognized")
+  
+  # check input data
+  if (missing(x)) stop("x is missing")
+  
+  if (model != "graph")
+    if (missing(y)) stop("y is missing")
+  
+  if (model == "survival")
+    if (missing(censor)) stop("censor is missing")
+  
   p = ncol(x)
   n = nrow(x)
 
-  ntrees = max(ntrees, 1)
-  storage.mode(ntrees) <- "integer"
-  
-  resample.prob = max(0, min(resample.prob, 1))
-  storage.mode(resample.prob) <- "double"
-  
-  # check resample.preset
-  if ( !is.null(resample.preset) )
-  {
-    if (!is.matrix(resample.preset))
-      stop("resample.preset must be a matrix")
-    
-    if (nrow(resample.preset) != n | ncol(resample.preset) != ntrees)
-      stop("Dimension of resample.preset does not match n x ntrees")
-    
-    if (any(resample.preset < 0))
-    {
-      warning("Negative entries in resample.preset will not be used as in-bag or out-of-bag samples.")
-      #resample.preset[resample.preset < 0] = 0;
-    }
-    
-    if ( any(colSums(resample.preset) > n) )
-    {
-      stop("Column sums in resample.preset should not be larger than n ...")
-    }
-    
-    storage.mode(resample.preset) <- "integer"
-    resample.track = TRUE
-    
-  }else{
-    resample.preset = ARMA_EMPTY_UMAT();
-  }  
-  
-  # set resample.preset if variance estimation is needed
-  
-  if (var.ready)
-  {
-    if (resample.replace)
-      stop("Variance estimation for bootstrap samples is not avaliable")
-    
-    if (resample.prob > 0.5)
-      stop("Variance estimation for resample.prob > 0.5 is not avaliable")
-    
-    if (ntrees %% 2 != 0)
-      stop("Please use an even number of trees")
+  # check some parameters
+  # we only check common parameters here
+  # model specific parameters will be checked inside each model fitting function
+  ntrees = check_ntrees(ntrees)
+  mtry = check_mtry(mtry, p)
+  nmin = check_nmin(nmin)
+  split.gen = check_splitgen(split.gen) # convert to numerical
+  nsplit = check_nsplit(nsplit)
+  resample.replace = check_resamplereplace(resample.replace)
+  resample.prob = check_resampleprob(resample.prob)
+  importance = check_importance(importance)
+  reinforcement = check_reinforcement(reinforcement)
+  ncores = check_ncores(ncores)
+  verbose = check_verbose(verbose)
+  seed = check_seed(seed) # will randomly generate seed if not provided
 
-    resample.preset = matrix(0, n, ntrees)
-    k = as.integer(resample.prob*n)
-      
-    for (i in 1:as.integer(ntrees/2) )
-    {
-      ab = sample(1:n, 2*k)
-      a = ab[1:k]
-      b = ab[-(1:k)]
-      
-      resample.preset[a, i] = 1
-      resample.preset[b, i+ (ntrees/2)] = 1
-    }
-    
-    storage.mode(resample.preset) <- "integer"
-    
-    resample.track = TRUE
-  }
-  
-  
-  # check observation weights  
+  # check observation weights
   if (is.null(obs.w))
   {
-    use.obs.w = 0L
     obs.w = ARMA_EMPTY_VEC()
+    use.obs.w = 0L
   }else{
+    obs.w = check_obsw(obs.w, n)
     use.obs.w = 1L
-    obs.w = as.numeric(as.vector(obs.w))
-    
-    if (any(obs.w < 0))
-      stop("observation weights cannot be negative")
-    
-    if (length(obs.w) != n)
-      stop("length of observation weights must be n")
-    
-    storage.mode(obs.w) <- "double"    
-    obs.w = obs.w/sum(obs.w)
   }
   
   # check variable weights  
   if (is.null(var.w))
   {
+    var.w = ARMA_EMPTY_VEC()    
     use.var.w = 0L
-    var.w = ARMA_EMPTY_VEC()
   }else{
+    var.w = check_varw(var.w, p)   
     use.var.w = 1L
-    var.w = as.numeric(as.vector(var.w))
-    
-    if (any(var.w < 0))
-      stop("variable weights cannot be negative")
-    
-    if (length(var.w) != p)
-      stop("length of variable weights must be p")
-    
-    storage.mode(var.w) <- "double"
-    var.w = var.w/sum(var.w)
   }
+  
+  # 
+  param = list("n" = n,
+               "p" = p,
+               "ntrees" = ntrees,
+               "mtry" = mtry,
+               "nmin" = nmin,
+               "split.gen" = split.gen,
+               "nsplit" = nsplit,
+               "resample.replace" = resample.replace,
+               "resample.prob" = resample.prob,
+               "use.obs.w" = use.obs.w,
+               "use.var.w" = use.var.w,
+               "importance" = importance,
+               "reinforcement" = reinforcement,
+               "ncores" = ncores,
+               "verbose" = verbose,
+               "seed" = seed)
   
   # check control parameters
+  param.control = check_control(param.control, param)
   
-  if (!is.null(param.control$VI.var)) {
-    if(!is.logical(param.control$VI.var)){
-      cat("VI.var must be TRUE or FALSE. Setting to FALSE. \n")
-      param.control$VI.var <- FALSE
-    }
-  }else{
-    param.control$VI.var <- FALSE
-  }
-  
-  if (is.null(param.control$oob.prop) & param.control$VI.var==TRUE) {
-    param.control$oob.prop <- 0.5
-  }else if(param.control$VI.var==TRUE){
-    if(param.control$oob.prop>0 & param.control$oob.prop<1){
-    }else{
-      cat("oob.prop must be in (0,1). Setting to default. \n")
-      param.control$oob.prop <- 0.5
-    }
-  }
-  
-  if(importance==TRUE){
-    if(param.control$VI.var & resample.prob<=0.5){
-      
-      k = as.integer(resample.prob*n)
-      koob <- round(k*param.control$oob.prop)
-      kinb <- k-koob
-
-      
-      if(dim(resample.preset)[1]==0){
-        resample.preset = matrix(0, n, ntrees)
-        for (i in 1:as.integer(ntrees/2) )
-        {
-          ab = sample(1:n, 2*k)
-          a = ab[1:k]
-          b = ab[-(1:k)]
-          
-          resample.preset[a, i] = 1
-          resample.preset[b, i+ (ntrees/2)] = 1
-        }
-      }  
-      
-      for(i in 1:ntrees){
-        resample.preset[,i] <- ifelse(resample.preset[,i]==0, -1, 
-                                      resample.preset[,i])
-        inbag <- c(1:n)[resample.preset[,i]==1]
-        newoob <- sample(inbag, koob)
-        resample.preset[newoob,i] <- 0
-    }
-    }else if(param.control$VI.var){
-      cat(" Will not calculate importance variance when resamp.prob>0.5. \n ")
-    }
-
-  }
-
-  # set all parameters
-  param <- check_param_RLT(n, p, ntrees, mtry, nmin,
-                           split.gen, nsplit,
-                           resample.replace, resample.prob, 
-                           resample.track,
-                           use.obs.w, use.var.w,
-                           linear.comb,
-                           importance,
-                           var.ready,                           
-                           ncores, verbose,
-                           reinforcement,
-                           param.control)
-  
-  # random seed 
-  
-  if (is.null(seed) | !is.numeric(seed))
+  # reset some parameters if var.ready is needed
+  if (param.control$var.ready)
   {
-    param$`seed` = runif(1) * .Machine$integer.max
-  }else{
-    param$`seed` = as.integer(seed)
+    if (verbose)
+    {
+      if (!is.null(resample.preset))
+        warning("resample.preset is overwritten due to var.ready")
+
+      if (param$resample.replace)
+      {
+        warning("resample.replace is set to FALSE due to var.ready")
+        param$resample.replace = 0L
+      }
+      
+      if (param$resample.prob > 0.5)
+      {
+        warning("resample.prob is set to 0.5 due to var.ready")
+        param$resample.prob = 0.5
+      }
+      
+      if (param$ntrees %% 2 != 0)
+      {
+        param$ntrees = 2*floor(param$ntrees/2)
+        warning(paste("ntrees is set to", param$ntrees, "due to var.ready"))
+      }
+    }
   }
   
+  # construct resample.preset
+  if (is.null(resample.preset) & param.control$var.ready == 0)
+  {
+    resample.preset = ARMA_EMPTY_UMAT()
+  }else{
+    resample.preset = check_resamplepreset(resample.preset, param, param.control)
+    param.control$resample.track = 1L
+  }
+
   # prepare x, continuous and categorical
   if (is.data.frame(x))
   {
@@ -368,10 +318,13 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   storage.mode(ncat) <- "integer"
   
   if (max(ncat) > 53)
-    stop("Cannot handle categorical predictors with more than 53 categories")
+    stop("cannot handle categorical predictors with more than 53 categories")
   
   xnames = colnames(x)
-  x <- data.matrix(x)
+  x <- data.matrix(x)  
+  
+  # set all parameters
+  param.all = append(param, param.control)
   
   # fit model
   
@@ -380,40 +333,48 @@ RLT <- function(x, y, censor = NULL, model = NULL,
     RLT.fit = RegForest(x, y, ncat, 
                         obs.w, var.w, 
                         resample.preset, 
-                        param, ...)
+                        param.all, ...)
   }
 
   if (model == "classification")
   {
-    if (verbose > 0) cat(" run classification forest ... \n ")
+    if (verbose > 0) cat("runing classification forest ... \n ")
     RLT.fit = ClaForest(x, y, ncat, 
                         obs.w, var.w, 
                         resample.preset, 
-                        param, ...)
+                        param.all, ...)
   }
 
   if (model == "survival")
   {
-    if (verbose > 0) cat(" run survival forest ... \n ")
+    if (verbose > 0) cat("runing survival forest ... \n ")
     RLT.fit = SurvForest(x, y, censor, ncat, 
                          obs.w, var.w, 
                          resample.preset, 
-                         param, ...)
+                         param.all, ...)
   }
 
-  
   if (model == "quantile")
   {
-      if (verbose > 0) cat(" run quantile forest ... \n ")
-      RLT.fit = QuanForest(x, y, ncat, 
-                           obs.w, var.w, 
-                           resample.preset, 
-                           param, ...)
+    if (verbose > 0) cat("runing quantile forest ... \n ")
+    RLT.fit = QuanForest(x, y, ncat, 
+                         obs.w, var.w, 
+                         resample.preset, 
+                         param.all, ...)
+  }
+  
+  if (model == "graph")
+  {
+    if (verbose > 0) cat("runing graph forest ... \n ")
+    RLT.fit = QuanForest(x, y, ncat, 
+                         obs.w, var.w, 
+                         resample.preset, 
+                         param.all, ...)
   }
   
   RLT.fit$"xnames" = xnames
   
-  if (importance == TRUE)
+  if (importance)
     rownames(RLT.fit$"VarImp") = xnames
 
   return(RLT.fit)

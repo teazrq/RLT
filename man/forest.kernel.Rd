@@ -2,8 +2,8 @@
 % Please edit documentation in R/forest.kernel.r
 \name{forest.kernel}
 \alias{forest.kernel}
-\title{\preformatted{      kernel.RLT
-}}
+\title{\if{html}{\out{<div class="sourceCode">}}\preformatted{      random forest kernel
+}\if{html}{\out{</div>}}}
 \usage{
 forest.kernel(
   object,
@@ -17,26 +17,30 @@ forest.kernel(
 \arguments{
 \item{object}{A fitted RLT object.}
 
-\item{X1}{The the first dataset. This calculates an \eqn{n_1 \times n_1} kernel
+\item{X1}{The dataset for prediction. This calculates an \eqn{n_1 \times n_1} kernel
 matrix of \code{X1}.}
 
-\item{X2}{The the second dataset of the relative kernel weights are required.
+\item{X2}{The dataset for reference/training.
 If \code{X2} is supplied, then calculate an \eqn{n_1 \times n_2}
 kernel matrix. If \code{vs.train} is used, then this must be the original
 training data.}
 
 \item{vs.train}{To calculate the kernel weights with respect to the training data.
 This is slightly different than supplying the training data to \code{X2}
-due to re-samplings of the training process. Hence, \code{ObsTrack} must
-be available from the fitted object (using \code{resample.track = TRUE}).}
+due to re-samplings of the training process. To use this feature, you must
+specify \code{resample.track = TRUE} in \code{param.control} when fitting
+the forst.}
 
 \item{verbose}{Whether fitting should be printed.}
 
 \item{...}{...   Additional arguments.}
 }
+\value{
+A kernel matrix that contains kernel weights for each observation in \code{X1} with respect to \code{X1}
+}
 \description{
-\preformatted{Get random forest induced kernel weight matrix of testing samples 
+\if{html}{\out{<div class="sourceCode">}}\preformatted{Get random forest induced kernel weight matrix of testing samples 
              or between any two sets of data. This is an experimental feature.
              Use at your own risk.
-}
+}\if{html}{\out{</div>}}
 }

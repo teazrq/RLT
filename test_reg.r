@@ -8,7 +8,7 @@ library(parallel)
 
 set.seed(1)
 
-trainn = 10000
+trainn = 3000
 testn = 1000
 n = trainn + testn
 p = 40
@@ -23,7 +23,7 @@ y = 1 + X[, 2] + 2 * (X[, p/2+1] %in% c(1, 3)) + rnorm(n)
 
 ntrees = 100
 ncores = detectCores() - 1
-nmin = 60
+nmin = 20
 mtry = p/2
 sampleprob = 0.85
 rule = "best"
@@ -32,7 +32,6 @@ importance = TRUE
 
 trainX = X[1:trainn, ]
 trainY = y[1:trainn]
-
 testX = X[1:testn + trainn, ]
 testY = y[1:testn + trainn]
 
@@ -42,11 +41,12 @@ colnames(metric) = c("fit.time", "pred.time", "pred.error",
                      "obj.size", "tree.size")
 
 start_time <- Sys.time()
-RLTfit <- RLT(trainX, trainY, ntrees = ntrees, ncores = ncores, 
-              nmin = nmin, mtry = mtry, nsplit = nsplit,
-              split.gen = rule, resample.prob = sampleprob,
-              importance = importance, param.control = list("alpha" = 0.2),
-              verbose = TRUE)
+RLTfit <- RLT(trainX, trainY, model = "regression", 
+              ntrees = ntrees, mtry = mtry, nmin = nmin, 
+              resample.prob = sampleprob, split.gen = rule, 
+              nsplit = nsplit, importance = importance, 
+              param.control = list("alpha" = 0),
+              ncores = ncores, verbose = TRUE)
 metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
 start_time <- Sys.time()
 RLTPred <- predict(RLTfit, testX, ncores = ncores)

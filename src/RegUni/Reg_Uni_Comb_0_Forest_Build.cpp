@@ -10,15 +10,15 @@ using namespace Rcpp;
 using namespace arma;
 
 void Reg_Uni_Comb_Forest_Build(const RLT_REG_DATA& REG_DATA,
-                            Reg_Uni_Comb_Forest_Class& REG_FOREST,
-                            const PARAM_GLOBAL& Param,
-                            const uvec& obs_id,
-                            const uvec& var_id,
-                            imat& ObsTrack,
-                            bool do_prediction,
-                            vec& Prediction,
-                            vec& OOBPrediction,
-                            vec& VarImp)
+                              Reg_Uni_Comb_Forest_Class& REG_FOREST,
+                              const PARAM_GLOBAL& Param,
+                              const uvec& obs_id,
+                              const uvec& var_id,
+                              imat& ObsTrack,
+                              bool do_prediction,
+                              vec& Prediction,
+                              vec& OOBPrediction,
+                              vec& VarImp)
 {
   // parameters to use
   size_t ntrees = Param.ntrees;
@@ -88,7 +88,7 @@ void Reg_Uni_Comb_Forest_Build(const RLT_REG_DATA& REG_DATA,
                                       REG_FOREST.RightNodeList(nt),
                                       REG_FOREST.NodeAveList(nt));
       
-      size_t TreeLength = 3 + size/nmin*3;
+      size_t TreeLength = 100 + size/nmin*4;
       OneTree.initiate(TreeLength, linear_comb);
       
       // build the tree

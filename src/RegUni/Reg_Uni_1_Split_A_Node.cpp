@@ -72,9 +72,7 @@ TERMINATENODE:
     if ( OneTree.SplitVar( OneTree.SplitVar.n_elem - 2) != -2 )
     {
       if (Param.verbose)
-      {
         RLTcout << "Tree extension needed. Terminal node size may not be well controlled." << std::endl;
-      }
       
       OneTree.extend();
     }

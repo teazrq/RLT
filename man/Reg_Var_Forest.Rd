@@ -2,8 +2,8 @@
 % Please edit documentation in R/Reg_Var_Forest.r
 \name{Reg_Var_Forest}
 \alias{Reg_Var_Forest}
-\title{\preformatted{            Regression random forest with variance estimation
-}}
+\title{\if{html}{\out{<div class="sourceCode">}}\preformatted{            Regression random forest with variance estimation
+}\if{html}{\out{</div>}}}
 \usage{
 Reg_Var_Forest(
   x,
@@ -59,15 +59,15 @@ a seed will be generated automatically.}
 \item{...}{Additional arguments.}
 }
 \value{
-\preformatted{           Prediction and variance estimation of the testing data
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{           Prediction and variance estimation of the testing data
+}\if{html}{\out{</div>}}
 }
 \description{
-\preformatted{      This function provides some experimental features 
+\if{html}{\out{<div class="sourceCode">}}\preformatted{      This function provides some experimental features 
                    to estimate the variance of random forests, especially
                    when the sub-sampling size is larger than \eqn{n/2}. 
                    These trees will always be sampled without replacement.
                    The choices of tuning parameters will be limited.
                    Use at your own risk.
-}
+}\if{html}{\out{</div>}}
 }

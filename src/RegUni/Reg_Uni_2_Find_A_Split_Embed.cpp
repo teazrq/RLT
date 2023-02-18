@@ -24,35 +24,24 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   Embed_Param.N = obs_id.n_elem;
   Embed_Param.P = var_id.n_elem;
   Embed_Param.ntrees = Param.embed_ntrees;
-  Embed_Param.nmin = Param.embed_nmin;
-  Embed_Param.importance = 1;
   
-  Embed_Param.useobsweight = Param.useobsweight;
-  Embed_Param.usevarweight = Param.usevarweight;
-  
-  Embed_Param.seed = rngl.rand_sizet(0, INT_MAX);
-  Embed_Param.ncores = 1;
-  Embed_Param.verbose = 0;
-
   if (Param.embed_mtry > 1)
     Embed_Param.mtry = (size_t) Param.embed_mtry;
   else
-    Embed_Param.mtry = (size_t) Embed_Param.P * Param.embed_mtry;
+    Embed_Param.mtry = (size_t) Embed_Param.P * Param.embed_mtry;  
   
+  Embed_Param.nmin = Param.embed_nmin;  
   Embed_Param.split_gen = Param.embed_split_gen;
   Embed_Param.nsplit = Param.embed_nsplit;
-  Embed_Param.resample_prob = Param.embed_resample_prob;
+  Embed_Param.replacement = 0; // no further bootstrap in embedded model
+  Embed_Param.resample_prob = Param.embed_resample_prob;  
+  Embed_Param.useobsweight = Param.useobsweight;
+  Embed_Param.usevarweight = Param.usevarweight;  
+  Embed_Param.importance = 1;  
   
-  //Embed_Param.rlt_print();  
-  size_t p_new;
-  
-  if (Param.embed_mute > 1)
-    p_new = Embed_Param.P - Param.embed_mute;
-  else
-    p_new = Embed_Param.P - (size_t) Embed_Param.P * Param.embed_mute;
-
-  if (p_new < 1)
-    p_new = 1;
+  Embed_Param.ncores = 1;  
+  Embed_Param.verbose = 0;  
+  Embed_Param.seed = rngl.rand_sizet(0, INT_MAX);
     
   // start fitting embedded model 
   
@@ -70,10 +59,10 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   arma::field<arma::vec> NodeAve(ntrees);
   
   //Initiate forest object
-  Reg_Uni_Forest_Class REG_FOREST(SplitVar, 
-                                  SplitValue, 
-                                  LeftNode, 
-                                  RightNode, 
+  Reg_Uni_Forest_Class REG_FOREST(SplitVar,
+                                  SplitValue,
+                                  LeftNode,
+                                  RightNode,
                                   NodeAve);
   
   // Initiate prediction objects
@@ -100,27 +89,31 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   
   // protected variables
   size_t embed_protect = (Param.embed_protect < var_id.n_elem) ? Param.embed_protect : var_id.n_elem;
-  var_protect = join_cols(var_protect, var_id.subvec(0, embed_protect-1));
-  var_protect = unique(var_protect);
+  var_protect = unique(join_cols(var_protect, var_id.subvec(0, embed_protect-1)));
 
-  // Rcout << "at here, protect" << var_protect << std::endl;
+  // calculate number of variables after muting
+  size_t p_new;
+  
+  if (Param.embed_mute > 1)
+    p_new = Embed_Param.P - Param.embed_mute;
+  else
+    p_new = Embed_Param.P - (size_t) Embed_Param.P * Param.embed_mute;
+  
+  if (p_new < 1) p_new = 1;
+
   // new variable list
   size_t var_best = var_id(0);
   var_id.resize(p_new);
-  var_id = join_cols(var_id, var_protect);
-  var_id = unique(var_id);
+  var_id = unique(join_cols(var_id, var_protect));
 
   // record and update 
   // the splitting rule 
-
   OneSplit.var = var_best;
-
   size_t split_gen = Param.split_gen;
   size_t split_rule = Param.split_rule;    
   size_t nsplit = Param.nsplit;
   double alpha = Param.alpha; 
   bool useobsweight = Param.useobsweight;  
-  
   
   if (REG_DATA.Ncat(var_best) > 1) // categorical variable 
   {
@@ -129,8 +122,8 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
                       obs_id, 
                       REG_DATA.X.unsafe_col(var_best), 
                       REG_DATA.Ncat(var_best),
-                      REG_DATA.Y, 
-                      REG_DATA.obsweight, 
+                      REG_DATA.Y,
+                      REG_DATA.obsweight,
                       0.0, // penalty
                       split_gen, 
                       split_rule, 

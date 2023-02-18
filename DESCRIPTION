@@ -13,22 +13,24 @@ Authors@R: c(
     person("Haowen", "Zhou",
            email = "pja9pw@virginia.edu", 
            role = c("ctb")),
+    person("Tianning", "Xu",
+           email = "tx8@illinois.edu", 
+           role = c("ctb")),
     person("Zhechao", "Huang",
            email = "huangzhechao1995@gmail.com", 
            role = c("ctb"))
     )
 Description: Random forest with a variety of additional features for regression, 
-    classification and survival analysis. The features include: parallel computing 
-    with OpenMP, reproduciblity with random seeds, variance estimation, embedded model 
-    for selecting the splitting variable (based on Zhu, Zeng & Kosorok, 2015), linear 
-    combination splits, observaton and variable weights, setting and tracking subjects 
-    used in each tree, etc.
+    classification, survival analysis and graphical model. Features include: parallel 
+    computing with OpenMP, reproduciblity with random seeds, variance estimation, 
+    embedded model for selecting the splitting variable, linear combination splits, 
+    observaton and variable weights, setting and tracking subjects used in each tree, etc.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: TRUE
-Imports: Rcpp (>= 1.0.2)
+Imports: Rcpp (>= 1.0.9), MASS
 LinkingTo: Rcpp, RcppArmadillo, dqrng, BH, sitmo
 URL: https://cran.r-project.org/package=RLT,
-    https://teazrq.github.io/RLT/
-RoxygenNote: 7.1.2
+     https://teazrq.github.io/RLT/
+RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)

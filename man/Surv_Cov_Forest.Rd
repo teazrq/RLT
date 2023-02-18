@@ -2,8 +2,8 @@
 % Please edit documentation in R/Surv_Cov_Forest.r
 \name{Surv_Cov_Forest}
 \alias{Surv_Cov_Forest}
-\title{\preformatted{            Survival random forest with covariance estimation
-}}
+\title{\if{html}{\out{<div class="sourceCode">}}\preformatted{            Survival random forest with covariance estimation
+}\if{html}{\out{</div>}}}
 \usage{
 Surv_Cov_Forest(
   x,
@@ -62,12 +62,12 @@ a seed will be generated automatically.}
 \item{...}{Additional arguments.}
 }
 \value{
-\preformatted{           Prediction and covariance estimation of the testing data
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{           Prediction and covariance estimation of the testing data
+}\if{html}{\out{</div>}}
 }
 \description{
-\preformatted{      These trees will always be sampled without replacement.
+\if{html}{\out{<div class="sourceCode">}}\preformatted{      These trees will always be sampled without replacement.
                    The choices of tuning parameters will be limited.
                    Use at your own risk.
-}
+}\if{html}{\out{</div>}}
 }

@@ -2,8 +2,8 @@
 % Please edit documentation in R/RLT.r
 \name{RLT}
 \alias{RLT}
-\title{\preformatted{            Reinforcement Learning Trees
-}}
+\title{\if{html}{\out{<div class="sourceCode">}}\preformatted{            Reinforcement Learning Trees
+}\if{html}{\out{</div>}}}
 \usage{
 RLT(
   x,
@@ -18,12 +18,9 @@ RLT(
   resample.replace = TRUE,
   resample.prob = if (resample.replace) 1 else 0.8,
   resample.preset = NULL,
-  resample.track = FALSE,
   obs.w = NULL,
   var.w = NULL,
-  linear.comb = 1,
   importance = FALSE,
-  var.ready = FALSE,
   reinforcement = FALSE,
   param.control = list(),
   ncores = 0,
@@ -33,14 +30,15 @@ RLT(
 )
 }
 \arguments{
-\item{x}{A \code{matrix} or \code{data.frame} of features}
+\item{x}{A \code{matrix} or \code{data.frame} of features. If \code{x} is a data.frame,
+then all factors are treated as categorical variables.}
 
 \item{y}{Response variable. a \code{numeric}/\code{factor} vector.}
 
-\item{censor}{The censoring indicator if survival model is used.}
+\item{censor}{Censoring indicator if survival model is used.}
 
-\item{model}{The model type: \code{"regression"}, \code{"classification"}
-or \code{"survival"}.}
+\item{model}{The model type: \code{"regression"}, \code{"classification"},
+\code{"quantile"}, \code{"survival"} or \code{"graph"}.}
 
 \item{ntrees}{Number of trees, \code{ntrees = 100} if reinforcement is
 used and \code{ntrees = 1000} otherwise.}
@@ -49,9 +47,7 @@ used and \code{ntrees = 1000} otherwise.}
 internal node.}
 
 \item{nmin}{Terminal node size. Splitting will stop when the internal
-node size is less than twice of \code{nmin}. This is
-almost equivalent to setting \code{nodesize} \eqn{= 2 \times}
-\code{nmin} in the \code{randomForest} package.}
+node size is less equal to \code{nmin}.}
 
 \item{split.gen}{How the cutting points are generated: \code{"random"},
 \code{"rank"} or \code{"best"}. If minimum child node size is
@@ -68,58 +64,91 @@ replacement.}
 
 \item{resample.preset}{A pre-specified matrix for in-bag data indicator/count
 matrix. It must be an \eqn{n \times} \code{ntrees}
-matrix and cannot contain negative values. Extremely
-large counts are not recommended, and the sum of
-each column cannot exceed \eqn{n}. If provided, then
-resample.track will be set to \code{TRUE}. This is an feature
-is mainly use when estimating variances of a random forest.
-Use at your own risk.}
+matrix with integer entries. Positive number indicates
+the number of copies of that observation (row) in the corresponding
+tree (column); zero indicates out-of-bag; negative values
+indicates not being used in either. Extremely large counts are not
+recommended. The sum of each column should not exceed \eqn{n}.}
 
-\item{resample.track}{Whether to keep track of the observations used in each tree.}
-
-\item{obs.w}{Observation weights}
+\item{obs.w}{Observation weights. The weights will be used for calculating
+the splitting scores, but not for sampling observations. This is
+An experimental feature currently only implemented for regression.}
 
 \item{var.w}{Variable weights. If this is supplied, the default is to
 perform weighted sampling of \code{mtry} variables. For
 other usage, see the details of \code{split.rule} in
-\code{\link{check_param_RLT}}.}
-
-\item{linear.comb}{When \code{linear.comb} is larger than 1, a linear combination
-split is used. When \code{reinforcement} is \code{TRUE}, the
-variables with the highest potential at an internal node is used.
-When \code{reinforcement} is \code{FALSE}, a marginal screening is
-used. In both cases, SIR and SAVE are used to determine the coefficients
-of the combination. When a categorical variable has the highest
-potential, then a single variable is used. Currently restricted to
-less than 5 number of variables in the linear combination.}
+\code{param.control}.}
 
 \item{importance}{Whether to calculate variable importance measures. The calculation
 follows Breiman's original permutation strategy.}
 
-\item{var.ready}{Construct \code{resample.preset} automatically to allow variance
-estimations for prediction. If this is used, then \code{resample.replace}
-will be set to \code{FALSE} and \code{resample.prob} should be no
-larger than \eqn{n / 2}. It is recommended to use a very large
-\code{ntrees}, e.g, 10000 or larger. For \code{resample.prob} greater than
-\eqn{n / 2}, one should use the \code{\link{Reg_Var_Forest}} function.}
-
 \item{reinforcement}{Should reinforcement splitting rule be used. Default
-is \code{"FALSE"}, i.e., regular random forests. When it
-is activated, embedded model tuning parameters are
-automatically chosen. They can also be specified in
-\code{RLT.control}.}
+is \code{"FALSE"}, i.e., regular random forests with marginal
+search of splitting variable. When it is activated, an
+embedded model is fitted to find the best splitting variable
+or a linear combination of them, if \code{linear.comb} $> 1$.
+They can also be specified in \code{param.control}.}
 
 \item{param.control}{A list of additional parameters. This can be used to
-specify other features in a random forest and set embedded
+specify other features in a random forest or set embedded
 model parameters for reinforcement splitting rules.
-See \code{check_param_RLT} and \code{set_embed_param} for
-more details. using \code{reinforcement = TRUE} will automatically
-generate some default tunings. However, they are not necessarily
-good.}
+Using \code{reinforcement = TRUE} will automatically
+generate some default tuning. They are not necessarily optimized.
+\itemize{
+\item \code{embed.ntrees}: number of trees in the embedded model
+\item \code{embed.resample.prob}: proportion of samples (of the internal node) in the embedded model
+\item \code{embed.mtry}: number or proportion of variables
+\item \code{embed.split.gen} random cutting point search method (\code{"random"}, \code{"rank"} or \code{"best"})
+\item \code{embed.nsplit} number of random cutting points.
+}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{                   \code{linear.comb} is a separate feature that can be activated 
+                   with or without using reinforcement. It creates linear combination of 
+                   features as the splitting rule. Currently only available for regression and classification. 
+                   \\itemize\{
+                   \\item In reinforcement mode, a linear combination is created using the top continuous 
+                   variables from the embedded model. If a categorical variable is the best, then a regular 
+                   split will be used. The splitting point will be searched based on \code{split.rule} of the
+                   model. 
+                   \\item In non-reinforcement mode, a marginal screening is performed and the top features 
+                   are used to construct the linear combination. This is an experimental feature. 
+                   \}
+                   
+                   \code{split.rule} is used to specify the criteria used to compare different splittings.
+                   Here are the available choices. The first one is the default:
+                   \\itemize\{
+                   \\item Regression: `"var"` (variance reduction); `"pca"` and `"sir"` can be used for linear combination splits
+                   \\item Classification: `"gini"`
+                   \\item Survival: `"logrank"`, `"suplogrank"`, `"coxgrad"`.
+                   \\item Quantile: `"ks"` (Kolmogorov-Smirnov test)
+                   \\item Graph: `"spectral"` (spectral embedding)
+                   \}
+                   
+                   \code{resample.track} indicates whether to keep track of the observations used in each tree.
+                   
+                   \code{var.ready} this is a feature to calculate variance of the random forest prediction
+                   Currently only available for regression (Xu, Zhu & Shao, 2023) and survival models (Formentini, Liang & Zhu, 2023). 
+                   Specifying \code{var.ready = TRUE} has the following effect:
+                   \\itemize\{
+                   \\item \code{resample.preset} is constructed automatically
+                   \\item \code{resample.replace} is set to `FALSE`
+                   \\item \code{resample.prob} is set to \eqn{n / 2}
+                   \\item \code{resample.track} is set to `TRUE`
+                   \}
+                   
+                   It is recommended to use a very large \code{ntrees}, e.g, 10000 or larger. 
+                   For \code{resample.prob} greater than \eqn{n / 2}, one should consider the approach in Xu, Zhu & Shao (2023).
+                   
+                   \code{alpha} force a minimum proportion of samples in each child node.
+                   
+                   \code{failcount} specifies the unique number of failure time points used in survival model. 
+                   By default, all failure time points will be used. A smaller number may speed up the computation. 
+                   The time points will be chosen uniformly on the quantiles of failure times.
+}\if{html}{\out{</div>}}}
 
 \item{ncores}{Number of cores. Default is 0 (using all available cores).}
 
-\item{verbose}{Whether fitting info should be printed.}
+\item{verbose}{Whether info should be printed.}
 
 \item{seed}{Random seed number to replicate a previously fitted forest.
 Internally, the \verb{xoshiro256++} generator is used. If not specified,
@@ -128,17 +157,20 @@ a seed will be generated automatically.}
 \item{...}{Additional arguments.}
 }
 \value{
-A \code{RLT} object, constructed as a list consisting
-
+A \code{RLT} fitted object, constructed as a list consisting
+\itemize{
 \item{FittedForest}{Fitted tree structures}
 \item{VarImp}{Variable importance measures, if \code{importance = TRUE}}
 \item{Prediction}{In-bag prediction values}
 \item{OOBPrediction}{Out-of-bag prediction values}
-\item{ObsTrack}{An \eqn{n \times} \code{ntrees} matrix that indicates which observations
-are used in each tree. Provided if \code{resample.preset}
-is used or \code{resample.track = TRUE}.}
+\item{resample.preset}{An \code{n} \eqn{\times} \code{ntrees} matrix that indicates
+which observations are used in each tree. Provided if
+\code{resample.preset} was supplied, \code{resample.track = TRUE},
+or \code{var.ready = TRUE}}
+}
 
-\strong{For Survival Forests}
+For survival forests, these items are further provided
+\itemize{
 \item{NFail}{The number of observed failure times}
 \item{VarImpCov}{if \code{VI.var=TRUE}, estimated covariance matrix for the variable importance}
 \item{cindex_tree}{Out-of-bag c-index for each tree}
@@ -146,29 +178,23 @@ is used or \code{resample.track = TRUE}.}
 \item{timepoints}{ordered observed failure times}
 \item{y.point}{order of \eqn{y} by observed failure times}
 }
+}
 \description{
-\preformatted{      Fit models for regression, classification and 
+\if{html}{\out{<div class="sourceCode">}}\preformatted{      Fit models for regression, classification and 
                    survival analysis using reinforced splitting rules.
                    The model reduces to regular random forests if 
                    reinforcement is turned off.
-}
+}\if{html}{\out{</div>}}
 
-If \code{x} is a data.frame, then all factors are treated as categorical variables.
-
-To specify parameters of embedded models when \code{reinforcement = TRUE},
-users can supply the following in the \code{param.control} list:
-
-\itemize{\item \code{embed.ntrees}: number of trees in the embedded model
-\item \code{embed.resample.prob}: proportion of samples (of the internal node)
-in the embedded model \item \code{embed.mtry}: number or proportion of variables
-\item \code{embed.nmin} terminal node size \item \code{embed.split.gen} random
-cutting point search method (\code{"random"}, \code{"rank"} or \code{"best"}) \item \code{embed.nsplit}
-number of random cutting points.}
-
-For some other experimental features, please see \code{\link{check_param_RLT}}.
+To activate embedded model for splitting variable selection, use \code{reinforcement = TRUE}.
+To specify parameters of embedded models, see definition of \code{param.control}.
 }
 \references{
-Zhu, R., Zeng, D., & Kosorok, M. R. (2015) "Reinforcement Learning Trees." Journal of the American Statistical Association. 110(512), 1770-1784.
+\itemize{
+\item Zhu, R., Zeng, D., & Kosorok, M. R. (2015) "Reinforcement Learning Trees." Journal of the American Statistical Association. 110(512), 1770-1784.
+\item Xu, T., Zhu, R., & Shao, X. (2023) "On Variance Estimation of Random Forests with Infinite-Order U-statistics." arXiv preprint arXiv:2202.09008.
+\item Formentini, S. E., Wei L., & Zhu, R. (2022) "Confidence Band Estimation for Survival Random Forests." arXiv preprint arXiv:2204.12038.
+}
 
-\dontrun{}
+\donttest{}
 }

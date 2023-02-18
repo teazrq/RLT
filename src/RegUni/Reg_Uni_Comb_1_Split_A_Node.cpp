@@ -28,7 +28,7 @@ void Reg_Uni_Comb_Split_A_Node(size_t Node,
   
   if (N <= nmin)
   {
-    TERMINATENODE:
+TERMINATENODE:
     Reg_Uni_Comb_Terminate_Node(Node, OneTree, obs_id, REG_DATA.Y, REG_DATA.obsweight, useobsweight);
     
   }else{

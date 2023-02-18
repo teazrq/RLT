@@ -165,7 +165,9 @@ List Kernel_Train(arma::field<arma::ivec>& SplitVar,
       uvec ID1 = real_id1(find(TermNode1 == j));
       uvec ID2 = real_id2(find(TermNode2 == j && intreent > 0));
       
-      K.submat(ID1, ID2) += 1;
+      for (auto k : ID1)
+        for (auto l : ID2)
+          K(k, l) += intreent(l);
     }
   }
   

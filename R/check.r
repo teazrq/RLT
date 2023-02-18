@@ -1,312 +1,388 @@
-#' @title check_input
-#' @name check_input
-#' @description Check input arguments to determine which model to use
-#' @param x x
-#' @param y x
-#' @param censor censoring indicator
-#' @param model model type
+#' @title check_ntrees
+#' @name check_ntrees
 #' @keywords internal
-
-check_input <- function(x, y, censor, model)
+check_ntrees <- function(ntrees)
 {
-  if (!is.matrix(x) & !is.data.frame(x)) stop("x must be a matrix or a data.frame")
-  if (!is.vector(y)) stop("y must be a vector")
+  storage.mode(ntrees) <- "integer"
   
-  if (any(is.na(x))) stop("NA not permitted in x")
-  if (any(is.na(y))) stop("NA not permitted in y")
-  
-  if (!is.null(y))
-    if (nrow(x) != length(y)) stop("number of observations does not match: x & y")
-  
-  if (!is.numeric(y) & !is.factor(y))
-    stop("y must be numeric or factor")
-  
-  if (!is.null(censor))
-  {
-    if (!is.vector(censor) | !is.numeric(censor)) stop("censor must be a numerical vector")
-    if (length(y) != length(censor)) stop("number of observations does not match: y & censor")
+  if (is.na(ntrees))
+    stop("ntrees should be numerical")
     
-    if ( sum(is.na(match(sort(unique(censor)), c(FALSE,TRUE)))) > 0 )
-      stop("censoring indicator must be 0 (censored) or 1 (failed)")
-    
-    if ( all(censor == 0) )
-      stop("all observations are censored, not suitable for survival model")
-  }
-  
-  # decide which model to fit 
-  
-  if (is.null(model))
-  {
-    model = "regression" 
-    
-    if (!is.null(censor))
-      model = "survival"
-    
-    if (is.factor(y))
-      model = "classification"
-    
-    if ( is.numeric(y) & length(unique(y)) < 5 )
-      warning("Number of unique values in y is less than 5. Please check input data and/or consider changing to classification.")
-  }
-  
-  return(model)
+  if (ntrees < 1)
+    stop("ntrees should be greater than 0")
+
+  return(ntrees)
 }
 
-#' @title check_param_RLT
-#' @name check_param_RLT
-#' @description Check parameters
-#' 
-#' The following parameters, if needed can be specified in the \code{param.control} list.
-#' 
-#' \code{alpha} can specify a minimum number of observations required for each 
-#' child node as a portion of the parent node. Must be within `[0, 0.5)`. When 
-#' \code{alpha} $> 0$ and \code{split.gen} is `rank` or `best`, this will force 
-#' each child node to contain at least \eqn{\max(\texttt{nmin}, \alpha \times N_A)}
-#' number of number of observations, where \eqn{N_A} is the sample size at the current 
-#' internal node. This is mainly for theoretical concern. 
-#' 
-#' \code{split.rule} specifies the splitting rule for comparisons. For regression, 
-#' variance reduction `"var"` is used; for classification, `"gini"` index is used.
-#' For survival, `"logrank"`, `"suplogrank"`, and `"coxgrad"` are available. When 
-#' `"coxgrad"` is used, variable weights `"var.w"` are used as the penalty. For linear
-#' combination splitting with embedded model screening \code{linear.comb > 1}, 
-#' variance reduction is always used for screening and \code{split.rule} specifies 
-#' the method for calculating the linear combination coefficient: `"sir"` (default) 
-#' for sliced inverse regression, `"pca"`, `"save"` and `"naive"` for the original 
-#' method in the RLT paper.
-#' 
-#' \code{VI.var=TRUE} will calculate variance for variable importance.
-#' If \code{VI.var=TRUE}, \eqn{\texttt{resamp.prob} \times (1- \texttt{oob.prop})} observations
-#' will be used for building each tree, \eqn{\texttt{resamp.prob} \times \texttt{oob.prop}}
-#' observations will be used for the out-of-bag sample, and 1-\code{resamp.prob}
-#' observations will not be used as in-bag or out-of-bag samples for that tree at
-#' all. Only implemented for survival forests. Ignored otherwise.
-#' 
-#' \code{oob.prop} only used when \code{VI.var}=TRUE.
-#' Specifies the proportion of resamp.prob that will be assigned to the out-of-bag 
-#' sample. Default is \code{oob.prop}=0.5. See \code{VI.var} for more details.
-#' Only implemented for survival forests. Ignored otherwise.
-#' 
+#' @title check_mtry
+#' @name check_mtry
 #' @keywords internal
-
-check_param_RLT <- function(n, p, ntrees, mtry, nmin,
-                            split.gen, nsplit,
-                            resample.replace, resample.prob,
-                            resample.track,
-                            use.obs.w, use.var.w,
-                            linear.comb,
-                            importance,
-                            var.ready, 
-                            ncores, verbose,
-                            reinforcement,
-                            param.control)
+check_mtry <- function(mtry, p)
 {
-  ntrees = max(ntrees, 1)
-  storage.mode(ntrees) <- "integer"
-
-  mtry = max(min(mtry, p), 1)
-  storage.mode(mtry) <- "integer"  
+  storage.mode(mtry) <- "integer"
   
-  nmin = max(1, floor(nmin))
+  if (is.na(mtry))
+    stop("mtry should be numerical")
+  
+  if (mtry < 1)
+    stop("mtry cannot be less than 1")
+  
+  if (mtry > p)
+    stop("mtry cannot be larger than p")
+
+  return(mtry)
+}
+
+#' @title check_nmin
+#' @name check_nmin
+#' @keywords internal
+check_nmin <- function(nmin)
+{
   storage.mode(nmin) <- "integer"
   
-  # splitting rules 
+  if (is.na(nmin))
+    stop("nmin should be numerical")
   
-  split.gen = match(split.gen, c("random", "rank", "best"), 
-                    nomatch = 0)
-  storage.mode(split.gen) <- "integer"
-  if (split.gen == 0) stop("split.gen not matched ...")
+  if (nmin < 1)
+    stop("nmin cannot be less than 1")
+
+  return(nmin)
+}
+
+#' @title check_splitgen
+#' @name check_splitgen
+#' @keywords internal
+check_splitgen <- function(split.gen)
+{
+  split.gen.num = match(split.gen, c("random", "rank", "best"), 
+                        nomatch = 0)
   
+  if (split.gen.num == 0) 
+    stop(paste("split.gen = ", split.gen, " is not recognized", sep = ""))
   
-  nsplit = max(1, nsplit)
-  storage.mode(nsplit) <- "integer"  
+  storage.mode(split.gen.num) <- "integer"
+  return(split.gen.num)
+}
+
+#' @title check_nsplit
+#' @name check_nsplit
+#' @keywords internal
+check_nsplit <- function(nsplit)
+{
+  storage.mode(nsplit) <- "integer"
   
-  # resampling
+  if (is.na(nsplit))
+    stop("nsplit should be numerical")
   
-  resample.replace = (resample.replace != 0)
+  if (nsplit < 0)
+    stop("nsplit cannot be less than 1")
+  
+  return(nsplit)
+}
+
+#' @title check_resamplereplace
+#' @name check_resamplereplace
+#' @keywords internal
+check_resamplereplace <- function(resample.replace)
+{
   storage.mode(resample.replace) <- "integer"
   
-  resample.prob = max(0, min(resample.prob, 1))
+  if (is.na(resample.replace))
+    stop("resample.replace should be logical")
+  
+  resample.replace = ifelse(resample.replace != 0, 1L, 0L)
+  return(resample.replace)
+}
+
+#' @title check_resampleprob
+#' @name check_resampleprob
+#' @keywords internal
+check_resampleprob <- function(resample.prob)
+{
   storage.mode(resample.prob) <- "double"  
   
-  resample.track = (resample.track != 0)
-  storage.mode(resample.track) <- "integer"
+  if (is.na(resample.prob))
+    stop("resample.prob should be numerical")
   
-  use.obs.w = (use.obs.w != 0)
-  storage.mode(use.obs.w) <- "integer"
+  if (resample.prob <= 0 | resample.prob > 1)
+    stop("resample.prob should be within the interval (0, 1]")
   
-  use.var.w = (use.var.w != 0)
-  storage.mode(use.var.w) <- "integer"
+  return(resample.prob)
+}
 
-  # linear combination 
+#' @title check_obsw
+#' @name check_obsw
+#' @keywords internal
+check_obsw <- function(obs.w, n)
+{
+  obs.w = as.numeric(as.vector(obs.w))
   
-  linear.comb = min(5, max(1, linear.comb))
-  storage.mode(linear.comb) <- "integer"
+  if (any(is.na(obs.w)))
+    stop("observation weights (obs.w) should be numerical")
+  
+  if (any(obs.w < 0))
+    stop("observation weights (obs.w) cannot be negative")
+  
+  if (length(obs.w) != n)
+    stop("length of observation weights (obs.w) must be n")
+  
+  storage.mode(obs.w) <- "double"    
+  obs.w = obs.w/sum(obs.w)
+  
+  return(obs.w)
+}
 
-  # importance 
+#' @title check_varw
+#' @name check_varw
+#' @keywords internal
+check_varw <- function(var.w, n)
+{
+  var.w = as.numeric(as.vector(var.w))
+
+  if (any(is.na(var.w)))
+    stop("variable weights (var.w) should be numerical")
   
-  importance = (importance != 0)
+  if (any(var.w < 0))
+    stop("variable weights (var.w) cannot be negative")
+  
+  if (length(var.w) != p)
+    stop("length of variable weights (var.w) must be p")
+  
+  storage.mode(var.w) <- "double"
+  var.w = var.w/sum(var.w)
+}
+
+#' @title check_importance
+#' @name check_importance
+#' @keywords internal
+check_importance <- function(importance)
+{
   storage.mode(importance) <- "integer"
+  
+  if (is.na(importance))
+    stop("importance should be logical")
+    
+  importance = ifelse(importance != 0, 1L, 0L)
+  
+  return(importance)
+}
 
-  # variance estimation 
+#' @title check_reinforcement
+#' @name check_reinforcement
+#' @keywords internal
+check_reinforcement <- function(reinforcement)
+{
+  storage.mode(reinforcement) <- "integer"
   
-  var.ready = (var.ready != 0)
-  storage.mode(var.ready) <- "integer"
+  if (is.na(reinforcement))
+    stop("reinforcement should be logical")
   
-  # system parameters
-  ncores = max(ncores, 0)
+  reinforcement = ifelse(reinforcement != 0, 1L, 0L)
+  
+  return(reinforcement)
+}
+
+#' @title check_ncores
+#' @name check_ncores
+#' @keywords internal
+check_ncores <- function(ncores)
+{
   storage.mode(ncores) <- "integer"
   
-  verbose = max(verbose, 0)
+  if (is.na(ncores))
+    stop("ncores should be numerical")
+  
+  if (ncores < 0)
+    stop("ncores cannot be less than 0")
+  
+  return(ncores)
+}
+
+#' @title check_verbose
+#' @name check_verbose
+#' @keywords internal
+check_verbose <- function(verbose)
+{
   storage.mode(verbose) <- "integer"
-
-  # reinforcement learning settings
   
-  reinforcement = (reinforcement != 0)
-  storage.mode(reinforcement) <- "integer"
-
-  # set RLT parameters
+  if (is.na(verbose))
+    stop("verbose should be numerical")
   
-  if (!is.list(param.control)) {
+  return(verbose)
+}
+
+#' @title check_seed
+#' @name check_seed
+#' @keywords internal
+check_seed <- function(seed)
+{
+  if (is.null(seed) | !is.numeric(seed))
+  {
+    seed = runif(1) * .Machine$integer.max
+  }else{
+    seed = as.integer(seed)
+  }
+  
+  storage.mode(seed) <- "integer"
+  return(seed)
+}
+
+#' @title check_control
+#' @name check_control
+#' @keywords internal
+check_control <- function(control, param)
+{
+  if (!is.list(control)) {
     stop("param.control must be a list")
   }
   
-  RLT.control = set_embed_param(param.control, reinforcement, n, p)
+  # embedded model parameters
+  
+  # embed.ntrees
+  if (is.null(control$embed.ntrees)) {
+    embed.ntrees <- 100
+  } else embed.ntrees = max(control$embed.ntrees, 1)
+  storage.mode(embed.ntrees) <- "integer"
+  
+  # embed.mtry
+  if (is.null(control$embed.mtry)) {
+    embed.mtry <- 1/2
+  } else embed.mtry = max(0, min(control$embed.mtry, param$p))
+  storage.mode(embed.mtry) <- "double"
+  
+  # embed.nmin
+  if (is.null(control$embed.nmin)) {
+    embed.nmin <- 5
+  } else embed.nmin = max(1, floor(control$embed.nmin))
+  storage.mode(embed.nmin) <- "integer"
+  
+  # embed.split.gen
+  if (is.null(control$embed.split.gen)) {
+      embed.split.gen <- 1
+  } else embed.split.gen = match(control$embed.split.gen, 
+                                 c("random", "rank", "best"),
+                                 nomatch = 0)
+  storage.mode(embed.split.gen) <- "integer"
+  
+  # embed.nsplit
+  if (is.null(control$embed.nsplit)) {
+      embed.nsplit <- 1
+  } else embed.nsplit = max(1, control$embed.nsplit)
+  storage.mode(embed.nsplit) <- "integer"
+  
+  # embed.resample.prob
+  if (is.null(control$embed.resample.prob)) {
+      embed.resample.prob <- 0.9
+  } else embed.resample.prob = max(0, min(control$embed.resample.prob, 1))
+  storage.mode(embed.resample.prob) <- "double"
+  
+  # embed.mute
+  if (is.null(control$embed.mute)) {
+      embed.mute <- 0
+  } else embed.mute = max(0, min(control$embed.mute, param$p))
+  storage.mode(embed.mute) <- "double"
+  
+  # embed.protect
+  if (is.null(control$embed.protect)) {
+      embed.protect <- ceiling(2*log(param$n))
+  } else embed.protect = max(0, min(control$embed.protect, param$p))
+  storage.mode(embed.protect) <- "integer"
 
-  param <- list("n" = n,
-                "p" = p,
-                "ntrees" = ntrees,
-                "mtry" = mtry,
-                "nmin" = nmin,
-                "split.gen" = split.gen,
-                "nsplit" = nsplit,
-                "resample.replace" = resample.replace,
-                "resample.prob" = resample.prob,
-                "resample.track" = resample.track,
-                "use.obs.w" = use.obs.w,
-                "use.var.w" = use.var.w,
-                "linear.comb" = linear.comb,
-                "importance" = importance,
-                "var.ready" = var.ready,
-                "ncores" = ncores,
-                "verbose" = verbose,                
-                "reinforcement" = reinforcement)
+  # other parameters 
   
-  param = append(param, RLT.control)
+  # linear.comb
+  if (is.null(control$linear.comb)) {
+    linear.comb <- 1
+  } else {
+    if ( control$linear.comb > 5 )
+      warning("very large linear.comb is not recommended")
+    
+    linear.comb = max(0, min(control$linear.comb, param$p))
+  }
+  storage.mode(linear.comb) <- "integer"  
   
-  # additional parameters
+  # split.rule will be checked in each model
   
-  if (is.null(param.control$alpha)) {
+  # resample.track
+  if (is.null(control$resample.track)) {
+    resample.track <- 0
+  } else resample.track = ifelse(control$resample.track != 0, 1L, 0L)
+  storage.mode(resample.track) <- "integer"
+  
+  # var.ready
+  if (is.null(control$var.ready)) {
+    var.ready <- 0
+  } else var.ready = max(0, min(control$var.ready, 2))
+  storage.mode(var.ready) <- "integer"
+
+  # alpha
+  if (is.null(control$alpha)) {
     alpha <- 0
-  } else alpha = min(max(param.control$alpha, 0), 0.5)
+  } else alpha = max(0, min(control$alpha, 0.5)) 
   storage.mode(alpha) <- "double"
   
-  # splitting rule 
-  # reg: var
-    # with linear comb: sir, save, pca
-  # quan: ks
-  # cla: gini
-  # surv: logrank, suplogrank
+  # failcount
+  if (is.null(control$failcount)) {
+    failcount <- 0
+  } else failcount = max(0, min(control$failcount, param$n))
+  storage.mode(failcount) <- "integer"
   
-  if (is.null(param.control$split.rule)) {
-    split.rule <- "default"
-  } else split.rule = as.character(param.control$split.rule)
-  
-  if (split.rule %in% c("var", "gini", "logrank", "sir", "ks"))
-    split.rule <- "default"
-  
-  storage.mode(split.rule) <- "character"
-  
-  param$'alpha' = alpha
-  param$'split.rule' = split.rule
-  
-  
-  param$'failcount' = 0L
-  param$'var.w.type' = 1L
-  
-  # return
-  return(param)
-}
-
-
-#' @title set_embed_param
-#' @name set_embed_param
-#' @description This is an internal function to set parameters for embedded model. 
-#' @keywords internal
-
-set_embed_param <- function(control, reinforcement, n, p)
-{
-  if (!reinforcement) ## no RLT, set some default to prevent crash
-  {
-    embed.ntrees = 1
-    embed.resample.prob = 0.8
-    embed.mtry = 0.33
-    embed.nmin = 1
-    embed.split.gen = 1
-    embed.nsplit = 1
-    embed.mute = 0
-    embed.protect = 0
-  }else{
-
-    if (is.null(control$embed.ntrees)) {
-      embed.ntrees <- 100
-    } else embed.ntrees = max(control$embed.ntrees, 1)
-    
-    storage.mode(embed.ntrees) <- "integer"
-    
-    if (is.null(control$embed.resample.prob)) {
-      embed.resample.prob <- 1
-    } else embed.resample.prob = max(0, min(control$embed.resample.prob, 1))
-    
-    storage.mode(embed.resample.prob) <- "double"
-    
-    if (is.null(control$embed.mtry)) {
-      embed.mtry <- 1/2
-    } else embed.mtry = max(0, min(control$embed.mtry, p))
-    
-    storage.mode(embed.mtry) <- "double"
-    
-    if (is.null(control$embed.nmin)) {
-      embed.nmin <- 5
-    } else embed.nmin = max(1, floor(control$embed.nmin))
-  
-    storage.mode(embed.nmin) <- "double"
-    
-    if (is.null(control$embed.split.gen)) {
-      embed.split.gen <- 1
-    } else embed.split.gen = match(control$embed.split.gen, 
-                                   c("random", "rank", "best"),
-                                   nomatch = 0)
-    
-    if (embed.split.gen == 0) stop("embed.split.gen not matched ...")
-    
-    storage.mode(embed.split.gen) <- "integer"
-    
-    if (is.null(control$embed.nsplit)) {
-      embed.nsplit <- 1
-    } else embed.nsplit = max(1, control$embed.nsplit)
-    
-    storage.mode(embed.nsplit) <- "integer"
-    
-    if (is.null(control$embed.mute)) {
-      embed.mute <- 0
-    } else embed.mute = max(0, min(control$embed.mute, p))
-    
-    storage.mode(embed.mute) <- "double"
-    
-    if (is.null(control$embed.protect)) {
-      embed.protect <- ceiling(2*log(n))
-    } else embed.protect = max(0, min(control$embed.protect, p))
-    
-    storage.mode(embed.protect) <- "integer"    
-  }
-  
-  return(list("embed.ntrees" = embed.ntrees,
-              "embed.resample.prob" = embed.resample.prob,
+  # return new control
+  return(list(# embedded model control
+              "embed.ntrees" = embed.ntrees,
               "embed.mtry" = embed.mtry,
               "embed.nmin" = embed.nmin,
               "embed.split.gen" = embed.split.gen,
               "embed.nsplit" = embed.nsplit,
+              "embed.resample.prob" = embed.resample.prob,              
               "embed.mute" = embed.mute,
-              "embed.protect" = embed.protect))
+              "embed.protect" = embed.protect,
+              # other parameters
+              "linear.comb" = linear.comb,
+              "split.rule" = control$split.rule,
+              "resample.track" = resample.track,
+              "var.ready" = var.ready,
+              "alpha" = alpha,
+              "failcount" = failcount))
+}
+
+#' @title check_resamplepreset
+#' @name check_resamplepreset
+#' @keywords internal
+check_resamplepreset <- function(resample.preset, param, param.control)
+{
+
+  # for variance estimation
+  if (param.control$var.ready)
+  {
+    # construct the matrix with matched sampling
+    resample.preset = matrix(0, param$n, param$ntrees)
+    k = as.integer(param$resample.prob*param$n)
+
+    for (i in 1:as.integer(param$ntrees/2) )
+    {
+      ab = sample(1:param$n, 2*k)
+      a = ab[1:k]
+      b = ab[-(1:k)]
+      
+      resample.preset[a, i] = 1
+      resample.preset[b, i+ (param$ntrees/2)] = 1
+    }
+  }else{
+    
+    # check resample.preset
+    if (!is.matrix(resample.preset))
+      stop("resample.preset must be a matrix")
+    
+    if (nrow(resample.preset) != param$n | ncol(resample.preset) != param$ntrees)
+      stop("dimension of resample.preset does not match n x ntrees")
+      
+    if ( any(colSums(resample.preset*(resample.preset>0)) > param$n) )
+      stop("column sums in resample.preset should not be larger than n")
+    
+  }
+  
+  storage.mode(resample.preset) <- "integer"
+  return(resample.preset)
+  
 }

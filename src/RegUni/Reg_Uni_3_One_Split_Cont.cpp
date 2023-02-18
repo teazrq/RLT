@@ -24,10 +24,6 @@ void Reg_Uni_Split_Cont(Split_Class& TempSplit,
                         Rand& rngl)
 {
   size_t N = obs_id.n_elem;
-
-  //arma::vec temp_cut_arma;
-  //double temp_cut;
-  //size_t temp_ind;
   double temp_score;
 
   if (split_gen == 1) // random split
@@ -37,9 +33,6 @@ void Reg_Uni_Split_Cont(Split_Class& TempSplit,
       // generate a random cut off
       size_t temp_id = obs_id( rngl.rand_sizet(0,N-1) );
       double temp_cut = x(temp_id);
-        
-      //temp_cut_arma = x(obs_id( rngl.rand_sizet(0,N-1) )); 
-      //temp_cut = temp_cut_arma(0);
 
       // calculate score
       if (useobsweight)
@@ -57,21 +50,21 @@ void Reg_Uni_Split_Cont(Split_Class& TempSplit,
     return;
   }
   
-  uvec indices = obs_id(sort_index(x(obs_id))); // this is the sorted obs_id  
+  // indices is obs_id sorted based on x values
+  uvec indices = obs_id(sort_index(x(obs_id)));
   
-  // check identical 
-  if ( x(indices(0)) == x(indices(N-1)) ) return;  
+  // check identical
+  if ( x(indices(0)) == x(indices(N-1)) ) return;
   
   // set low and high index
   size_t lowindex = 0; // less equal goes to left
   size_t highindex = N - 2;
   
-  // alpha is only effective when x can be sorted
-  // I need to do some changes to this
-  // this will force nmin for each child node
+  // alpha is only effective when x can be sorted 
+  // this will force a portion of alpha for each child node 
   if (alpha > 0)
   {
-    // if (N*alpha > nmin) nmin = (size_t) N*alpha;
+    // size on each side
     size_t nmin = (size_t) N*alpha;
     if (nmin < 1) nmin = 1;
     
@@ -79,8 +72,7 @@ void Reg_Uni_Split_Cont(Split_Class& TempSplit,
     highindex = N - nmin - 1;
   }
   
-  // if ties
-  // move index to better locations
+  // if ties, move index to better locations
   if ( x(indices(lowindex)) == x(indices(lowindex+1)) or x(indices(highindex)) == x(indices(highindex+1)) )
   {
     check_cont_index_sub(lowindex, highindex, x, indices);
@@ -91,23 +83,9 @@ void Reg_Uni_Split_Cont(Split_Class& TempSplit,
       return;
     }
   }
-  
-  /*
-    // if there are ties, do further check
-    if ( (x(indices(lowindex)) == x(indices(lowindex + 1))) | (x(indices(highindex)) == x(indices(highindex + 1))) )
-      move_cont_index(lowindex, highindex, x, indices, nmin);
-    
-  }else{
-    // move index if ties
-    while( x(indices(lowindex)) == x(indices(lowindex + 1)) ) lowindex++;
-    while( x(indices(highindex)) == x(indices(highindex + 1)) ) highindex--;
-    
-    //If there is nowhere to split
-    if (lowindex > highindex) return;
-  }
-  */
-  
-  if (split_gen == 2) // rank split
+
+  // rank split
+  if (split_gen == 2)
   {
     for (size_t k = 0; k < nsplit; k++)
     {

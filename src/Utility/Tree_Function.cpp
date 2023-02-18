@@ -10,7 +10,7 @@
 using namespace Rcpp;
 using namespace arma;
 
-// categorical variable pack
+// categorical variable packing
 
 double pack(const size_t nBits, const uvec& bits) // from Andy's rf package
 {
@@ -78,7 +78,7 @@ void get_samples(arma::uvec& inbagObs,
 	{
 		if (ObsTrack_nt(i) > 0)
 		{
-			for (size_t k = 0; k < ObsTrack_nt(i); k++)
+			for (int k = 0; k < ObsTrack_nt(i); k++)
 			{
 				inbagObs(mover) = subj_id(i);
 				mover ++;
@@ -86,56 +86,6 @@ void get_samples(arma::uvec& inbagObs,
 		}
 	}
 }
-
-// this is an older version, I have now moved to a less complicated one
-// moveindex (continuous variable) so that both low and high are not at a tie location 
-// and has sufficient number of observations
-/*
-void move_cont_index(size_t& lowindex, 
-                     size_t& highindex, 
-                     const vec& x, const uvec& indices, size_t nmin)
-{
-  // in this case, we will not be able to control for nmin
-  // but extremely small nmin should not have a high splitting score
-  
-  // size_t N = indices.size();
-  
-  lowindex = 0;
-  highindex = indices.size()-2;
-  
-  while( x(indices(lowindex)) == x(indices(lowindex+1)) ) lowindex++;
-  while( x(indices(highindex)) == x(indices(highindex+1)) ) highindex--;
-  
-  // now both low and high index are not tied with the end
-  if ( lowindex >= (nmin - 1) and highindex <= (indices.size() - nmin - 1) ) // everything is good
-    return;
-  
-  if ( x(indices(lowindex)) == x(indices(highindex)) ) // nothing we can do
-    return;
-    
-  if ( lowindex < (nmin - 1) and highindex <= (indices.size() - nmin - 1) ) // only need to fix lowindex
-  {
-    while( (x(indices(lowindex)) == x(indices(lowindex+1)) or lowindex < (nmin - 1)) and lowindex <= highindex ) lowindex++;
-  }
-  
-  if ( lowindex >= (nmin - 1) and highindex > (indices.size() - nmin - 1) ) // only need to fix highindex
-  {
-    while( (x(indices(highindex)) == x(indices(highindex+1)) or highindex > (indices.size() - nmin - 1)) and lowindex <= highindex ) highindex--;
-  }  
-  
-  if ( lowindex < (nmin - 1) and highindex > (indices.size() - nmin - 1) ) // if both need to be fixed, start with one randomly
-  {
-    if ( 1 )
-    { // fix lowindex first
-      while( (x(indices(lowindex)) == x(indices(lowindex+1)) or lowindex < (nmin - 1)) and lowindex <= highindex ) lowindex++;
-      while( (x(indices(highindex)) == x(indices(highindex+1)) or highindex > (indices.size() - nmin - 1)) and lowindex <= highindex ) highindex--;
-    }else{ // fix highindex first
-      while( (x(indices(highindex)) == x(indices(highindex+1)) or highindex > (indices.size() - nmin - 1)) and lowindex <= highindex ) highindex--;         
-      while( (x(indices(lowindex)) == x(indices(lowindex+1)) or lowindex < (nmin - 1)) and lowindex <= highindex ) lowindex++;
-    }
-  }
-}
-*/
 
 void check_cont_index_sub(size_t& lowindex, 
                           size_t& highindex, 
@@ -498,13 +448,5 @@ void Find_Terminal_Node_ShuffleJ(size_t Node,
   
   return;
   
-}
-
-// categorical class functions
-
-void surv_print(std::vector<Cat_Class*> surv_list)
-{
-    RLTcout << "print first one count " << 
-        surv_list[0]->count << std::endl;
 }
 

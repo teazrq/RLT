@@ -33,50 +33,71 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
   library(RLT)
 ```
 
-## RLT Split
-
-
-# RLT split 
+## Single Variable Embedded Splitting
 
 ```{r}
-    set.seed(1)
-    
-    n = 1000
-    p = 1000
-    X = matrix(rnorm(n*p), n, p)
-    y = 1 + X[, 1] + X[, 3] + X[, 9] + rnorm(n)
-    
-    testX = matrix(rnorm(n*p), n, p)
-    testy = 1 + testX[, 1] + testX[, 9] + testX[, 3]  + rnorm(n)
-    
-    start_time <- Sys.time()
-    
-    RLTfit <- RLT(X, y, ntrees = 2, ncores = 0, nmin = 10,
-                  split.gen = "random", nsplit = 1, linear.comb = 2, 
-                  resample.prob = 0.85, resample.replace = FALSE,
-                  reinforcement = TRUE, importance = TRUE, 
-                  param.control = list("embed.ntrees" = 100,
-                                       "embed.mtry" = 1/3,
-                                       "embed.nmin" = 10,
-                                       "embed.split.gen" = "random",
-                                       "embed.nsplit" = 1,
-                                       "embed.resample.prob" = 0.75,
-                                       "embed.mute" = 0.75,
-                                       "embed.protect" = 2),
-                  verbose = TRUE)
-    
-    difftime(Sys.time(), start_time, units = "secs")
-    
-    
-        
-    barplot(as.vector(RLTfit$VarImp[1:50]), main = "RLT")
-    
-    get.one.tree(RLTfit, 1)
-    
-    mean((RLTfit$OOBPrediction - y)^2, na.rm = TRUE)
-    pred = predict(RLTfit, testX)
-    mean((pred$Prediction - testy)^2)
+  set.seed(2)
+  
+  n = 1000
+  p = 1000
+  X = matrix(rnorm(n*p), n, p)
+  y = 1 + X[, 1] + X[, 3] + X[, 9] + rnorm(n)
+  
+  testX = matrix(rnorm(n*p), n, p)
+  testy = 1 + testX[, 1] + testX[, 3] + testX[, 9] + rnorm(n)
+  
+  start_time <- Sys.time()
+  
+  RLTfit <- RLT(X, y, model = "regression", 
+                ntrees = 20, ncores = 1, nmin = 10,
+                split.gen = "random", nsplit = 1,
+                resample.prob = 0.85, resample.replace = FALSE,
+                reinforcement = TRUE, importance = TRUE,
+                param.control = list("embed.ntrees" = 50,
+                                     "embed.mtry" = 1/3,
+                                     "embed.nmin" = 10,
+                                     "embed.split.gen" = "random",
+                                     "embed.nsplit" = 1,
+                                     "embed.resample.prob" = 0.75,
+                                     "embed.mute" = 0.5,
+                                     "embed.protect" = 5),
+                verbose = TRUE)
+  
+  difftime(Sys.time(), start_time, units = "secs")
+  
+  # sparse variable importance
+  barplot(as.vector(RLTfit$VarImp[1:50]), main = "RLT")
+  
+  # check one tree
+  get.one.tree(RLTfit, 1)
+  
+  # oob error
+  mean((RLTfit$OOBPrediction - y)^2, na.rm = TRUE)
+  
+  # prediction error
+  pred = predict(RLTfit, testX)
+  mean((pred$Prediction - testy)^2)
 ```
 
+Check seed match
+
+```{r}
+  RLTfit2 <- RLT(X, y, model = "regression", 
+                 ntrees = 20, ncores = 1, nmin = 10,
+                 split.gen = "random", nsplit = 1,
+                 resample.prob = 0.85, resample.replace = FALSE,
+                 reinforcement = TRUE, importance = TRUE,
+                 param.control = list("embed.ntrees" = 50,
+                                      "embed.mtry" = 1/3,
+                                      "embed.nmin" = 10,
+                                      "embed.split.gen" = "random",
+                                      "embed.nsplit" = 1,
+                                      "embed.resample.prob" = 0.75,
+                                      "embed.mute" = 0.5,
+                                      "embed.protect" = 5),
+                 verbose = TRUE, seed = RLTfit$parameters$seed)
+
+  all(RLTfit$VarImp == RLTfit2$VarImp)
+```
 
 
