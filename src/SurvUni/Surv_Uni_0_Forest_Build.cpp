@@ -92,6 +92,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
                                  SURV_FOREST.SplitValueList(nt),
                                  SURV_FOREST.LeftNodeList(nt),
                                  SURV_FOREST.RightNodeList(nt),
+                                 SURV_FOREST.NodeWeightList(nt),
                                  SURV_FOREST.NodeHazList(nt));
       
       OneTree.initiate(100 + 6*size/nmin);
@@ -157,7 +158,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
           for (size_t i = 0; i < NTest; i++)
             oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
           
-          cindex_tree(nt) = 1-cindex_i( oobY, oobCensor, oobpred );
+          cindex_tree(nt) = 1 - cindex_i(oobY, oobCensor, oobpred);
         }
       }
       

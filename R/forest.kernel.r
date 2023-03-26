@@ -63,12 +63,13 @@ forest.kernel <- function(object,
     if (is.null(X2))
     {
       K <- Kernel_Self(object$FittedForest$SplitVar,
-                          object$FittedForest$SplitValue,
-                          object$FittedForest$LeftNode,
-                          object$FittedForest$RightNode,
-                          X1,
-                          object$ncat,
-                          verbose)
+                       object$FittedForest$SplitValue,
+                       object$FittedForest$LeftNode,
+                       object$FittedForest$RightNode,
+                       object$FittedForest$NodeWeight,
+                       X1,
+                       object$ncat,
+                       verbose)
       
       class(K) <- c("RLT", "kernel", "self")
       
@@ -100,13 +101,14 @@ forest.kernel <- function(object,
         # cross-kernel of X1 and X2
     
         K <- Kernel_Cross(object$FittedForest$SplitVar,
-                             object$FittedForest$SplitValue,
-                             object$FittedForest$LeftNode,
-                             object$FittedForest$RightNode,
-                             X1,
-                             X2,
-                             object$ncat,
-                             verbose)
+                          object$FittedForest$SplitValue,
+                          object$FittedForest$LeftNode,
+                          object$FittedForest$RightNode,
+                          object$FittedForest$NodeWeight,
+                          X1,
+                          X2,
+                          object$ncat,
+                          verbose)
     
         class(K) <- c("RLT", "kernel", "cross")
         
@@ -123,14 +125,15 @@ forest.kernel <- function(object,
           stop("X2 must be the original training data")
         
         K <- Kernel_Train(object$FittedForest$SplitVar,
-                             object$FittedForest$SplitValue,
-                             object$FittedForest$LeftNode,
-                             object$FittedForest$RightNode,
-                             X1,
-                             X2,
-                             object$ncat,
-                             ObsTrack,
-                             verbose)
+                          object$FittedForest$SplitValue,
+                          object$FittedForest$LeftNode,
+                          object$FittedForest$RightNode,
+                          object$FittedForest$NodeWeight,
+                          X1,
+                          X2,
+                          object$ncat,
+                          ObsTrack,
+                          verbose)
         
         class(K) <- c("RLT", "kernel", "train")
         

@@ -86,6 +86,7 @@ void Reg_Uni_Comb_Forest_Build(const RLT_REG_DATA& REG_DATA,
                                       REG_FOREST.SplitValueList(nt),
                                       REG_FOREST.LeftNodeList(nt),
                                       REG_FOREST.RightNodeList(nt),
+                                      REG_FOREST.NodeWeightList(nt),
                                       REG_FOREST.NodeAveList(nt));
       
       size_t TreeLength = 100 + size/nmin*4;
@@ -107,7 +108,7 @@ void Reg_Uni_Comb_Forest_Build(const RLT_REG_DATA& REG_DATA,
       TreeLength = OneTree.get_tree_length();
       OneTree.trim(TreeLength);
 
-      RLTcout << "print tree ..." << std::endl;
+      RLTcout << "-------- print tree ----------" << std::endl;
       
       OneTree.print();
 

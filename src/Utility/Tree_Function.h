@@ -6,7 +6,6 @@
 // my header file
 
 # include <RcppArmadillo.h>
-# include <Rcpp.h>
 # include <algorithm>
 
 using namespace Rcpp;

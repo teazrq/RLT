@@ -124,12 +124,13 @@ void Surv_Uni_Terminate_Node(size_t Node,
 {
 
   OneTree.SplitVar(Node) = -1; // -1 says this node is a terminal node. Ow, it would be the variable num
-  OneTree.LeftNode(Node) = obs_id.n_elem; // save node size on LeftNode
-  
+
   //Find the average of the observations in the terminal node
   if (useobsweight)
   {
     //NOT IMPLEMENETED
+    double allweight = arma::sum(obs_weight(obs_id));
+    OneTree.NodeWeight(Node) = allweight; // save node weight
     
   }else{
 
@@ -157,5 +158,6 @@ void Surv_Uni_Terminate_Node(size_t Node,
     }
 
     OneTree.NodeHaz(Node) = NodeHazard;
+    OneTree.NodeWeight(Node) = obs_id.n_elem; // save node total weights
   }
 }

@@ -41,6 +41,7 @@ List QuanUniForestFit(arma::mat& X,
   arma::field<arma::vec> SplitValue(ntrees);
   arma::field<arma::uvec> LeftNode(ntrees);
   arma::field<arma::uvec> RightNode(ntrees);
+  arma::field<arma::vec> NodeWeight(ntrees);
   arma::field<arma::vec> NodeAve(ntrees);
   
   //Initiate forest object
@@ -48,6 +49,7 @@ List QuanUniForestFit(arma::mat& X,
                                   SplitValue, 
                                   LeftNode, 
                                   RightNode, 
+                                  NodeWeight,
                                   NodeAve);
   
   // initiate obs id and var id
@@ -85,6 +87,7 @@ List QuanUniForestFit(arma::mat& X,
   Forest_R["SplitValue"] = SplitValue;
   Forest_R["LeftNode"] = LeftNode;
   Forest_R["RightNode"] = RightNode;
+  Forest_R["NodeWeight"] = NodeWeight;
   Forest_R["NodeAve"] = NodeAve;
   
   //Add to return list

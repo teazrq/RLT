@@ -46,6 +46,7 @@ List SurvUniForestFit(arma::mat& X,
   arma::field<arma::vec> SplitValue(ntrees);
   arma::field<arma::uvec> LeftNode(ntrees);
   arma::field<arma::uvec> RightNode(ntrees);
+  arma::field<arma::vec> NodeWeight(ntrees);
   arma::field<arma::field<arma::vec>> NodeHaz(ntrees);
   
   //Initiate forest object
@@ -53,6 +54,7 @@ List SurvUniForestFit(arma::mat& X,
                                   SplitValue, 
                                   LeftNode, 
                                   RightNode, 
+                                  NodeWeight,
                                   NodeHaz);
   
   // initiate obs id and var id
@@ -104,8 +106,9 @@ List SurvUniForestFit(arma::mat& X,
   Forest_R["SplitValue"] = SplitValue;
   Forest_R["LeftNode"] = LeftNode;
   Forest_R["RightNode"] = RightNode;
+  Forest_R["NodeWeight"] = NodeWeight;  
   Forest_R["NodeHaz"] = NodeHaz;
-  
+
   //Add to return list
   ReturnList["FittedForest"] = Forest_R;
   
@@ -157,7 +160,7 @@ List SurvUniForestFit(arma::mat& X,
     uvec oobC = Censor(nonNAs);
     vec oobP = oobpred(nonNAs);
     
-    ReturnList["cindex"] =  cindex_i( oobY, oobC, oobP );
+    ReturnList["cindex"] =  cindex_i(oobY, oobC, oobP);
   }
   
   return ReturnList;
@@ -165,17 +168,18 @@ List SurvUniForestFit(arma::mat& X,
 
 // [[Rcpp::export()]]
 List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
-                      arma::field<arma::vec>& SplitValue,
-                      arma::field<arma::uvec>& LeftNode,
-                      arma::field<arma::uvec>& RightNode,
-                      arma::field<arma::field<arma::vec>>& NodeHaz,
-                      arma::mat& X,
-                      arma::uvec& Ncat,
-                      size_t& NFail,
-                      bool VarEst,
-                      bool keep_all,
-                      size_t usecores,
-                      size_t verbose)
+                       arma::field<arma::vec>& SplitValue,
+                       arma::field<arma::uvec>& LeftNode,
+                       arma::field<arma::uvec>& RightNode,
+                       arma::field<arma::vec>& NodeWeight,
+                       arma::field<arma::field<arma::vec>>& NodeHaz,
+                       arma::mat& X,
+                       arma::uvec& Ncat,
+                       size_t& NFail,
+                       bool VarEst,
+                       bool keep_all,
+                       size_t usecores,
+                       size_t verbose)
 {
   // check number of cores
   usecores = checkCores(usecores, verbose);
@@ -183,10 +187,11 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
   // convert R object to forest
   
   Surv_Uni_Forest_Class SURV_FOREST(SplitVar, 
-                                  SplitValue, 
-                                  LeftNode, 
-                                  RightNode, 
-                                  NodeHaz);
+                                    SplitValue, 
+                                    LeftNode, 
+                                    RightNode, 
+                                    NodeWeight,
+                                    NodeHaz);
   
   // Initialize prediction objects  
   cube Pred;

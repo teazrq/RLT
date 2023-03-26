@@ -164,7 +164,7 @@ double logrank_at_id_index(const uvec& indices, // index for Y, sorted by x
                            const uvec& All_Risk,
                            size_t a_random_ind)
 {
-  size_t N = indices.n_elem;
+  //size_t N = indices.n_elem;
   uvec Left_Risk(NFail+1, fill::zeros);
   uvec Left_Fail(NFail+1, fill::zeros);
   

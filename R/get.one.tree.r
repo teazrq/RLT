@@ -14,8 +14,9 @@ get.one.tree <- function(x, tree = 1, ...)
     stop(paste("There is no tree", tree, "in the fitted forest"))
   
   if (is.null(x$xnames))
+  {
     newnames = paste("var ", 1:x$parameters$p)
-  else
+  }else
     newnames = x$xnames
   
   # newnames = gsub("\\s", " ", format(newnames, width=max(nchar(newnames))))
@@ -28,42 +29,47 @@ get.one.tree <- function(x, tree = 1, ...)
   SplitValue = x$FittedForest$SplitValue[[tree]]
   LeftNode = x$FittedForest$LeftNode[[tree]] + 1
   RightNode = x$FittedForest$RightNode[[tree]] + 1
+  NodeWeight = x$FittedForest$NodeWeight[[tree]]
   
-  terminal = SplitVar == -1
-  
-  SplitVar[terminal] = p
-  
-  # the node size is saved at LeftNode
-  NodeSize = LeftNode - 1
-  NodeSize[!terminal] = NA
-  
+  terminal = (SplitVar == -1)
+
   # correct other columns
+  SplitVar[terminal] = NA  
   SplitValue[terminal] = NA
   LeftNode[terminal] = NA
   RightNode[terminal] = NA
   
-  while (sum(is.na(NodeSize)) > 0)
-  {
-    uppernodes = (LeftNode %in% which(!is.na(NodeSize))) & 
-                 (RightNode %in% which(!is.na(NodeSize))) & 
-                 is.na(NodeSize)
-
-    NodeSize[uppernodes] = NodeSize[LeftNode[uppernodes]] + 
-                           NodeSize[RightNode[uppernodes]]
-  }  
+  # old code when node size is not saved
+  # SplitVar[terminal] = p  
+  # # the node size is saved at LeftNode
+  # NodeSize = LeftNode - 1
+  # NodeSize[!terminal] = NA
+  # 
+  # # correct other columns
+  # SplitValue[terminal] = NA
+  # LeftNode[terminal] = NA
+  # RightNode[terminal] = NA
+  # 
+  # while (sum(is.na(NodeSize)) > 0)
+  # {
+  #   uppernodes = (LeftNode %in% which(!is.na(NodeSize))) & 
+  #                (RightNode %in% which(!is.na(NodeSize))) & 
+  #                is.na(NodeSize)
+  # 
+  #   NodeSize[uppernodes] = NodeSize[LeftNode[uppernodes]] + 
+  #                          NodeSize[RightNode[uppernodes]]
+  # }  
   
   if ( class(x)[3] == "reg" )
   {
     cat(paste("Tree #", tree, " in the fitted regression forest: \n\n", sep = ""))
-    
-    NodeAve = x$FittedForest$NodeAve[[tree]]
-  
+
     OneTree = data.frame("SplitVar (Type)" = newnames[SplitVar + 1],
                          "SplitValue" = SplitValue,
                          "LeftNode" = LeftNode,
                          "RightNode" = RightNode,
-                         "NodeSize" = NodeSize,
-                         "NodeAve" = NodeAve)
+                         "NodeWeight" = NodeWeight,
+                         "NodeAve" = x$FittedForest$NodeAve[[tree]])
   }
   
   
@@ -75,7 +81,7 @@ get.one.tree <- function(x, tree = 1, ...)
                          "SplitValue" = SplitValue,
                          "LeftNode" = LeftNode,
                          "RightNode" = RightNode,
-                         "NodeSize" = NodeSize)
+                         "NodeWeight" = NodeWeight)
     
   }
   

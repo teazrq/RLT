@@ -117,16 +117,16 @@ void Reg_Uni_Terminate_Node(size_t Node,
                             bool useobsweight)
 {
   
-  OneTree.SplitVar(Node) = -1; // -1 says this node is a terminal node. Ow, it would be the variable num
-  OneTree.LeftNode(Node) = obs_id.n_elem; // save node size on LeftNode
+  OneTree.SplitVar(Node) = -1; // -1 mean terminal node. Ow, it would be the variable num
   
   //Find the average of the observations in the terminal node
   if (useobsweight)
   {
     double allweight = arma::sum(obs_weight(obs_id));
-    OneTree.SplitValue(Node) = allweight; // save total weights on split value
+    OneTree.NodeWeight(Node) = allweight; // save node weight
     OneTree.NodeAve(Node) = arma::sum(Y(obs_id) % obs_weight(obs_id)) / allweight;
   }else{
+    OneTree.NodeWeight(Node) = obs_id.n_elem; // save node size
     OneTree.NodeAve(Node) = arma::mean(Y(obs_id));
   }
 }

@@ -6,7 +6,6 @@
 // my header file
 
 #include <RcppArmadillo.h>
-#include <Rcpp.h>
 
 using namespace Rcpp;
 using namespace arma;
@@ -15,213 +14,6 @@ using namespace arma;
 
 #ifndef RLT_TREE_DEFINITION
 #define RLT_TREE_DEFINITION
-
-class PARAM_GLOBAL{
-public:
-  
-// main parameters
-  size_t N = 0;
-  size_t P = 0;
-  size_t ntrees = 1;
-  size_t mtry = 1;
-  size_t nmin = 1;
-  size_t split_gen = 1;
-  size_t nsplit = 1;
-  bool replacement = 0;
-  double resample_prob = 0.8;
-  bool useobsweight = 0;
-  bool usevarweight = 0;
-  bool importance = 0;
-  bool reinforcement = 0;
-  
-// other control parameters  
-  bool obs_track = 0;
-  size_t linear_comb = 1;
-  double alpha = 0;
-  size_t split_rule = 1;
-  //size_t varweighttype = 0;  
-  bool failcount = 0;  
-
-// RLT parameters 
-  size_t embed_ntrees = 0;
-  double embed_mtry = 0;
-  size_t embed_nmin = 0;  
-  size_t embed_split_gen = 0;
-  size_t embed_nsplit = 0;  
-  double embed_resample_prob = 0;
-  double embed_mute = 0;
-  size_t embed_protect = 0;  
-  
-// system related
-  size_t ncores = 1;
-  size_t verbose = 0;
-  size_t seed = 1;
-
-  void PARAM_READ_R(List& param){
-    
-  // main parameters
-    N             = param["n"];
-    P             = param["p"];
-    ntrees        = param["ntrees"];
-    mtry          = param["mtry"];
-    nmin          = param["nmin"];
-    split_gen     = param["split.gen"];
-    nsplit        = param["nsplit"];
-    replacement   = param["resample.replace"];
-    resample_prob = param["resample.prob"];
-    useobsweight  = param["use.obs.w"];
-    usevarweight  = param["use.var.w"];    
-    importance    = param["importance"];    
-    reinforcement = param["reinforcement"];
-    
-  // other control parameters
-    obs_track     = param["resample.track"];
-    linear_comb   = param["linear.comb"];
-    alpha         = param["alpha"];
-    split_rule    = param["split.rule"];
-    //varweighttype = param["var.w.type"];
-    failcount     = param["failcount"];
-    
-  // RLT parameters
-    embed_ntrees        = param["embed.ntrees"];
-    embed_mtry          = param["embed.mtry"];
-    embed_nmin          = param["embed.nmin"];  
-    embed_split_gen     = param["embed.split.gen"];
-    embed_nsplit        = param["embed.nsplit"];    
-    embed_resample_prob = param["embed.resample.prob"];
-    embed_mute          = param["embed.mute"];
-    embed_protect       = param["embed.protect"];  
-    
-  // system related
-    ncores        = param["ncores"];
-    verbose       = param["verbose"];
-    seed          = param["seed"];
-  };
-  
-  void copyfrom(const PARAM_GLOBAL& Input){
-  // main parameters
-    N             = Input.N;
-    P             = Input.P;
-    ntrees        = Input.ntrees;
-    mtry          = Input.mtry;
-    nmin          = Input.nmin;
-    split_gen     = Input.split_gen;
-    nsplit        = Input.nsplit;
-    replacement   = Input.replacement;
-    resample_prob = Input.resample_prob;
-    useobsweight  = Input.useobsweight;
-    usevarweight  = Input.usevarweight;
-    importance    = Input.importance;  
-    reinforcement = Input.reinforcement;
-
-  // other control parameters   
-    obs_track     = Input.obs_track;      
-    linear_comb   = Input.linear_comb;
-    alpha         = Input.alpha;
-    split_rule    = Input.split_rule;
-    //varweighttype = Input.varweighttype;  
-    failcount     = Input.failcount;
-    
-  // RLT parameters 
-    embed_ntrees        = Input.embed_ntrees;
-    embed_mtry          = Input.embed_mtry;
-    embed_nmin          = Input.embed_nmin;
-    embed_split_gen     = Input.embed_split_gen;
-    embed_nsplit        = Input.embed_nsplit;
-    embed_resample_prob = Input.embed_resample_prob;
-    embed_mute          = Input.embed_mute;
-    embed_protect       = Input.embed_protect;  
-  
-  // system related
-    ncores        = Input.ncores;
-    verbose       = Input.verbose;
-    seed          = Input.seed;
-  };
-
-  void print() {
-    
-      RLTcout << "---------- Parameters Summary ----------" << std::endl;
-      RLTcout << "              (N, P) = (" << N << ", " << P << ")" << std::endl;
-      RLTcout << "          # of trees = " << ntrees << std::endl;
-      RLTcout << "        (mtry, nmin) = (" << mtry << ", " << nmin << ")" << std::endl;
-      
-      if (split_gen == 3)
-        RLTcout << "      splitting rule = Best" << std::endl;
-      
-      if (split_gen < 3)
-        RLTcout << "      splitting rule = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
-
-      RLTcout << "            sampling = " << resample_prob << (replacement ? " w/ replace" : " w/o replace") << std::endl;
-      
-      RLTcout << "  (Obs, Var) weights = (" << (useobsweight ? "Yes" : "No") << ", " << (usevarweight ? "Yes" : "No") << ")" << std::endl;
-
-      if (alpha > 0)
-        RLTcout << "               alpha = " << alpha << std::endl;
-      
-      if (linear_comb > 1)
-        RLTcout << "  linear combination = " << linear_comb << std::endl;
-      
-      RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
-      RLTcout << "----------------------------------------" << std::endl;
-      if (reinforcement) rlt_print();
-  };
-  
-  void print() const {
-    
-    RLTcout << "---------- Parameters Summary ----------" << std::endl;
-    RLTcout << "              (N, P) = (" << N << ", " << P << ")" << std::endl;
-    RLTcout << "          # of trees = " << ntrees << std::endl;
-    RLTcout << "        (mtry, nmin) = (" << mtry << ", " << nmin << ")" << std::endl;
-    
-    if (split_gen == 3)
-        RLTcout << "      splitting rule = Best" << std::endl;
-    
-    if (split_gen < 3)
-        RLTcout << "      splitting rule = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
-    
-    RLTcout << "            sampling = " << resample_prob << (replacement ? " w/ replace" : " w/o replace") << std::endl;
-    
-    RLTcout << "  (Obs, Var) weights = (" << (useobsweight ? "Yes" : "No") << ", " << (usevarweight ? "Yes" : "No") << ")" << std::endl;
-    
-    if (alpha > 0)
-        RLTcout << "               alpha = " << alpha << std::endl;
-    
-    if (linear_comb > 1)
-        RLTcout << "  linear combination = " << linear_comb << std::endl;
-    
-    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
-    RLTcout << "----------------------------------------" << std::endl;
-    if (reinforcement) rlt_print();
-  };
-  
-  void rlt_print() {
-    
-    RLTcout << " embed.ntrees        = " << embed_ntrees << std::endl;
-    RLTcout << " embed.mtry          = " << embed_mtry << std::endl;    
-    RLTcout << " embed.nmin          = " << embed_nmin << std::endl;
-    RLTcout << " embed.split_gen     = " << embed_split_gen << std::endl;
-    RLTcout << " embed.nsplit        = " << embed_nsplit << std::endl;    
-    RLTcout << " embed.resample_prob = " << embed_resample_prob << std::endl;
-    RLTcout << " embed.mute          = " << embed_mute << std::endl;
-    RLTcout << " embed.protect       = " << embed_protect << std::endl;
-    RLTcout << "----------------------------------------" << std::endl;
-    
-  };
-  
-  void rlt_print() const {
-    
-    RLTcout << " embed.ntrees        = " << embed_ntrees << std::endl;
-    RLTcout << " embed.mtry          = " << embed_mtry << std::endl;    
-    RLTcout << " embed.nmin          = " << embed_nmin << std::endl;
-    RLTcout << " embed.split_gen     = " << embed_split_gen << std::endl;
-    RLTcout << " embed.nsplit        = " << embed_nsplit << std::endl;    
-    RLTcout << " embed.resample_prob = " << embed_resample_prob << std::endl;
-    RLTcout << " embed.mute          = " << embed_mute << std::endl;
-    RLTcout << " embed.protect       = " << embed_protect << std::endl;
-    RLTcout << "----------------------------------------" << std::endl;
-
-  };
-};
 
 // *************** //
 // field functions //
@@ -241,22 +33,25 @@ public:
   arma::vec& SplitValue;
   arma::uvec& LeftNode;
   arma::uvec& RightNode;
+  arma::vec& NodeWeight;
   
   Tree_Class(arma::ivec& SplitVar,
-                 arma::vec& SplitValue,
-                 arma::uvec& LeftNode,
-                 arma::uvec& RightNode) : SplitVar(SplitVar),
-                                          SplitValue(SplitValue),
-                                          LeftNode(LeftNode),
-                                          RightNode(RightNode) {}
+             arma::vec& SplitValue,
+             arma::uvec& LeftNode,
+             arma::uvec& RightNode,
+             arma::vec& NodeWeight) : SplitVar(SplitVar),
+                                      SplitValue(SplitValue),
+                                      LeftNode(LeftNode),
+                                      RightNode(RightNode),
+                                      NodeWeight(NodeWeight) {}
   
   void find_next_nodes(size_t& NextLeft, size_t& NextRight)
   {
-    while( SplitVar(NextLeft)!=-2 ) NextLeft++;
+    while( SplitVar(NextLeft) != -2 ) NextLeft++;
     SplitVar(NextLeft) = -3;  
     
     NextRight = NextLeft;
-    while( SplitVar(NextRight)!=-2 ) NextRight++;
+    while( SplitVar(NextRight) != -2 ) NextRight++;
     
     // -2: unused, -3: reserved; Else: internal node; -1: terminal node
     SplitVar(NextRight) = -3;
@@ -284,17 +79,19 @@ public:
   arma::vec& SplitValue;
   arma::uvec& LeftNode;
   arma::uvec& RightNode;
+  arma::vec& NodeWeight;
   
   Comb_Tree_Class(arma::imat& SplitVar,
                    arma::mat& SplitLoad,
                    arma::vec& SplitValue,
                    arma::uvec& LeftNode,
-                   arma::uvec& RightNode) : 
-                   SplitVar(SplitVar),
-                   SplitLoad(SplitLoad),
-                   SplitValue(SplitValue),
-                   LeftNode(LeftNode),
-                   RightNode(RightNode) {}
+                   arma::uvec& RightNode,
+                   arma::vec& NodeWeight) : SplitVar(SplitVar),
+                                            SplitLoad(SplitLoad),
+                                            SplitValue(SplitValue),
+                                            LeftNode(LeftNode),
+                                            RightNode(RightNode),
+                                            NodeWeight(NodeWeight) {}
   
   void find_next_nodes(size_t& NextLeft, size_t& NextRight)
   {
@@ -371,11 +168,6 @@ public:
     void print() {
         RLTcout << "Category is " << cat << " count is " << count << " weight is " << weight << " score is " << score << std::endl;
     }
-};
-
-class Cat_Class_2: public Cat_Class{
-public: 
-    int surv_value;
 };
 
 #endif

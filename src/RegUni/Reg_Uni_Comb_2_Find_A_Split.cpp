@@ -18,16 +18,11 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
                                Rand& rngl)
 {
   
-  RLTcout << "Reg_Uni_Comb_Find_A_Split:" << std::endl;
-  
-  // preset
-  OneSplit.var.zeros();
-  OneSplit.load.zeros();
-  OneSplit.score = -1;
-  OneSplit.value = 0;
+  RLTcout << "--Reg_Uni_Comb_Find_A_Split:" << std::endl;
+
+  // parameters
   size_t linear_comb = Param.linear_comb;
   
-  // parameters
   size_t mtry = Param.mtry;
   //size_t nmin = Param.nmin;
   double alpha = Param.alpha;
@@ -55,7 +50,7 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   
   RLTcout << "best vars \n" << split_var << std::endl;
   RLTcout << "best scores \n" << split_score << std::endl;
-
+  
   // if the best variable is categorical
   // do single categorical split
   // I may need to change this later for combination cat split
@@ -63,7 +58,7 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   {
     size_t var_j = split_var(0);
     
-    RLTcout << "Use single cat split" <<  var_j << std::endl;
+    RLTcout << "--Use single cat split" <<  var_j << std::endl;
     
     //Initialize objects
     Split_Class TempSplit;
@@ -94,25 +89,32 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
     return;
   }
   
-  // find all continuous variables at the top
+  // find and restrict to continuous variables at the top
   
   size_t cont_count = 0;
-  uvec use_var(linear_comb, fill::zeros);
+  size_t var_used = (linear_comb < mtry)? linear_comb : mtry;
   
-  for (size_t j = 0; j < linear_comb; j++)
-  {
+  for (size_t j = 0; j < var_used; j++)
+  {  
     if (REG_DATA.Ncat(split_var(j)) == 1)
-    {
-      use_var(cont_count) = split_var(j);
-      cont_count++;
-    }
+      cont_count ++;
+    else
+      break;
   }
+  
+  split_var.resize(cont_count);
+  split_score.resize(cont_count);
+
+  RLTcout << "--After getting the best continuous variables" << std::endl;
+  RLTcout << "best vars \n" << split_var << std::endl;
+  RLTcout << "best scores \n" << split_score << std::endl;
+  
   // If there is only one continuous variable at the top
   if (cont_count == 1)
   {
     size_t var_j = split_var(0);
     
-    RLTcout << "Use single cont split" <<  var_j << std::endl;
+    RLTcout << "--Use single cont split" <<  var_j << std::endl;
     
     //Initialize objects
     Split_Class TempSplit;
@@ -141,15 +143,11 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
     
     return;
   }
-  
-  // continuous variable linear combination 
-  // use all continuous variables in the top
-  
-  use_var.resize(cont_count);
-  
+
   // find best linear combination split
   Reg_Uni_Comb_Split_Cont(OneSplit,
-                          (const uvec&) use_var,
+                          (const uvec&) split_var,
+                          (const vec&) split_score,
                           REG_DATA,
                           Param,
                           obs_id,

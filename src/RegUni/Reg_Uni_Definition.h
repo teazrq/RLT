@@ -45,18 +45,20 @@ public:
   arma::field<arma::vec>& SplitValueList;
   arma::field<arma::uvec>& LeftNodeList;
   arma::field<arma::uvec>& RightNodeList;
+  arma::field<arma::vec>& NodeWeightList;
   arma::field<arma::vec>& NodeAveList;
   
   Reg_Uni_Forest_Class(arma::field<arma::ivec>& SplitVarList,
                        arma::field<arma::vec>& SplitValueList,
                        arma::field<arma::uvec>& LeftNodeList,
                        arma::field<arma::uvec>& RightNodeList,
-                       arma::field<arma::vec>& NodeAveList) : 
-                       SplitVarList(SplitVarList), 
-                       SplitValueList(SplitValueList),
-                       LeftNodeList(LeftNodeList),
-                       RightNodeList(RightNodeList),
-                       NodeAveList(NodeAveList) {}
+                       arma::field<arma::vec>& NodeWeightList,
+                       arma::field<arma::vec>& NodeAveList) : SplitVarList(SplitVarList), 
+                                                              SplitValueList(SplitValueList),
+                                                              LeftNodeList(LeftNodeList),
+                                                              RightNodeList(RightNodeList),
+                                                              NodeWeightList(NodeWeightList),
+                                                              NodeAveList(NodeAveList) {}
 };
 
 class Reg_Uni_Tree_Class : public Tree_Class{
@@ -67,12 +69,13 @@ public:
                      arma::vec& SplitValue,
                      arma::uvec& LeftNode,
                      arma::uvec& RightNode,
-                     arma::vec& NodeAve) : Tree_Class(
-                     SplitVar,
-                     SplitValue,
-                     LeftNode,
-                     RightNode),
-                     NodeAve(NodeAve) {}
+                     arma::vec& NodeWeight,
+                     arma::vec& NodeAve) : Tree_Class(SplitVar,
+                                                      SplitValue,
+                                                      LeftNode,
+                                                      RightNode,
+                                                      NodeWeight),
+                                                      NodeAve(NodeAve) {}
 
   // initiate tree
   void initiate(size_t TreeLength)
@@ -86,6 +89,7 @@ public:
     SplitValue.zeros(TreeLength);
     LeftNode.zeros(TreeLength);
     RightNode.zeros(TreeLength);
+    NodeWeight.zeros(TreeLength);
     NodeAve.zeros(TreeLength);
   }
 
@@ -96,6 +100,7 @@ public:
     SplitValue.resize(TreeLength);
     LeftNode.resize(TreeLength);
     RightNode.resize(TreeLength);
+    NodeWeight.resize(TreeLength);
     NodeAve.resize(TreeLength);
   }
 
@@ -118,6 +123,9 @@ public:
     RightNode.resize(NewLength);
     RightNode(span(OldLength, NewLength-1)).zeros();
 
+    NodeWeight.resize(NewLength);
+    NodeWeight(span(OldLength, NewLength-1)).zeros();
+    
     NodeAve.resize(NewLength);
     NodeAve(span(OldLength, NewLength-1)).zeros();
   }
@@ -131,6 +139,7 @@ public:
   arma::field<arma::vec>& SplitValueList;
   arma::field<arma::uvec>& LeftNodeList;
   arma::field<arma::uvec>& RightNodeList;
+  arma::field<arma::vec>& NodeWeightList;
   arma::field<arma::vec>& NodeAveList;
   
   Reg_Uni_Comb_Forest_Class(arma::field<arma::imat>& SplitVarList,
@@ -138,32 +147,33 @@ public:
                          arma::field<arma::vec>& SplitValueList,
                          arma::field<arma::uvec>& LeftNodeList,
                          arma::field<arma::uvec>& RightNodeList,
-                         arma::field<arma::vec>& NodeAveList): 
-    SplitVarList(SplitVarList), 
-    SplitLoadList(SplitLoadList), 
-    SplitValueList(SplitValueList),
-    LeftNodeList(LeftNodeList),
-    RightNodeList(RightNodeList),
-    NodeAveList(NodeAveList) {}
+                         arma::field<arma::vec>& NodeWeightList,
+                         arma::field<arma::vec>& NodeAveList) : SplitVarList(SplitVarList), 
+                                                                SplitLoadList(SplitLoadList), 
+                                                                SplitValueList(SplitValueList),
+                                                                LeftNodeList(LeftNodeList),
+                                                                RightNodeList(RightNodeList),
+                                                                NodeWeightList(NodeWeightList),
+                                                                NodeAveList(NodeAveList) {}
 };
-
 
 class Reg_Uni_Comb_Tree_Class : public Comb_Tree_Class{
 public:
   arma::vec& NodeAve;
   
   Reg_Uni_Comb_Tree_Class(arma::imat& SplitVar,
-                       arma::mat& SplitLoad,
-                       arma::vec& SplitValue,
-                       arma::uvec& LeftNode,
-                       arma::uvec& RightNode,
-                       arma::vec& NodeAve) : 
-                         Comb_Tree_Class(SplitVar,
-                                          SplitLoad,
-                                          SplitValue,
-                                          LeftNode,
-                                          RightNode),
-                         NodeAve(NodeAve) {}
+                          arma::mat& SplitLoad,
+                          arma::vec& SplitValue,
+                          arma::uvec& LeftNode,
+                          arma::uvec& RightNode,
+                          arma::vec& NodeWeight,
+                          arma::vec& NodeAve) : Comb_Tree_Class(SplitVar,
+                                                                SplitLoad,
+                                                                SplitValue,
+                                                                LeftNode,
+                                                                RightNode,
+                                                                NodeWeight),
+                                                NodeAve(NodeAve) {}
   
   // initiate tree
   void initiate(size_t TreeLength, size_t linear_comb)
@@ -179,6 +189,7 @@ public:
     SplitValue.zeros(TreeLength);
     LeftNode.zeros(TreeLength);
     RightNode.zeros(TreeLength);
+    NodeWeight.zeros(TreeLength);
     NodeAve.zeros(TreeLength);
   }
   
@@ -190,6 +201,7 @@ public:
     SplitValue.resize(TreeLength);
     LeftNode.resize(TreeLength);
     RightNode.resize(TreeLength);
+    NodeWeight.resize(TreeLength);
     NodeAve.resize(TreeLength);
   }
   
@@ -215,6 +227,9 @@ public:
     
     RightNode.resize(NewLength);
     RightNode.subvec(OldLength, NewLength-1).zeros();
+
+    NodeWeight.resize(NewLength);
+    NodeWeight.subvec(OldLength, NewLength-1).zeros();
     
     NodeAve.resize(NewLength);
     NodeAve.subvec(OldLength, NewLength-1).zeros();

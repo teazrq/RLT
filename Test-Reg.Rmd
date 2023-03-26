@@ -291,22 +291,22 @@ We generate a set of data with 20 variables, and the true model depends only on 
 
 ```{r}
   ## Fitting a forest
-  RLTfit <- RLT(trainX, trainY, model = "regression", 
-                ntrees = 100, importance = TRUE, nmin = 1)
+  RLTfit1 <- RLT(trainX, trainY, model = "regression", 
+                 ntrees = 100, importance = TRUE, nmin = 1)
 
   RLTfit2 <- RLT(trainX, trainY, model = "regression", 
                  ntrees = 100, importance = TRUE, nmin = 1,
-                 seed = RLTfit$parameters$seed)
+                 seed = RLTfit1$parameters$seed)
   
   # check if importance are identical
-  all(RLTfit$VarImp == RLTfit2$VarImp)
+  all(RLTfit1$VarImp == RLTfit2$VarImp)
   
   # prediction
-  RLTPred <- predict(RLTfit, testX, keep.all = TRUE)
+  RLTPred1 <- predict(RLTfit1, testX, keep.all = TRUE)
   RLTPred2 <- predict(RLTfit2, testX, keep.all = TRUE)
 
   # check predictions are identical
-  all(RLTPred$Prediction == RLTPred2$Prediction)
+  all(RLTPred1$Prediction == RLTPred2$Prediction)
 ```
 
 

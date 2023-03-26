@@ -51,19 +51,23 @@ public:
   arma::field<arma::vec>& SplitValueList;
   arma::field<arma::uvec>& LeftNodeList;
   arma::field<arma::uvec>& RightNodeList;
+  arma::field<arma::vec>& NodeWeightList;
   arma::field<arma::field<arma::vec>>& NodeHazList;
   
   Surv_Uni_Forest_Class(arma::field<arma::ivec>& SplitVarList,
                        arma::field<arma::vec>& SplitValueList,
                        arma::field<arma::uvec>& LeftNodeList,
                        arma::field<arma::uvec>& RightNodeList,
-                       arma::field<arma::field<arma::vec>>& NodeHazList) : 
-                       SplitVarList(SplitVarList), 
-                       SplitValueList(SplitValueList),
-                       LeftNodeList(LeftNodeList),
-                       RightNodeList(RightNodeList),
-                       NodeHazList(NodeHazList) {}
+                       arma::field<arma::vec>& NodeWeightList,
+                       arma::field<arma::field<arma::vec>>& NodeHazList) : SplitVarList(SplitVarList),
+                                                                           SplitValueList(SplitValueList),
+                                                                           LeftNodeList(LeftNodeList),
+                                                                           RightNodeList(RightNodeList),
+                                                                           NodeWeightList(NodeWeightList),
+                                                                           NodeHazList(NodeHazList) {}
 };
+
+// tree class survival 
 
 class Surv_Uni_Tree_Class : public Tree_Class{
 public:
@@ -73,12 +77,13 @@ public:
                      arma::vec& SplitValue,
                      arma::uvec& LeftNode,
                      arma::uvec& RightNode,
-                     arma::field<arma::vec>& NodeHaz) : Tree_Class(
-                     SplitVar,
-                     SplitValue,
-                     LeftNode,
-                     RightNode),
-                     NodeHaz(NodeHaz) {}
+                     arma::vec& NodeWeight,
+                     arma::field<arma::vec>& NodeHaz) : Tree_Class(SplitVar,
+                                                                   SplitValue,
+                                                                   LeftNode,
+                                                                   RightNode,
+                                                                   NodeWeight),
+                                                        NodeHaz(NodeHaz) {}
 
   // initiate tree
   void initiate(size_t TreeLength)
@@ -92,6 +97,7 @@ public:
     SplitValue.zeros(TreeLength);
     LeftNode.zeros(TreeLength);
     RightNode.zeros(TreeLength);
+    NodeWeight.zeros(TreeLength);
     NodeHaz.set_size(TreeLength);
   }
 
@@ -102,6 +108,7 @@ public:
     SplitValue.resize(TreeLength);
     LeftNode.resize(TreeLength);
     RightNode.resize(TreeLength);
+    NodeWeight.resize(TreeLength);
     field_vec_resize(NodeHaz, TreeLength);
   }
 
@@ -124,6 +131,9 @@ public:
     RightNode.resize(NewLength);
     RightNode(span(OldLength, NewLength-1)).zeros();
 
+    NodeWeight.resize(NewLength);
+    NodeWeight(span(OldLength, NewLength-1)).zeros();
+    
     field_vec_resize(NodeHaz, NewLength);
   }
 };
@@ -161,11 +171,4 @@ double record_cat_split(std::vector<Surv_Cat_Class>& cat_reduced,
                         size_t true_cat,
                         size_t ncat);
 
-double cindex_d(arma::uvec& Y,
-                arma::uvec& Censor,
-                arma::vec& pred);
-
-double cindex_i(arma::uvec& Y,
-                arma::uvec& Censor,
-                arma::vec& pred);
 #endif

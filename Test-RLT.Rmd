@@ -100,4 +100,53 @@ Check seed match
   all(RLTfit$VarImp == RLTfit2$VarImp)
 ```
 
+## Linear Combination Split
 
+```{r eval=FALSE}
+  detach_package <- function(pkg, character.only = FALSE)
+  {
+    if(!character.only)
+    {
+      pkg <- deparse(substitute(pkg))
+    }
+    search_item <- paste("package", pkg, sep = ":")
+    while(search_item %in% search())
+    {
+      detach(search_item, unload = TRUE, character.only = TRUE)
+    }
+  }
+  detach_package(RLT)
+  detach(RLT, unload = TRUE)
+  remove.packages("RLT")
+  unlink("C:\\rlibrary\\RLT", recursive=TRUE)
+  file.remove("C:\\rlibrary\\RLT\\libs\\x64\\RLT.dll")
+```
+
+```{r}
+  library(RLT)
+  library(MASS)
+
+  # set.seed(1)
+  
+  n = 200
+  p = 5
+  S = matrix(0.6, p, p)
+  diag(S) = 1
+  X1 = mvrnorm(n, mu = rep(0, p), Sigma = S)
+  X2 = as.factor(sample(c(-1,1), size = n, replace = TRUE))
+  X = data.frame(X1, X2)
+  y = 1 + X[, 1] + X[, 3] + X[, 5] + rnorm(n)
+  w = runif(n)
+  
+  start_time <- Sys.time()
+  
+  RLTfit <- RLT(X, y, model = "regression", obs.w = w,
+                ntrees = 1, ncores = 1, nmin = 100, mtry = 6,
+                split.gen = "best", nsplit = 10, 
+                resample.prob = 1, resample.replace = FALSE, 
+                param.control = list("linear.comb" = 3, 
+                                     "split.rule" = "sir"), 
+                importance = TRUE, verbose = TRUE)
+  
+  difftime(Sys.time(), start_time, units = "secs")
+```

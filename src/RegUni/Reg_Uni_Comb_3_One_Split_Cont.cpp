@@ -11,91 +11,94 @@ using namespace arma;
 
 //Find a split using linear combination
 void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
-                             const uvec& use_var,
-                             const RLT_REG_DATA& REG_DATA, 
+                             const uvec& split_var,
+                             const vec& split_score,
+                             const RLT_REG_DATA& REG_DATA,
                              const PARAM_GLOBAL& Param,
                              const uvec& obs_id,
                              Rand& rngl)
 {
   
-  RLTcout << "Use comb cont split with variables \n" << use_var << std::endl;
- 
+  RLTcout << "---run Reg_Uni_Comb_Split_Cont on variables \n" << split_var << std::endl;
+  
   // construct some new data 
   bool useobsweight = Param.useobsweight;
-  mat newX(REG_DATA.X(obs_id, use_var));
+  mat newX(REG_DATA.X(obs_id, split_var));
   vec newY(REG_DATA.Y(obs_id));
   vec newW;
   if (useobsweight) newW = REG_DATA.obsweight(obs_id);
   
   // some parameters
-  // there are three split_rule types: sir (default), save, and pca
+  // there are three split_rule types: sir (default), pca, save
   size_t N = obs_id.n_elem;
-  size_t P = use_var.n_elem;
+  size_t P = split_var.n_elem;
   size_t split_rule = Param.split_rule;
   size_t split_gen = Param.split_gen;
   size_t nsplit = Param.nsplit;
 
-  // find splitting rule 
-  vec v;
   
-  if (split_rule == 1 and N >= 15) // default sir
+  // check splitting rule 1 sir; 2 save; 3 pca; 4 lm
+  if ( (split_rule == 1 or split_rule == 2) and N < 10)
+    split_rule = 4; // switch to lm if sample size is too small
+  
+  // find splitting rule loading vector 
+  vec v;  
+
+  if (split_rule == 1) // default sir
   {
-    RLTcout << "using SIR split --- not done yet, switching to pca \n" << std::endl;
-    split_rule = 3;
+    RLTcout << "using SIR split \n" << std::endl;
     
-    //mat M = sir(newX, newY, newW, useobsweight, sqrt(N));
-    
-    //mat xcov = wcov(newX, newW, useobsweight);
-    
-    //vec eigval;
-    //mat eigvec;
-    //eig_sym(eigval, eigvec, M);
-    
-    // eigenvalues are ascending
-    //v = eigvec.col( eigvec.n_cols );
+    v = sir(newX, newY, newW, useobsweight, sqrt(N)).col(0);
   }
   
-  if (split_rule == 2 and N >= 15) // save
+  if (split_rule == 2) // save
   {
-    RLTcout << "using SAVE split --- not done yet, switching to pca \n" << std::endl;
-    split_rule = 3;
-    
-    //mat M = save(newX, newY, newW, useobsweight, sqrt(N));
-    
-    //vec eigval;
-    //mat eigvec;
-    //eig_sym(eigval, eigvec, M);
-    
-    // eigenvalues are ascending
-    //v = eigvec.col( eigvec.n_cols );
+    RLTcout << "using SAVE split --- not done yet \n" << std::endl;
+    return;
   }
   
-  if (split_rule == 3 or N < 15) // pca
+  // pca can be done regardless of sample size
+  if (split_rule == 3)
   {
     RLTcout << "using PCA split \n" << std::endl;
-
-    mat coeff = princomp(newX);
     
-    // eigenvalues are descending
-    v = coeff.col(0);
+    // pca eigenvectors are sorted with descending eigenvalues
+    v = first_pc(newX, newW, useobsweight).col(0);
   }
   
+  if (split_rule == 4) // lm
+  {
+    RLTcout << "using LM split \n" << std::endl;
+    
+    if (useobsweight)
+    {
+      mat XW = newX;
+      XW.each_col() %= sqrt(newW);
+      v = solve(XW.t() * XW, newX.t() * (newW % newY), solve_opts::allow_ugly);
+    }else{
+      v = solve(newX.t() * newX, newX.t() * newY, solve_opts::allow_ugly);
+    }
+  }  
+  
+  
+  RLTcout << "---Finish runing sir/save/pca/lm" << std::endl;
+  RLTcout << "---obtain loadings " << v << std::endl;
+  
   // record splitting variable and loading
-  OneSplit.var.subvec(0, P-1) = use_var;
+  OneSplit.var.subvec(0, P-1) = split_var;
   OneSplit.load.subvec(0, P-1) = v;
   
-  // search for the best split
+  // search for the best splitting point with the linear combination
   arma::vec U1 = newX * v;
-  //Rcout << "new linear combination x \n" << U1 << std::endl;
   
   if (split_gen == 1) // random split
   {
-    RLTcout << "random splitting \n" << std::endl;
+    RLTcout << "-- use random split\n" << std::endl;
     
     for (size_t k = 0; k < nsplit; k++)
     {
       // generate a random cut off
-      double temp_cut = U1(rngl.rand_sizet(0,N-1)); 
+      double temp_cut = U1(rngl.rand_sizet(0,N-1));
       double temp_score = -1;
       
       // calculate score
@@ -103,8 +106,6 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
         temp_score = reg_uni_cont_score_cut_full_w(U1, newY, temp_cut, newW);
       else
         temp_score = reg_uni_cont_score_cut_full(U1, newY, temp_cut);
-      
-      RLTcout << "Try cut " << temp_cut << " with score " << temp_score << std::endl;
       
       if (temp_score > OneSplit.score)
       {
@@ -130,7 +131,6 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
   size_t highindex = N - 2;
   
   // alpha is only effective when x can be sorted
-  // I need to do some changes to this
   // this will force nmin for each child node
   
   if (alpha > 0)
@@ -156,9 +156,10 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
     }
   }
   
+  
   if (split_gen == 2) // rank split
   {
-    RLTcout << "Rank split\n" << std::endl;
+    RLTcout << "-- use rank split\n" << std::endl;
     
     for (size_t k = 0; k < nsplit; k++)
     {
@@ -198,9 +199,17 @@ void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
     return;
   }
   
+  
   if (split_gen == 3) // best split
   {
-    RLTcout << "Best split\n" << std::endl;
+    RLTcout << "-- use best split\n" << std::endl;
+
+    // get score
+    if (useobsweight)
+      reg_uni_cont_score_best_full_w(U1, newY, newW, lowindex, highindex, OneSplit.value, OneSplit.score);
+    else
+      reg_uni_cont_score_best_full(U1, newY, lowindex, highindex, OneSplit.value, OneSplit.score);
+    
     return;
   }
 
@@ -316,183 +325,116 @@ double reg_uni_cont_score_rank_full_w(const vec& y,
 }
 
 
-arma::mat sir(arma::mat& newX, 
-              arma::vec& newY, 
-              arma::vec& newW,
-              bool useobsweight,
-              size_t nslice)
+//For best split
+void reg_uni_cont_score_best_full(const vec& x,
+                                  const vec& y,
+                                  size_t lowindex, 
+                                  size_t highindex, 
+                                  double& temp_cut, 
+                                  double& temp_score)
 {
-  uvec index = sort_index(newY);
-  size_t N = newY.n_elem;
-  size_t P = newX.n_cols;
-
-  mat M(P, P, fill::zeros);
+  size_t N = y.n_elem;
+  double score = 0;
   
-  mat sortedx = newX.rows(index);
-  vec sortedy = newY(index);
+  double LeftSum = 0;
+  double RightSum = 0;
   
-  size_t slice_size = (size_t) N/nslice;
-  size_t res = N - nslice*slice_size;
+  //Find left or right of the lowindex to start
+  for (size_t i = 0; i <= lowindex; i++)
+    LeftSum += y(i);
   
-  if (useobsweight)
-  {
-    // apply weights
-    sortedx.each_col() %= newW;
-    rowvec xbar = sum(sortedx, 0) / sum(newW);
-    
-    // obs index
-    size_t rownum = 0;
-    
-    for (size_t k =0; k < nslice; k++)
-    {
-      // sample size in this slice
-      // first res slices has one more obs
-      size_t nh = (k < res) ? (slice_size + 1) : slice_size;
-      
-      // slice weight
-      double wh = sum(newW.subvec(rownum, rownum + nh - 1));
-
-      // weighted slice mean
-      rowvec xhbar = sum(sortedx.rows(rownum, rownum + nh - 1), 0) / wh;
-      
-      // next slice
-      rownum += nh;
-
-      // add to estimation matrix 
-      M += (xhbar - xbar).t() * (xhbar - xbar) * wh;
-    }
-    
-  }else{
-    // x mean
-    rowvec xbar = mean(sortedx, 0);
-      
-    // obs index
-    size_t rownum = 0;
-    
-    for (size_t k =0; k < nslice; k++) 
-    {
-      // sample size in this slice
-      // first res slices has one more obs
-      size_t nh = (k < res) ? (slice_size + 1) : slice_size;
-      
-      // slice mean
-      rowvec xhbar = mean(sortedx.rows(rownum, rownum + nh - 1), 0);
-
-      // next slice
-      rownum += nh;
-      
-      // add to estimation matrix 
-      M += (xhbar - xbar).t() * (xhbar - xbar) * nh;
-    }
-  }
+  for (size_t i = lowindex+1; i < N; i++)
+    RightSum += y(i);
   
-  return M;
-}
-
-// arma::mat wcov(arma::mat& newX, 
-//                arma::vec& newW, 
-//                bool useobsweight)
-// {
-//   if (useobsweight)
-//   {
-//     // apply weights
-//     // weighted x mean
-//     rowvec xwbar = sum(newX.each_col() % newW, 0) / sum(newW);
-//     
-//     // cov
-//     mat xrw = newX.each_row() - xwbar;
-//     mat xrw = newX.each_col() % sqrt(newW);    
-//     
-//     return xrw.t() * xrw / (1.0 -  norm(newW, "fro"));
-// 
-//   }else{
-//     return var(newX);
-//   }
-// }
-
-
-
-arma::mat save(arma::mat& newX, 
-               arma::vec& newY, 
-               arma::vec& newW,
-               bool useobsweight,
-               size_t nslice)
-{
-  uvec index = sort_index(newY);
-  size_t N = newY.n_elem;
-  size_t P = newX.n_cols;
-  
-  mat M(P, P, fill::zeros);
-  
-  mat sortedx = newX.rows(index);
-  vec sortedy = newY(index);
-  
-  size_t slice_size = (size_t) N/nslice;
-  size_t res = N - nslice*slice_size;
-  mat Diag(P, P, fill::eye);
-  
-  if (useobsweight)
+  //Trying the other splits
+  for (size_t i = lowindex; i <= highindex; i++)
   {
     
-    // obs index
-    size_t rownum = 0;
-    
-    for (size_t k =0; k < nslice; k++) 
-    {
-      // sample size in this slice
-      // first res slices has one more obs
-      size_t nh = (k < res) ? (slice_size + 1) : slice_size;
+    //If there is a tie
+    while (x(i) == x(i+1)){
+      i++;
       
-      // slice data
-      mat xslice = sortedx.rows(rownum, rownum + nh - 1);
-      vec wslice = newW.subvec(rownum, rownum + nh - 1);
-      
-      // next slice
-      rownum += nh;
-      
-      // center xslice
-      xslice.each_row() -= mean(xslice.each_col() % wslice, 0); 
-      
-      // apply weight
-      xslice.each_col() %= sqrt(wslice);
-      
-      // slice cov and M
-      double w = sum(wslice);
-      w = 1 - norm(wslice, "fro") / w / w;
-      
-      mat C = Diag - xslice.t() * xslice / w;
-      M += C * C.t();
+      //Adjust sums
+      LeftSum += y(i);
+      RightSum -= y(i);
     }
     
+    //Calculate score
+    score = LeftSum*LeftSum/(i + 1) + RightSum*RightSum/(N - i - 1);
     
-  }else{
-    // obs index
-    size_t rownum = 0;
-    
-    for (size_t k =0; k < nslice; k++) 
+    //If the score has improved, find cut and set new score
+    if (score > temp_score)
     {
-      // sample size in this slice
-      // first res slices has one more obs
-      size_t nh = (k < res) ? (slice_size + 1) : slice_size;
-      
-      // slice data
-      mat xslice = sortedx.rows(rownum, rownum + nh - 1);
-      
-      // next slice
-      rownum += nh;
-      
-      RLTcout << "k= " << k << std::endl;
-      
-      // slice cov and M
-      mat C = Diag - arma::cov(xslice);
-      M += C * C.t();
-      
-      RLTcout << "complete " << k << std::endl;
+      temp_cut = (x(i) + x(i + 1))/2 ;
+      temp_score = score;
+    }
+    
+    //Adjust sums
+    if (i + 1 <= highindex)
+    {
+      LeftSum += y(i+1);
+      RightSum -= y(i+1);
     }
   }
-  
-  return M;
-  
 }
 
 
+
+void reg_uni_cont_score_best_full_w(const vec& x,
+                                    const vec& y,
+                                    const vec& w,
+                                    size_t lowindex, 
+                                    size_t highindex, 
+                                    double& temp_cut, 
+                                    double& temp_score)
+{
+  size_t N = y.n_elem;
+  double score = 0;
+  
+  double LeftSum = 0;
+  double RightSum = 0;
+  double Left_w = 0;
+  double Right_w = 0;
+  
+  for (size_t i = 0; i <= lowindex; i++)
+  {
+    LeftSum += y(i)*w(i);
+    Left_w += w(i);
+  }
+  
+  for (size_t i = lowindex+1; i < N; i++)
+  {
+    RightSum += y(i)*w(i);
+    Right_w += w(i);
+  }
+  
+  for (size_t i = lowindex; i <= highindex; i++)
+  {
+    while (x(i) == x(i+1)){
+      i++;
+      
+      LeftSum += y(i)*w(i);
+      RightSum -= y(i)*w(i);
+      
+      Left_w += w(i);
+      Right_w += w(i);
+    }
+    
+    score = LeftSum*LeftSum/Left_w + RightSum*RightSum/Right_w;
+    
+    if (score > temp_score)
+    {
+      temp_cut = (x(i) + x(i + 1))/2 ;
+      temp_score = score;
+    }
+    
+    if (i + 1 <= highindex)
+    {
+      LeftSum += y(i+1)*w(i+1);
+      RightSum -= y(i+1)*w(i+1);
+      
+      Left_w += w(i+1);
+      Right_w += w(i+1);
+    }
+  }
+}

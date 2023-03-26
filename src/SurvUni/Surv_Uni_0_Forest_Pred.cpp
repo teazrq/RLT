@@ -33,10 +33,11 @@ void Surv_Uni_Forest_Pred(cube& Pred,
       uvec TermNode(N, fill::zeros);
         
       Surv_Uni_Tree_Class OneTree(SURV_FOREST.SplitVarList(nt),
-                                 SURV_FOREST.SplitValueList(nt),
-                                 SURV_FOREST.LeftNodeList(nt),
-                                 SURV_FOREST.RightNodeList(nt),
-                                 SURV_FOREST.NodeHazList(nt));
+                                  SURV_FOREST.SplitValueList(nt),
+                                  SURV_FOREST.LeftNodeList(nt),
+                                  SURV_FOREST.RightNodeList(nt),
+                                  SURV_FOREST.NodeWeightList(nt),
+                                  SURV_FOREST.NodeHazList(nt));
       
       Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
       

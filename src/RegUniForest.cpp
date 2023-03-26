@@ -39,13 +39,15 @@ List RegUniForestFit(arma::mat& X,
   arma::field<arma::vec> SplitValue(ntrees);
   arma::field<arma::uvec> LeftNode(ntrees);
   arma::field<arma::uvec> RightNode(ntrees);
+  arma::field<arma::vec> NodeWeight(ntrees);
   arma::field<arma::vec> NodeAve(ntrees);
   
   //Initiate forest object
   Reg_Uni_Forest_Class REG_FOREST(SplitVar, 
                                   SplitValue, 
                                   LeftNode, 
-                                  RightNode, 
+                                  RightNode,
+                                  NodeWeight,
                                   NodeAve);
   
   // initiate obs id and var id
@@ -83,6 +85,7 @@ List RegUniForestFit(arma::mat& X,
   Forest_R["SplitValue"] = SplitValue;
   Forest_R["LeftNode"] = LeftNode;
   Forest_R["RightNode"] = RightNode;
+  Forest_R["NodeWeight"] = NodeWeight;
   Forest_R["NodeAve"] = NodeAve;
   
   //Add to return list
@@ -102,6 +105,7 @@ List RegUniForestPred(arma::field<arma::ivec>& SplitVar,
                       arma::field<arma::vec>& SplitValue,
                       arma::field<arma::uvec>& LeftNode,
                       arma::field<arma::uvec>& RightNode,
+                      arma::field<arma::vec>& NodeWeight,
                       arma::field<arma::vec>& NodeAve,
                       arma::mat& X,
                       arma::uvec& Ncat,
@@ -119,6 +123,7 @@ List RegUniForestPred(arma::field<arma::ivec>& SplitVar,
                                   SplitValue, 
                                   LeftNode, 
                                   RightNode, 
+                                  NodeWeight, 
                                   NodeAve);
   
   // Initialize prediction objects  

@@ -24,7 +24,7 @@ void Reg_Uni_Comb_Split_A_Node(size_t Node,
   size_t linear_comb = Param.linear_comb;
   
   if (Param.verbose)
-    RLTcout << "at node" << Node << " ..." << std::endl;
+    RLTcout << "at node " << Node << " ..." << std::endl;
   
   if (N <= nmin)
   {
@@ -34,15 +34,15 @@ TERMINATENODE:
   }else{
     
     //Set up another split
-    uvec var(linear_comb);
-    vec load(linear_comb);
+    uvec var(linear_comb, fill::zeros);
+    vec load(linear_comb, fill::zeros);
     
     Comb_Split_Class OneSplit(var, load);
     
     //Figure out where to split the node
     Reg_Uni_Comb_Find_A_Split(OneSplit, REG_DATA, Param, obs_id, var_id, rngl);
     
-    RLTcout << " back to Reg_Uni_Comb_Split_A_Node ... " << std::endl;
+    RLTcout << "\n-back to Reg_Uni_Comb_Split_A_Node ... " << std::endl;
     OneSplit.print();
     
 goto TERMINATENODE;
@@ -61,15 +61,15 @@ void Reg_Uni_Comb_Terminate_Node(size_t Node,
 {
   
   OneTree.SplitVar(Node, 0) = -1; // -1 says this node is a terminal node. Ow, it would be the variable num
-  OneTree.LeftNode(Node) = obs_id.n_elem; // save node size on LeftNode
   
   //Find the average of the observations in the terminal node
   if (useobsweight)
   {
     double allweight = arma::sum(obs_weight(obs_id));
-    OneTree.SplitValue(Node) = allweight; // save total weights on split value
+    OneTree.NodeWeight(Node) = allweight; // save total weights
     OneTree.NodeAve(Node) = arma::sum(Y(obs_id) % obs_weight(obs_id)) / allweight;
   }else{
+    OneTree.NodeWeight(Node) = obs_id.n_elem; // save node weight
     OneTree.NodeAve(Node) = arma::mean(Y(obs_id));
   }
 }

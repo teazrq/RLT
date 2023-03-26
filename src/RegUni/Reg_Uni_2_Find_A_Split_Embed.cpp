@@ -56,6 +56,7 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   arma::field<arma::vec> SplitValue(ntrees);
   arma::field<arma::uvec> LeftNode(ntrees);
   arma::field<arma::uvec> RightNode(ntrees);
+  arma::field<arma::vec> NodeWeight(ntrees);
   arma::field<arma::vec> NodeAve(ntrees);
   
   //Initiate forest object
@@ -63,6 +64,7 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
                                   SplitValue,
                                   LeftNode,
                                   RightNode,
+                                  NodeWeight,
                                   NodeAve);
   
   // Initiate prediction objects

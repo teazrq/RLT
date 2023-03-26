@@ -238,7 +238,8 @@ void Reg_Uni_Comb_Pre_Screen(uvec& var,
                              Rand& rngl);
   
 void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
-                             const uvec& use_var,
+                             const uvec& split_var,
+                             const vec& split_score,
                              const RLT_REG_DATA& REG_DATA, 
                              const PARAM_GLOBAL& Param,
                              const uvec& obs_id,
@@ -260,16 +261,19 @@ double reg_uni_cont_score_rank_full_w(const vec& y,
                                       size_t a_random_ind,
                                       const vec& w);
 
-arma::mat sir(arma::mat& newX, 
-              arma::vec& newY, 
-              arma::vec& newW,
-              bool useobsweight,
-              size_t nslice);
+void reg_uni_cont_score_best_full(const vec& x,
+                                  const vec& y,
+                                  size_t lowindex, 
+                                  size_t highindex, 
+                                  double& temp_cut, 
+                                  double& temp_score);
 
-arma::mat save(arma::mat& newX, 
-               arma::vec& newY, 
-               arma::vec& newW,
-               bool useobsweight,
-               size_t nslice);
+void reg_uni_cont_score_best_full_w(const vec& x,
+                                    const vec& y,
+                                    const vec& w,
+                                    size_t lowindex, 
+                                    size_t highindex, 
+                                    double& temp_cut, 
+                                    double& temp_score);
 
 #endif

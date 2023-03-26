@@ -43,15 +43,17 @@ List RegUniCombForestFit(arma::mat& X,
   arma::field<arma::vec> SplitValue(ntrees);
   arma::field<arma::uvec> LeftNode(ntrees);
   arma::field<arma::uvec> RightNode(ntrees);
+  arma::field<arma::vec> NodeWeight(ntrees);
   arma::field<arma::vec> NodeAve(ntrees);
 
   // Initiate forest object
   Reg_Uni_Comb_Forest_Class REG_FOREST(SplitVar,
-										SplitLoad,
-										SplitValue,
-										LeftNode,
-										RightNode,
-										NodeAve);
+                  										 SplitLoad,
+                  										 SplitValue,
+                  										 LeftNode,
+                  										 RightNode,
+                  										 NodeWeight,
+                  										 NodeAve);
   
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);
@@ -90,6 +92,7 @@ List RegUniCombForestFit(arma::mat& X,
   Forest_R["SplitValue"] = SplitValue;
   Forest_R["LeftNode"] = LeftNode;
   Forest_R["RightNode"] = RightNode;
+  Forest_R["NodeWeight"] = NodeWeight;
   Forest_R["NodeAve"] = NodeAve;
   
   //Add to return list

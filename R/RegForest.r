@@ -59,8 +59,8 @@ RegForest <- function(x, y, ncat,
     if (is.null(param$"split.rule"))
       param$"split.rule" <- "sir"
     
-    all.split.rule = c("sir", "save", "pca", "naive")
-    param$"split.rule" <- match.arg(param$"split.rule", all.split.rule)
+    all.split.rule = c("sir", "save", "pca", "lm")
+    param$"split.rule" <- match(param$"split.rule", all.split.rule)
 
     if (param$"split.rule" == 0)
       warning("split.rule is not compatiable with linear combination regression; reset")    

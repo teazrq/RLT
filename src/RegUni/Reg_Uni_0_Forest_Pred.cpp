@@ -35,6 +35,7 @@ void Reg_Uni_Forest_Pred(mat& Pred,
                                  REG_FOREST.SplitValueList(nt),
                                  REG_FOREST.LeftNodeList(nt),
                                  REG_FOREST.RightNodeList(nt),
+                                 REG_FOREST.NodeWeightList(nt),
                                  REG_FOREST.NodeAveList(nt));
       
       Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);

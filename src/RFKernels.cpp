@@ -14,6 +14,7 @@ List Kernel_Self(arma::field<arma::ivec>& SplitVar,
                     arma::field<arma::vec>& SplitValue,
                     arma::field<arma::uvec>& LeftNode,
                     arma::field<arma::uvec>& RightNode,
+                    arma::field<arma::vec>& NodeWeight,
                     arma::mat& X,
                     arma::uvec& Ncat,
                     size_t verbose)
@@ -28,9 +29,10 @@ List Kernel_Self(arma::field<arma::ivec>& SplitVar,
   for (size_t nt = 0; nt < ntrees; nt++)
   {
     Tree_Class OneTree(SplitVar(nt),
-                           SplitValue(nt),
-                           LeftNode(nt),
-                           RightNode(nt));
+                       SplitValue(nt),
+                       LeftNode(nt),
+                       RightNode(nt),
+                       NodeWeight(nt));
     
     // initiate all observations
     uvec proxy_id = linspace<uvec>(0, N-1, N);
@@ -58,13 +60,14 @@ List Kernel_Self(arma::field<arma::ivec>& SplitVar,
 
 // [[Rcpp::export()]]
 List Kernel_Cross(arma::field<arma::ivec>& SplitVar,
-                     arma::field<arma::vec>& SplitValue,
-                     arma::field<arma::uvec>& LeftNode,
-                     arma::field<arma::uvec>& RightNode,
-                     arma::mat& X1,
-                     arma::mat& X2,
-                     arma::uvec& Ncat,
-                     size_t verbose)
+                  arma::field<arma::vec>& SplitValue,
+                  arma::field<arma::uvec>& LeftNode,
+                  arma::field<arma::uvec>& RightNode,
+                  arma::field<arma::vec>& NodeWeight,
+                  arma::mat& X1,
+                  arma::mat& X2,
+                  arma::uvec& Ncat,
+                  size_t verbose)
 {
   size_t N1 = X1.n_rows;
   size_t N2 = X2.n_rows;
@@ -81,9 +84,10 @@ List Kernel_Cross(arma::field<arma::ivec>& SplitVar,
   for (size_t nt = 0; nt < ntrees; nt++)
   {
     Tree_Class OneTree(SplitVar(nt),
-                           SplitValue(nt),
-                           LeftNode(nt),
-                           RightNode(nt));
+                       SplitValue(nt),
+                       LeftNode(nt),
+                       RightNode(nt),
+                       NodeWeight(nt));
     
     // initiate all observations
     uvec proxy_id1 = linspace<uvec>(0, N1-1, N1);
@@ -117,14 +121,15 @@ List Kernel_Cross(arma::field<arma::ivec>& SplitVar,
 
 // [[Rcpp::export()]]
 List Kernel_Train(arma::field<arma::ivec>& SplitVar,
-                     arma::field<arma::vec>& SplitValue,
-                     arma::field<arma::uvec>& LeftNode,
-                     arma::field<arma::uvec>& RightNode,
-                     arma::mat& X1,
-                     arma::mat& X2,
-                     arma::uvec& Ncat,
-                     arma::imat& ObsTrack,
-                     size_t verbose)
+                  arma::field<arma::vec>& SplitValue,
+                  arma::field<arma::uvec>& LeftNode,
+                  arma::field<arma::uvec>& RightNode,
+                  arma::field<arma::vec>& NodeWeight,
+                  arma::mat& X1,
+                  arma::mat& X2,
+                  arma::uvec& Ncat,
+                  arma::imat& ObsTrack,
+                  size_t verbose)
 {
   size_t N1 = X1.n_rows;
   size_t N2 = X2.n_rows;
@@ -141,9 +146,10 @@ List Kernel_Train(arma::field<arma::ivec>& SplitVar,
   for (size_t nt = 0; nt < ntrees; nt++)
   {
     Tree_Class OneTree(SplitVar(nt),
-                           SplitValue(nt),
-                           LeftNode(nt),
-                           RightNode(nt));
+                       SplitValue(nt),
+                       LeftNode(nt),
+                       RightNode(nt),
+                       NodeWeight(nt));
     
     // initiate all observations
     uvec proxy_id1 = linspace<uvec>(0, N1-1, N1);

@@ -21,16 +21,14 @@
 
 
 //#define ARMA_USE_OPENMP
-#define ARMA_NO_DEBUG
+//#define ARMA_NO_DEBUG
 //#define RLT_DEBUG
 
 // header files
-# include <RcppArmadillo.h>
-# include <Rcpp.h>
-
 # include "Utility/Utility.h"
 # include "Utility/Tree_Definition.h"
 # include "Utility/Tree_Function.h"
+# include "Utility/Stat_Function.h"
 
 // regression
 # include "RegUni/Reg_Uni_Definition.h"
