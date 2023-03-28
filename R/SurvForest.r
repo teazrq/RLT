@@ -3,15 +3,19 @@
 #' @description Internal function for fitting survival forest
 #' @keywords internal
 
-SurvForest <- function(x, y, censor, ncat,
-                      obs.w, var.w,
-                      resample.preset,
-                      param,
-                      ...)
+SurvForest <- function(x, y, censor, 
+                       ncat, failcount,
+                       obs.w, var.w,
+                       resample.preset,
+                       param,
+                       ...)
 {
   # prepare y
-
   timepoints = sort(unique(y[censor == 1]))
+  
+  # a smaller failcount
+  if (failcount != 0 & failcount < length(timepoints))
+    timepoints = quantile(timepoints, probs = seq(0, 1, length.out = failcount))
   
   y.point = rep(NA, length(y))
   
@@ -70,8 +74,8 @@ SurvForest <- function(x, y, censor, ncat,
     fit[["obs.w"]] = obs.w
     fit[["var.w"]] = var.w
     fit[["y"]] = y
-    fit[["y.point"]] = y.point
     fit[["censor"]] = censor
+    fit[["failcount"]] = 
     
     class(fit) <- c("RLT", "fit", "surv", "uni", "single")
   }else{

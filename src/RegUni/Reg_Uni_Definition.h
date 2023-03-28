@@ -197,7 +197,7 @@ public:
   void trim(size_t TreeLength)
   {
     SplitVar.resize(TreeLength, SplitVar.n_cols);
-    SplitLoad.resize(TreeLength, SplitVar.n_cols);
+    SplitLoad.resize(TreeLength, SplitLoad.n_cols);
     SplitValue.resize(TreeLength);
     LeftNode.resize(TreeLength);
     RightNode.resize(TreeLength);

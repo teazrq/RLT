@@ -321,12 +321,6 @@ check_control <- function(control, param)
   } else alpha = max(0, min(control$alpha, 0.5)) 
   storage.mode(alpha) <- "double"
   
-  # failcount
-  if (is.null(control$failcount)) {
-    failcount <- 0
-  } else failcount = max(0, min(control$failcount, param$n))
-  storage.mode(failcount) <- "integer"
-  
   # return new control
   return(list(# embedded model control
               "embed.ntrees" = embed.ntrees,
@@ -342,8 +336,7 @@ check_control <- function(control, param)
               "split.rule" = control$split.rule,
               "resample.track" = resample.track,
               "var.ready" = var.ready,
-              "alpha" = alpha,
-              "failcount" = failcount))
+              "alpha" = alpha))
 }
 
 #' @title check_resamplepreset

@@ -3,7 +3,8 @@
 #' @description Internal function for fitting regression forest
 #' @keywords internal
 
-RegForest <- function(x, y, ncat,
+RegForest <- function(x, y, 
+                      ncat,
                       obs.w, var.w,
                       resample.preset,
                       param,
@@ -35,8 +36,10 @@ RegForest <- function(x, y, ncat,
     param$"split.rule" <- match(param$"split.rule", all.split.rule)
     
     if (param$"split.rule" == 0)
-      warning("split.rule is not compatiable with regression; reset")
+      warning("split.rule is not compatiable with regression, switching to default")
     
+    param$"split.rule" = 1
+      
     # fit single variable split model
     fit = RegUniForestFit(x, y, ncat,
                           obs.w, var.w,

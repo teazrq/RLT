@@ -81,8 +81,6 @@ public:
  size_t linear_comb = 1;
  double alpha = 0;
  size_t split_rule = 1;
- //size_t varweighttype = 0;  
- bool failcount = 0;  
  
  // RLT parameters 
  size_t embed_ntrees = 0;
@@ -121,8 +119,6 @@ public:
    linear_comb   = param["linear.comb"];
    alpha         = param["alpha"];
    split_rule    = param["split.rule"];
-   //varweighttype = param["var.w.type"];
-   failcount     = param["failcount"];
    
    // RLT parameters
    embed_ntrees        = param["embed.ntrees"];
@@ -161,8 +157,6 @@ public:
    linear_comb   = Input.linear_comb;
    alpha         = Input.alpha;
    split_rule    = Input.split_rule;
-   //varweighttype = Input.varweighttype;  
-   failcount     = Input.failcount;
    
    // RLT parameters 
    embed_ntrees        = Input.embed_ntrees;

@@ -11,6 +11,46 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// ClaUniForestFit
+List ClaUniForestFit(arma::mat& X, arma::uvec& Y, arma::uvec& Ncat, size_t nclass, arma::vec& obsweight, arma::vec& varweight, arma::imat& ObsTrack, List& param_r);
+RcppExport SEXP _RLT_ClaUniForestFit(SEXP XSEXP, SEXP YSEXP, SEXP NcatSEXP, SEXP nclassSEXP, SEXP obsweightSEXP, SEXP varweightSEXP, SEXP ObsTrackSEXP, SEXP param_rSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Ncat(NcatSEXP);
+    Rcpp::traits::input_parameter< size_t >::type nclass(nclassSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type obsweight(obsweightSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type varweight(varweightSEXP);
+    Rcpp::traits::input_parameter< arma::imat& >::type ObsTrack(ObsTrackSEXP);
+    Rcpp::traits::input_parameter< List& >::type param_r(param_rSEXP);
+    rcpp_result_gen = Rcpp::wrap(ClaUniForestFit(X, Y, Ncat, nclass, obsweight, varweight, ObsTrack, param_r));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ClaUniForestPred
+List ClaUniForestPred(arma::field<arma::ivec>& SplitVar, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeWeight, arma::field<arma::mat>& NodeProb, arma::mat& X, arma::uvec& Ncat, bool VarEst, bool keep_all, size_t usecores, size_t verbose);
+RcppExport SEXP _RLT_ClaUniForestPred(SEXP SplitVarSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeWeightSEXP, SEXP NodeProbSEXP, SEXP XSEXP, SEXP NcatSEXP, SEXP VarEstSEXP, SEXP keep_allSEXP, SEXP usecoresSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::field<arma::ivec>& >::type SplitVar(SplitVarSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::vec>& >::type SplitValue(SplitValueSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type LeftNode(LeftNodeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type RightNode(RightNodeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::vec>& >::type NodeWeight(NodeWeightSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat>& >::type NodeProb(NodeProbSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Ncat(NcatSEXP);
+    Rcpp::traits::input_parameter< bool >::type VarEst(VarEstSEXP);
+    Rcpp::traits::input_parameter< bool >::type keep_all(keep_allSEXP);
+    Rcpp::traits::input_parameter< size_t >::type usecores(usecoresSEXP);
+    Rcpp::traits::input_parameter< size_t >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(ClaUniForestPred(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, NodeProb, X, Ncat, VarEst, keep_all, usecores, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // QuanUniForestFit
 List QuanUniForestFit(arma::mat& X, arma::vec& Y, arma::uvec& Ncat, arma::vec& obsweight, arma::vec& varweight, arma::imat& ObsTrack, List& param_r);
 RcppExport SEXP _RLT_QuanUniForestFit(SEXP XSEXP, SEXP YSEXP, SEXP NcatSEXP, SEXP obsweightSEXP, SEXP varweightSEXP, SEXP ObsTrackSEXP, SEXP param_rSEXP) {
@@ -245,6 +285,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_RLT_ClaUniForestFit", (DL_FUNC) &_RLT_ClaUniForestFit, 8},
+    {"_RLT_ClaUniForestPred", (DL_FUNC) &_RLT_ClaUniForestPred, 12},
     {"_RLT_QuanUniForestFit", (DL_FUNC) &_RLT_QuanUniForestFit, 7},
     {"_RLT_ARMA_EMPTY_UMAT", (DL_FUNC) &_RLT_ARMA_EMPTY_UMAT, 0},
     {"_RLT_ARMA_EMPTY_VEC", (DL_FUNC) &_RLT_ARMA_EMPTY_VEC, 0},

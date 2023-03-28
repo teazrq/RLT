@@ -14,13 +14,13 @@ using namespace arma;
 
 // [[Rcpp::export()]]
 List SurvUniForestFit(arma::mat& X,
-                     arma::uvec& Y,
-                     arma::uvec& Censor,
-                     arma::uvec& Ncat,
-                     arma::vec& obsweight,
-                     arma::vec& varweight,
-                     arma::imat& ObsTrack,
-                     List& param_r)
+                      arma::uvec& Y,
+                      arma::uvec& Censor,
+                      arma::uvec& Ncat,
+                      arma::vec& obsweight,
+                      arma::vec& varweight,
+                      arma::imat& ObsTrack,
+                      List& param_r)
 {
   
   // reading parameters 
@@ -51,11 +51,11 @@ List SurvUniForestFit(arma::mat& X,
   
   //Initiate forest object
   Surv_Uni_Forest_Class SURV_FOREST(SplitVar, 
-                                  SplitValue, 
-                                  LeftNode, 
-                                  RightNode, 
-                                  NodeWeight,
-                                  NodeHaz);
+                                    SplitValue, 
+                                    LeftNode, 
+                                    RightNode, 
+                                    NodeWeight,
+                                    NodeHaz);
   
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);

@@ -74,16 +74,16 @@ public:
   arma::field<arma::vec>& NodeHaz;
   
   Surv_Uni_Tree_Class(arma::ivec& SplitVar,
-                     arma::vec& SplitValue,
-                     arma::uvec& LeftNode,
-                     arma::uvec& RightNode,
-                     arma::vec& NodeWeight,
-                     arma::field<arma::vec>& NodeHaz) : Tree_Class(SplitVar,
-                                                                   SplitValue,
-                                                                   LeftNode,
-                                                                   RightNode,
-                                                                   NodeWeight),
-                                                        NodeHaz(NodeHaz) {}
+                      arma::vec& SplitValue,
+                      arma::uvec& LeftNode,
+                      arma::uvec& RightNode,
+                      arma::vec& NodeWeight,
+                      arma::field<arma::vec>& NodeHaz) : Tree_Class(SplitVar,
+                                                                    SplitValue,
+                                                                    LeftNode,
+                                                                    RightNode,
+                                                                    NodeWeight),
+                                                         NodeHaz(NodeHaz) {}
 
   // initiate tree
   void initiate(size_t TreeLength)

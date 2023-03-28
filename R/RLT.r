@@ -146,6 +146,11 @@
 #'                        or \code{var.ready = TRUE}}
 #' }
 #' 
+#' For classification forests, these items are further provided
+#' \itemize{
+#' \item{NClass}{The number of classes}
+#' }
+#' 
 #' For survival forests, these items are further provided
 #' \itemize{
 #' \item{NFail}{The number of observed failure times}
@@ -153,7 +158,6 @@
 #' \item{cindex_tree}{Out-of-bag c-index for each tree}
 #' \item{cindex}{Out-of-bag c-index for the forest}
 #' \item{timepoints}{ordered observed failure times}
-#' \item{y.point}{order of \eqn{y} by observed failure times}
 #' }
 #' 
 #' @references 
@@ -259,6 +263,11 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                "verbose" = verbose,
                "seed" = seed)
   
+  # failcount for survival
+  if (is.null(param$failcount)) {
+    failcount <- 0
+  } else failcount = param$failcount
+  
   # check control parameters
   param.control = check_control(param.control, param)
   
@@ -339,7 +348,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   if (model == "classification")
   {
     if (verbose > 0) cat("runing classification forest ... \n ")
-    RLT.fit = ClaForest(x, y, ncat, 
+    RLT.fit = ClaForest(x, y, ncat,
                         obs.w, var.w, 
                         resample.preset, 
                         param.all, ...)
@@ -348,7 +357,8 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   if (model == "survival")
   {
     if (verbose > 0) cat("runing survival forest ... \n ")
-    RLT.fit = SurvForest(x, y, censor, ncat, 
+    RLT.fit = SurvForest(x, y, censor, 
+                         ncat, failcount,
                          obs.w, var.w, 
                          resample.preset, 
                          param.all, ...)
