@@ -1,6 +1,6 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Regression
+//  Classification
 //  **********************************
 
 // my header file
@@ -31,8 +31,82 @@ TERMINATENODE:
   }else{
     RLTcout << " split node " << std::endl;
     
-goto TERMINATENODE;
-
+    //Set up another split
+    Split_Class OneSplit;
+    
+    //regular univariate split
+    Cla_Uni_Find_A_Split(OneSplit,
+                         CLA_DATA,
+                         Param,
+                         (const uvec&) obs_id,
+                         var_id,
+                         rngl);
+    
+    // if did not find a good split, terminate
+    if (OneSplit.score <= 0)
+      goto TERMINATENODE;    
+    
+    // record internal node weight 
+    if (useobsweight)
+    {
+      OneTree.NodeWeight(Node) = arma::sum(CLA_DATA.obsweight(obs_id));
+    }else{
+      OneTree.NodeWeight(Node) = obs_id.n_elem;
+    }
+    
+    // construct indices for left and right nodes
+    uvec left_id(obs_id.n_elem);
+    
+    if ( CLA_DATA.Ncat(OneSplit.var) == 1 )
+    {
+      split_id(CLA_DATA.X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id); 
+    }else{
+      split_id_cat(CLA_DATA.X.unsafe_col(OneSplit.var), OneSplit.value, left_id, obs_id, CLA_DATA.Ncat(OneSplit.var));
+    }    
+    
+    // if this happens something about the splitting rule is wrong
+    if (left_id.n_elem == N or obs_id.n_elem == N)
+      goto TERMINATENODE;
+    
+    // record internal node to tree 
+    OneTree.SplitVar(Node) = OneSplit.var;
+    OneTree.SplitValue(Node) = OneSplit.value;    
+    
+    // check if the current tree is long enough to store two more nodes
+    // if not, extend the current tree
+    if ( OneTree.SplitVar( OneTree.SplitVar.n_elem - 2) != -2 )
+    {
+      if (Param.verbose)
+        RLTcout << "Tree extension needed. Report Error." << std::endl;
+      
+      OneTree.extend();
+    }
+    
+    // get ready find the locations of next left and right nodes     
+    size_t NextLeft = Node;
+    size_t NextRight = Node;    
+    
+    //Find locations of the next nodes
+    OneTree.find_next_nodes(NextLeft, NextRight);
+    OneTree.LeftNode(Node) = NextLeft;
+    OneTree.RightNode(Node) = NextRight;    
+    
+    // split the left and right nodes 
+    Cla_Uni_Split_A_Node(NextLeft, 
+                         OneTree,
+                         CLA_DATA,
+                         Param,
+                         left_id, 
+                         var_id,
+                         rngl);
+    
+    Cla_Uni_Split_A_Node(NextRight,                          
+                         OneTree,
+                         CLA_DATA,
+                         Param,
+                         obs_id, 
+                         var_id,
+                         rngl);
   }
 }
 

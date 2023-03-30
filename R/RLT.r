@@ -274,9 +274,6 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   # reset some parameters if var.ready is needed
   if (param.control$var.ready)
   {
-    if (!is.null(resample.preset))
-      if (verbose) warning("resample.preset is overwritten due to var.ready")
-
     if (param$resample.replace)
     {
       if (verbose) warning("resample.replace is set to FALSE due to var.ready")
@@ -294,6 +291,9 @@ RLT <- function(x, y, censor = NULL, model = NULL,
       param$ntrees = 2*floor(param$ntrees/2)
       if (verbose) warning(paste("ntrees is set to", param$ntrees, "due to var.ready"))
     }
+    
+    if (!is.null(resample.preset))
+      if (verbose) warning("resample.preset is overwritten due to var.ready")
   }
   
   # construct resample.preset

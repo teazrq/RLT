@@ -45,8 +45,13 @@ TERMINATENODE:
     if (OneSplit.score <= 0)
       goto TERMINATENODE;
     
-    // record internal node mean 
-    OneTree.NodeAve(Node) = arma::mean(REG_DATA.Y(obs_id));
+    // record internal node weight 
+    if (useobsweight)
+    {
+      OneTree.NodeWeight(Node) = arma::sum(REG_DATA.obsweight(obs_id));
+    }else{
+      OneTree.NodeWeight(Node) = obs_id.n_elem;
+    }
     
     // construct indices for left and right nodes
     uvec left_id(obs_id.n_elem);
@@ -72,7 +77,7 @@ TERMINATENODE:
     if ( OneTree.SplitVar( OneTree.SplitVar.n_elem - 2) != -2 )
     {
       if (Param.verbose)
-        RLTcout << "Tree extension needed. Terminal node size may not be well controlled." << std::endl;
+        RLTcout << "Tree extension needed. Report Error." << std::endl;
       
       OneTree.extend();
     }

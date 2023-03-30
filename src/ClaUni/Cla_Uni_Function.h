@@ -53,6 +53,42 @@ void Cla_Uni_Terminate_Node(size_t Node,
                             const vec& obs_weight,
                             bool useobsweight);
 
+void Cla_Uni_Find_A_Split(Split_Class& OneSplit,
+                          const RLT_CLA_DATA& Cla_DATA,
+                          const PARAM_GLOBAL& Param,
+                          const uvec& obs_id,
+                          const uvec& var_id,
+                          Rand& rngl);
+
+void Cla_Uni_Split_Cat(Split_Class& TempSplit,
+                       const uvec& obs_id,
+                       const vec& x,
+                       const size_t ncat,
+                       const uvec& Y,
+                       const vec& obs_weight,
+                       const size_t nclass,
+                       double penalty,
+                       size_t split_gen,
+                       size_t split_rule,
+                       size_t nsplit,
+                       double alpha,
+                       bool useobsweight,
+                       Rand& rngl);
+
+void Cla_Uni_Split_Cont(Split_Class& TempSplit,
+                        const uvec& obs_id,
+                        const vec& x,
+                        const uvec& Y,
+                        const vec& obs_weight,
+                        const size_t nclass,
+                        double penalty,
+                        size_t split_gen,
+                        size_t split_rule,
+                        size_t nsplit,
+                        double alpha,
+                        bool useobsweight,
+                        Rand& rngl);
+
 // for prediction 
 
 void Cla_Uni_Forest_Pred(cube& Pred,

@@ -1,6 +1,6 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Regression
+//  Classification
 //  **********************************
 
 // my header file
@@ -10,8 +10,8 @@ using namespace Rcpp;
 using namespace arma;
 
 //Figuring out where to split a node, called from Split_A_Node
-void Reg_Uni_Find_A_Split(Split_Class& OneSplit,
-                          const RLT_REG_DATA& REG_DATA,
+void Cla_Uni_Find_A_Split(Split_Class& OneSplit,
+                          const RLT_CLA_DATA& Cla_DATA,
                           const PARAM_GLOBAL& Param,
                           const uvec& obs_id,
                           const uvec& var_id,
@@ -25,11 +25,7 @@ void Reg_Uni_Find_A_Split(Split_Class& OneSplit,
   size_t split_gen = Param.split_gen;
   size_t split_rule = Param.split_rule;
   
-  // Choose the variables to try
-  //mtry = ( (mtry <= var_id.n_elem) ? mtry : var_id.n_elem ); // take minimum
-
-  //uvec sampled = rngl.sample(0, var_id.n_elem - 1, mtry);
-
+  // sample variables for mtry
   uvec var_try = rngl.sample(var_id, mtry);
 
   //For each variable in var_try
@@ -41,15 +37,16 @@ void Reg_Uni_Find_A_Split(Split_Class& OneSplit,
     TempSplit.value = 0;
     TempSplit.score = -1;
       
-    if (REG_DATA.Ncat(j) > 1) // categorical variable 
+    if (Cla_DATA.Ncat(j) > 1) // categorical variable 
     {
       
-      Reg_Uni_Split_Cat(TempSplit, 
+      Cla_Uni_Split_Cat(TempSplit, 
                         obs_id, 
-                        REG_DATA.X.unsafe_col(j), 
-                        REG_DATA.Ncat(j),
-                        REG_DATA.Y, 
-                        REG_DATA.obsweight, 
+                        Cla_DATA.X.unsafe_col(j), 
+                        Cla_DATA.Ncat(j),
+                        Cla_DATA.Y, 
+                        Cla_DATA.obsweight,
+                        Cla_DATA.nclass,
                         0.0, // penalty
                         split_gen, 
                         split_rule, 
@@ -60,11 +57,12 @@ void Reg_Uni_Find_A_Split(Split_Class& OneSplit,
       
     }else{ // continuous variable
       
-      Reg_Uni_Split_Cont(TempSplit,
+      Cla_Uni_Split_Cont(TempSplit,
                          obs_id,
-                         REG_DATA.X.unsafe_col(j), 
-                         REG_DATA.Y,
-                         REG_DATA.obsweight,
+                         Cla_DATA.X.unsafe_col(j), 
+                         Cla_DATA.Y,
+                         Cla_DATA.obsweight,
+                         Cla_DATA.nclass,
                          0.0, // penalty
                          split_gen,
                          split_rule,

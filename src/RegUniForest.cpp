@@ -95,8 +95,11 @@ List RegUniForestFit(arma::mat& X,
   if (importance) ReturnList["VarImp"] = VarImp;
   
   ReturnList["Prediction"] = Prediction;
-  ReturnList["OOBPrediction"] = OOBPrediction;
+  ReturnList["OobPrediction"] = OOBPrediction;
 
+  ReturnList["Error"] = norm(Prediction - Y, 2) / N;
+  ReturnList["OobError"] = norm(OOBPrediction - Y, 2) / N;
+  
   return ReturnList;
 }
 
