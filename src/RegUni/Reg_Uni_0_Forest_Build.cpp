@@ -149,27 +149,22 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
         
         double baseImp = mean(square(oobY - oobpred));
         
-        for (size_t j = 0; j < P; j++)
+        for (auto shuffle_var_j : AllVar)
         {
-          size_t suffle_var_j = var_id(j);
-          
-          if (!any(AllVar == suffle_var_j))
-            continue;
-
           uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
           uvec TermNode(NTest, fill::zeros);
           
-          uvec oob_ind = rngl.shuffle(oobagObs);
-          vec tildex = REG_DATA.X.col(suffle_var_j);
-          tildex = tildex.elem( oob_ind );  //shuffle( REG_DATA.X.unsafe_col(j).elem( oobagObs ) );
+          // create shuffled variable xj
+          vec tildex = REG_DATA.X.col(shuffle_var_j);
+          tildex = tildex.elem( rngl.shuffle(oobagObs) );
           
-          Find_Terminal_Node_ShuffleJ(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobagObs, TermNode, tildex, suffle_var_j);
+          Find_Terminal_Node_ShuffleJ(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobagObs, TermNode, tildex, shuffle_var_j);
           
           // get prediction
           vec oobpred = OneTree.NodeAve(TermNode);
           
           // record
-          AllImp(nt, j) =  mean(square(oobY - oobpred)) - baseImp;
+          AllImp(nt, shuffle_var_j) =  mean(square(oobY - oobpred)) - baseImp;
         }
       }
     }

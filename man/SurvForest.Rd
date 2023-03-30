@@ -4,7 +4,18 @@
 \alias{SurvForest}
 \title{SurvForest}
 \usage{
-SurvForest(x, y, censor, ncat, obs.w, var.w, resample.preset, param, ...)
+SurvForest(
+  x,
+  y,
+  censor,
+  ncat,
+  failcount,
+  obs.w,
+  var.w,
+  resample.preset,
+  param,
+  ...
+)
 }
 \description{
 Internal function for fitting survival forest

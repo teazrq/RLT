@@ -19,6 +19,7 @@ List ClaUniForestFit(arma::mat& X,
           					 arma::imat& ObsTrack,
           					 List& param_r)
 {
+  
   // reading parameters 
   PARAM_GLOBAL Param;
   Param.PARAM_READ_R(param_r);
@@ -50,6 +51,7 @@ List ClaUniForestFit(arma::mat& X,
                                   RightNode,
                                   NodeWeight,
                                   NodeProb);
+  
   
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);
@@ -95,9 +97,12 @@ List ClaUniForestFit(arma::mat& X,
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
   
-  ReturnList["Prediction"] = Prediction;
-  ReturnList["OOBPrediction"] = OOBPrediction;
-
+  ReturnList["Prediction"] = index_max(Prediction, 1);
+  ReturnList["OOBPrediction"] = index_max(OOBPrediction, 1);
+  
+  ReturnList["Prob"] = Prediction;
+  ReturnList["OOBProb"] = OOBPrediction;
+  
   return ReturnList;
 }
 
@@ -128,20 +133,24 @@ List ClaUniForestPred(arma::field<arma::ivec>& SplitVar,
                                   NodeProb);
   
   // Initialize prediction objects  
-  mat PredAll;
+  cube PredAll;
 
-  // Run prediction
-  // Cla_Uni_Forest_Pred(PredAll,
-  //                     (const Cla_Uni_Forest_Class&) CLA_FOREST,
-  //                     X,
-  //                     Ncat,
-  //                     usecores,
-  //                     verbose);
+  // run prediction
+  Cla_Uni_Forest_Pred(PredAll,
+                      (const Cla_Uni_Forest_Class&) CLA_FOREST,
+                      X,
+                      Ncat,
+                      usecores,
+                      verbose);
   
   // Initialize return list
   List ReturnList;
   
-  ReturnList["Prediction"] = mean(PredAll, 1);
+  uvec Pred(X.n_rows, fill::zeros);
+  for (size_t i = 0; i < X.n_rows; i++)
+    Pred(i) = index_max( mean(PredAll.slice(i), 0) );
+  
+  ReturnList["Prediction"] = Pred;
   
   // If keeping predictions for every tree  
   if (keep_all)

@@ -11,7 +11,7 @@ ClaForest <- function(x, y,
                       ...)
 {
   # prepare data
-  if (!is.vector(y)) stop("y must be a vector")
+  # if (!is.vector(y)) stop("y must be a vector")
   if (any(is.na(x))) stop("NA not permitted in x")
   if (any(is.na(y))) stop("NA not permitted in y")
   if (nrow(x) != length(y)) stop("number of observations does not match: x & y")
@@ -23,16 +23,16 @@ ClaForest <- function(x, y,
   if (nclass < 2) step("y's are identical")
   
   ylabels = levels(y)
-  y.numerical = as.numeric(y)
+  y.integer = as.numeric(y) - 1
   
-  storage.mode(y.numerical) <- "integer"
+  storage.mode(y.integer) <- "integer"
   
   # fit model
   
   if (param$linear.comb == 1)
   {
     if (param$verbose > 0)
-      cat("Classification Random Forest ... \n")
+      cat("in ClaForest ... \n")
     
     # check splitting rules
     if (is.null(param$"split.rule"))
@@ -47,26 +47,32 @@ ClaForest <- function(x, y,
       warning("split.rule is not compatiable with classification, switching to default")
     
     param$"split.rule" = 1
-    
+
     # fit single variable split model
-    fit = ClaUniForestFit(x, y.numerical, ncat, nclass,
+    fit = ClaUniForestFit(x, y.integer, ncat, nclass,
                           obs.w, var.w,
                           resample.preset,
                           param)
-    
+
     fit[["parameters"]] = param
     fit[["ncat"]] = ncat
     fit[["obs.w"]] = obs.w
     fit[["var.w"]] = var.w
     fit[["y"]] = y
-    fit[["ylabel"]] = ylabels
+    fit[["ylabels"]] = ylabels
     fit[["nclass"]] = nclass
+
+    fit$Prediction = as.factor( c(1:nclass, fit$Prediction+1) )[-(1:fit$parameters$n)]
+    levels(fit$Prediction) = ylabels
     
+    fit$OOBPrediction = as.factor( c(1:nclass, fit$OOBPrediction+1) )[-(1:fit$parameters$n)]
+    levels(fit$OOBPrediction) = ylabels
+
     class(fit) <- c("RLT", "fit", "cla", "uni")
   }else{
     
     if (param$verbose > 0)
-      cat("Classification Forest with Linear Combination Splits ... \n") 
+      cat("Classification Forest with Linear Combination Splits ... \n")
     
     stop("Not avaliable yet")
     

@@ -169,6 +169,11 @@ which observations are used in each tree. Provided if
 or \code{var.ready = TRUE}}
 }
 
+For classification forests, these items are further provided
+\itemize{
+\item{NClass}{The number of classes}
+}
+
 For survival forests, these items are further provided
 \itemize{
 \item{NFail}{The number of observed failure times}
@@ -176,7 +181,6 @@ For survival forests, these items are further provided
 \item{cindex_tree}{Out-of-bag c-index for each tree}
 \item{cindex}{Out-of-bag c-index for the forest}
 \item{timepoints}{ordered observed failure times}
-\item{y.point}{order of \eqn{y} by observed failure times}
 }
 }
 \description{

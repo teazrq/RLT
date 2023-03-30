@@ -54,18 +54,20 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
     OOBPrediction.zeros(N, nclass);
     oob_count.zeros(N);
   }
-  
+
   // importance
   mat AllImp;
     
   if (importance)
     AllImp.zeros(ntrees, P);
-  
-  #pragma omp parallel num_threads(usecores)
-  {
-    #pragma omp for schedule(dynamic)
+
+
+//  #pragma omp parallel num_threads(usecores)
+//  {
+//    #pragma omp for schedule(dynamic)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
     {
+      
       // set xoshiro random seed
       Rand rngl(seed_vec(nt));
       
@@ -75,10 +77,10 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
       //If ObsTrack isn't given, set ObsTrack
       if (!obs_track_pre)
         set_obstrack(ObsTrack, nt, size, replacement, rngl);
-      
+        
       // Find the samples from pre-defined ObsTrack
       get_samples(inbag_id, oobagObs, obs_id, ObsTrack.unsafe_col(nt));
-
+ 
       // initialize a tree (univariate split)
       Cla_Uni_Tree_Class OneTree(CLA_FOREST.SplitVarList(nt),
                                  CLA_FOREST.SplitValueList(nt),
@@ -98,6 +100,7 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
         Cla_Uni_Split_A_Node(0, OneTree, CLA_DATA, 
                              Param, inbag_id, var_id, rngl);
       }
+      
       // trim tree 
       TreeLength = OneTree.get_tree_length();
       OneTree.trim(TreeLength);
@@ -105,23 +108,84 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
       // inbag and oobag predictions for all subjects
       if (do_prediction)
       {
-        RLTcout << " do prediction" << std::endl;
+        uvec proxy_id = linspace<uvec>(0, N-1, N);
+        uvec TermNode(N, fill::zeros);
+        
+        Find_Terminal_Node(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat, proxy_id, obs_id, TermNode);
+        
+        // record terminal node prediction
+        mat AllPred(N, nclass);
+        for (size_t i = 0; i < N; i++)
+          AllPred.row(i) = OneTree.NodeProb.row(TermNode(i));
+        
+        Prediction += AllPred;
+        
+        if (oobagObs.n_elem > 0)
+        {
+          for (size_t i = 0; i < N; i++)
+          {
+            if (ObsTrack(i, nt) == 0)
+            {
+              OOBPrediction.row(i) += AllPred.row(i);
+              oob_count(i) += 1;
+            }
+          }
+        }
       }
 
       // calculate importance 
-      
       if (importance and oobagObs.n_elem > 1)
       {
-        RLTcout << " do importance" << std::endl;
+        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitVar >= 0 ) ) ));
+        
+        size_t NTest = oobagObs.n_elem;
+        
+        uvec oobY = CLA_DATA.Y(oobagObs);
+        
+        uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
+        uvec TermNode(NTest, fill::zeros);
+        
+        Find_Terminal_Node(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat, proxy_id, oobagObs, TermNode);
+        
+        // oob prediction error for this tree
+        uvec oobpred(NTest);
+        
+        for (size_t i = 0; i < NTest; i++)
+          oobpred(i) = index_max(OneTree.NodeProb.row(TermNode(i)));
+        
+        double baseImp = mean(oobY != oobpred);
+        
+        for (auto shuffle_var_j : AllVar)
+        {
+          uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
+          uvec TermNode(NTest, fill::zeros);
+          
+          // create shuffled variable xj
+          vec tildex = CLA_DATA.X.col(shuffle_var_j);
+          tildex = tildex.elem( rngl.shuffle(oobagObs) ); 
+
+          // find the terminal of the shuffled data
+          Find_Terminal_Node_ShuffleJ(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat, proxy_id, oobagObs, TermNode, tildex, shuffle_var_j);
+          
+          // get prediction error
+          for (size_t i = 0; i < NTest; i++)
+            oobpred(i) = index_max(OneTree.NodeProb.row(TermNode(i)));
+
+          // record
+          AllImp(nt, shuffle_var_j) =  mean(oobY != oobpred) - baseImp;
+        }
       }
     }
-  }
+    
+//  }
   
   if (do_prediction)
   {
     Prediction /= ntrees;
-    OOBPrediction = OOBPrediction / oob_count;
-  }  
+    
+    for (size_t i = 0; i < nclass; i++)
+      OOBPrediction.col(i) = OOBPrediction.col(i) / oob_count;
+  }
   
   if (importance)
     VarImp = mean(AllImp, 0).t();

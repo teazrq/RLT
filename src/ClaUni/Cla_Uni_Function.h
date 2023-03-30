@@ -55,7 +55,7 @@ void Cla_Uni_Terminate_Node(size_t Node,
 
 // for prediction 
 
-void Cla_Uni_Forest_Pred(mat& Pred,
+void Cla_Uni_Forest_Pred(cube& Pred,
                          const Cla_Uni_Forest_Class& CLA_FOREST,
                          const mat& X,
                          const uvec& Ncat,

@@ -1,6 +1,11 @@
-CXX = $(CXX) -std=c++11
+# Compiler and flags
+CXX_STD = CXX11
+CXX11 = $(CXX) -std=c++11
+
+# Package specific flags
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
 PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
+# source and object files
 SOURCES = $(wildcard *.cpp */*.cpp)
 OBJECTS = $(SOURCES:.cpp=.o)

@@ -64,34 +64,32 @@ predict.RLT<- function(object,
                        verbose = 0,
                        ...)
 {
-
-  if (is.null(testx))
-  {
-    return(object$OOBPrediction)
-  }
   
+  # insample prediction
+  if (is.null(testx))
+    return(object$OOBPrediction)
+  
+  # check test data
   if (!is.matrix(testx) & !is.data.frame(testx)) stop("testx must be a matrix or a data.frame")
+  
+  if (is.null(colnames(testx)))
+  {
+    if (ncol(testx) != object$parameters$p) stop("test data dimension does not match training data, variable names are not supplied...")
+  }else if (any(colnames(testx) != object$variablenames)){
+    
+    warning("test data variables names does not match training data...")
+    varmatch = match(object$variablenames, colnames(testx))
+    if (any(is.na(varmatch))) stop("test data missing some variables...")
+    testx = testx[, varmatch]
+  }
+
+  testx <- data.matrix(testx)  
+
+  if (var.est & !object$parameters$var.ready)
+    stop("The original forest is not fitted with `var.ready` Please check the conditions and build another forest.")
   
   if( class(object)[2] == "fit" &  class(object)[3] == "reg" )
   {
-    # check test data 
-
-    if (is.null(colnames(testx)))
-    {
-      if (ncol(testx) != object$parameters$p) stop("test data dimension does not match training data, variable names are not supplied...")
-    }else if (any(colnames(testx) != object$variablenames)){
-      
-      warning("test data variables names does not match training data...")
-      varmatch = match(object$variablenames, colnames(testx))
-      if (any(is.na(varmatch))) stop("test data missing some variables...")
-      testx = testx[, varmatch]
-    }
-
-    testx <- data.matrix(testx)
-    
-    if (var.est & !object$parameters$var.ready)
-      stop("The original forest is not fitted with `var.ready` Please check the conditions and build another forest.")
-
     pred <- RegUniForestPred(object$FittedForest$SplitVar,
                              object$FittedForest$SplitValue,
                              object$FittedForest$LeftNode,
@@ -109,25 +107,30 @@ predict.RLT<- function(object,
     return(pred)
   }
   
-  if( class(object)[2] == "fit" &  class(object)[3] == "surv" ) 
+  if( class(object)[2] == "fit" &  class(object)[3] == "cla" )
   {
-    # check test data 
+    pred <- ClaUniForestPred(object$FittedForest$SplitVar,
+                             object$FittedForest$SplitValue,
+                             object$FittedForest$LeftNode,
+                             object$FittedForest$RightNode,
+                             object$FittedForest$NodeWeight,
+                             object$FittedForest$NodeProb,
+                             testx,
+                             object$ncat,
+                             var.est,
+                             keep.all,
+                             ncores,
+                             verbose)
     
-    if (is.null(colnames(testx)))
-    {
-      if (ncol(testx) != object$parameters$p) stop("test data dimension does not match training data, variable names are not supplied...")
-    }else if (any(colnames(testx) != object$variablenames)){
-      
-      warning("test data variables names does not match training data...")
-      
-      varmatch = match(object$variablenames, colnames(testx))
-      
-      if (any(is.na(varmatch))) stop("test data missing some variables...")
-      testx = testx[, varmatch]
-    }
-    
-    testx <- data.matrix(testx)
-    
+    pred$Prediction = as.factor( c(1:object$nclass, pred$Prediction+1) )[-(1:object$nclass)]
+    levels(pred$Prediction) = object$ylabels
+
+    class(pred) <- c("RLT", "pred", "cla")
+    return(pred)
+  }  
+  
+  if( class(object)[2] == "fit" &  class(object)[3] == "surv" )
+  {
     pred <- SurvUniForestPred(object$FittedForest$SplitVar,
                               object$FittedForest$SplitValue,
                               object$FittedForest$LeftNode,
@@ -191,7 +194,6 @@ predict.RLT<- function(object,
       pred$CVprojSmooth <- CVprojSmooth
       
     }
-    
     
     class(pred) <- c("RLT", "pred", "surv")
     return(pred)
