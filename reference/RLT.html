@@ -257,18 +257,15 @@ a seed will be generated automatically.</p></dd>
 
 <p>A <code>RLT</code> fitted object, constructed as a list consisting</p><ul><li><p>FittedForestFitted tree structures</p></li>
 <li><p>VarImpVariable importance measures, if <code>importance = TRUE</code></p></li>
-<li><p>PredictionIn-bag prediction values</p></li>
-<li><p>OOBPredictionOut-of-bag prediction values</p></li>
+<li><p>PredictionOut-of-bag prediction</p></li>
+<li><p>ErrorOut-of-bag prediction error, adaptive to the model type</p></li>
 <li><p>resample.presetAn <code>n</code> \(\times\) <code>ntrees</code> matrix that indicates
 which observations are used in each tree. Provided if
 <code>resample.preset</code> was supplied, <code>resample.track = TRUE</code>,
 or <code>var.ready = TRUE</code></p></li>
 </ul><p>For classification forests, these items are further provided</p><ul><li><p>NClassThe number of classes</p></li>
-</ul><p>For survival forests, these items are further provided</p><ul><li><p>NFailThe number of observed failure times</p></li>
-<li><p>VarImpCovif <code>VI.var=TRUE</code>, estimated covariance matrix for the variable importance</p></li>
-<li><p>cindex_treeOut-of-bag c-index for each tree</p></li>
-<li><p>cindexOut-of-bag c-index for the forest</p></li>
-<li><p>timepointsordered observed failure times</p></li>
+</ul><p>For survival forests, these items are further provided</p><ul><li><p>timepointsordered observed failure times</p></li>
+<li><p>NFailThe number of observed failure times</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
