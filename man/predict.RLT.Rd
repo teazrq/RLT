@@ -26,7 +26,8 @@ For survival forests, calculates the covariance matrix over all
 observed time points and calculates critical value for the confidence
 band.}
 
-\item{keep.all}{whether to keep the prediction from all trees}
+\item{keep.all}{whether to keep the prediction from all trees. Warning: this can
+occupy a large storage space, especially in survival model}
 
 \item{ncores}{number of cores}
 

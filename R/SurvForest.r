@@ -75,7 +75,7 @@ SurvForest <- function(x, y, censor,
     fit[["var.w"]] = var.w
     fit[["y"]] = y
     fit[["censor"]] = censor
-    fit[["failcount"]] = 
+    fit[["failcount"]] = failcount
     
     class(fit) <- c("RLT", "fit", "surv", "uni", "single")
   }else{

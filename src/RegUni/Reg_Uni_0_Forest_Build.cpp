@@ -17,7 +17,6 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
                           imat& ObsTrack,
                           bool do_prediction,
                           vec& Prediction,
-                          vec& OOBPrediction,
                           vec& VarImp)
 {
   // parameters to use
@@ -47,10 +46,11 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
   // Calculate predictions
   uvec oob_count;
   
+  if (importance) do_prediction = true;
+    
   if (do_prediction)
   {
     Prediction.zeros(N);
-    OOBPrediction.zeros(N);
     oob_count.zeros(N);
   }
   
@@ -62,7 +62,7 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
   
   #pragma omp parallel num_threads(usecores)
   {
-    #pragma omp for schedule(dynamic)
+    #pragma omp for schedule(dynamic, 1)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
     {
       // set xoshiro random seed
@@ -105,76 +105,77 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
       TreeLength = OneTree.get_tree_length();
       OneTree.trim(TreeLength);
 
-      // inbag and oobag predictions for all subjects
-      if (do_prediction)
+      // for predictions
+      size_t NTest = oobagObs.n_elem;
+      uvec proxy_id;
+      uvec TermNode;
+      
+      // oobag prediction
+      if (do_prediction and NTest > 0)
       {
-        uvec proxy_id = linspace<uvec>(0, N-1, N);
-        uvec TermNode(N, fill::zeros);
-      
-        Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, obs_id, TermNode);
-      
-        vec AllPred = OneTree.NodeAve(TermNode);
-      
-        Prediction += AllPred;
-  
-        if (oobagObs.n_elem > 0)
-        {
-          for (size_t i = 0; i < N; i++)
-          {
-            if (ObsTrack(i, nt) == 0)
-            {
-              OOBPrediction(i) += AllPred(i);
-              oob_count(i) += 1;
-            }
-          }
-        }
+        // objects used for predicting oob samples
+        proxy_id = linspace<uvec>(0, NTest-1, NTest);
+        TermNode.zeros(NTest);
+        
+        // find terminal codes
+        Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, 
+                           proxy_id, oobagObs, TermNode);
+        
+        // calculate prediction
+        Prediction(oobagObs) += OneTree.NodeAve(TermNode);
+        oob_count(oobagObs) += 1;
       }
 
-      // calculate importance 
-      
-      if (importance and oobagObs.n_elem > 1)
+      // calculate importance
+      if (importance and NTest > 1)
       {
-        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitVar >= 0 ) ) ));
-        
-        size_t NTest = oobagObs.n_elem;
-        
         vec oobY = REG_DATA.Y(oobagObs);
         
-        uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
-        uvec TermNode(NTest, fill::zeros);
+        if (TermNode.n_elem == 0){// TermNode not already calculated
+          proxy_id = linspace<uvec>(0, NTest-1, NTest);
+          TermNode.zeros(NTest);
+          Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, 
+                             proxy_id, oobagObs, TermNode);
+        }
         
-        Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobagObs, TermNode);
+        // otherwise directly calculate error
+        double baseImp = mean(square(oobY - OneTree.NodeAve(TermNode)));
         
-        vec oobpred = OneTree.NodeAve(TermNode);
+        // what variables are used in this tree
+        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitVar >= 0 ) ) ));
         
-        double baseImp = mean(square(oobY - oobpred));
-        
+        // go through all variables
         for (auto shuffle_var_j : AllVar)
         {
-          uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
-          uvec TermNode(NTest, fill::zeros);
-          
+          // reset proxy_id
+          proxy_id = linspace<uvec>(0, NTest-1, NTest);
+
           // create shuffled variable xj
           vec tildex = REG_DATA.X.col(shuffle_var_j);
           tildex = tildex.elem( rngl.shuffle(oobagObs) );
           
-          Find_Terminal_Node_ShuffleJ(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobagObs, TermNode, tildex, shuffle_var_j);
-          
-          // get prediction
-          vec oobpred = OneTree.NodeAve(TermNode);
+          // find terminal node of shuffled obs
+          Find_Terminal_Node_ShuffleJ(0, OneTree, REG_DATA.X, REG_DATA.Ncat, 
+                                      proxy_id, oobagObs, TermNode, tildex, shuffle_var_j);
           
           // record
-          AllImp(nt, shuffle_var_j) =  mean(square(oobY - oobpred)) - baseImp;
+          AllImp(nt, shuffle_var_j) =  mean(square(oobY - OneTree.NodeAve(TermNode))) - baseImp;
         }
       }
     }
+    
+    // #pragma omp barrier
+    // calculate things for all observations
+    // #pragma omp for schedule(static)
+    // for (size_t i = 0; i < N; i++)
+    // {    
+    //   // save for later
+    // }
+    
   }
   
   if (do_prediction)
-  {
-    Prediction /= ntrees;
-    OOBPrediction = OOBPrediction / oob_count;
-  }  
+    Prediction = Prediction / oob_count;
   
   if (importance)
     VarImp = mean(AllImp, 0).t();

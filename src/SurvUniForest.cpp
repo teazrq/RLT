@@ -60,27 +60,17 @@ List SurvUniForestFit(arma::mat& X,
   // initiate obs id and var id
   uvec obs_id = linspace<uvec>(0, N-1, N);
   uvec var_id = linspace<uvec>(0, P-1, P);
-  vec cindex_tree;
-  cindex_tree.zeros(ntrees);
-  
+
   // Initiate prediction objects
-  mat Prediction; // initialization means they will be calculated
-  mat OOBPrediction;
-  
+  mat Prediction;
+
   // VarImp
   vec VarImp;
-  vec VarImpVar;
-  if (importance){
-    VarImp.zeros(P);
-    VarImpVar.zeros(P);
-  }
-  
-  // importance
-  mat AllImp;
-  
   if (importance)
-    AllImp.zeros(ntrees, P);
+    VarImp.zeros(P);
   
+  bool do_prediction = Param.replacement or (Param.resample_prob < 1);
+
   // Run model fitting
   Surv_Uni_Forest_Build((const RLT_SURV_DATA&) SURV_DATA,
                        SURV_FOREST,
@@ -88,16 +78,12 @@ List SurvUniForestFit(arma::mat& X,
                        (const uvec&) obs_id,
                        (const uvec&) var_id,
                        ObsTrack,
-                       true,
+                       do_prediction,
                        Prediction,
-                       OOBPrediction,
-                       VarImp,
-                       AllImp,
-                       cindex_tree);
+                       VarImp);
   
   //initialize return objects
   List ReturnList;
-  ReturnList["NFail"] = NFail;
   
   List Forest_R;
   
@@ -114,54 +100,20 @@ List SurvUniForestFit(arma::mat& X,
   
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
-  if (importance) ReturnList["VarImpAll"] = AllImp;
-  
-  if(any(ObsTrack.col(0)<0)){
-    
-    size_t B = (size_t) ntrees/2;
-    
-    uvec firsthalf = linspace<uvec>(0, B-1, B);
-    uvec secondhalf = linspace<uvec>(B, 2*B-1, B);
-    
-    mat AllImpt = AllImp.t();
-    
-    arma::mat tmp_diff;
-    arma::mat Cov_Est(P, P, fill::zeros);
-
-    arma::mat Tree_Cov_Est = Cov_Tree(AllImpt, B);
-    
-    Cov_Est=cov(AllImpt.t(), 1);
-
-    arma::mat cov = Tree_Cov_Est - Cov_Est;
-    ReturnList["VarImpCov"] = cov;
-  }
   
   ReturnList["Prediction"] = Prediction;
-  ReturnList["OOBPrediction"] = OOBPrediction;
-  ReturnList["cindex_tree"] = cindex_tree;
   
+  // c-index for oob prediction
+  // uvec nonNAs = find_finite(OOBPrediction.col(0)); if there are nan in prediction
   
-  // c index for model fitting 
+  // oob sum of cumulative hazard as prediction
+  vec oobcch(N, fill::zeros);
   
-  uvec nonNAs = find_finite(OOBPrediction.col(0));
+  for (size_t i = 0; i < N; i++)
+    oobcch(i) = accu( cumsum( Prediction.row(i) ) );
   
-  ReturnList["cindex"] = datum::nan;
-
-  if (nonNAs.n_elem > 2)
-  {
-    vec oobpred(N, fill::zeros);
-    
-    for (auto i : nonNAs)
-    {
-      oobpred(i) = sum( cumsum( OOBPrediction.row(i) ) ); // sum of cumulative hazard as prediction
-    }
-    
-    uvec oobY = Y(nonNAs);
-    uvec oobC = Censor(nonNAs);
-    vec oobP = oobpred(nonNAs);
-    
-    ReturnList["cindex"] =  cindex_i(oobY, oobC, oobP);
-  }
+  ReturnList["Error"] = 1 - cindex_i(Y, Censor, oobcch);
+  ReturnList["NFail"] = NFail;
   
   return ReturnList;
 }
@@ -185,7 +137,6 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
   usecores = checkCores(usecores, verbose);
   
   // convert R object to forest
-  
   Surv_Uni_Forest_Class SURV_FOREST(SplitVar, 
                                     SplitValue, 
                                     LeftNode, 
@@ -193,102 +144,131 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
                                     NodeWeight,
                                     NodeHaz);
   
-  // Initialize prediction objects  
-  cube Pred;
+  // parameters
+  size_t N = X.n_rows;
+  size_t ntrees = SURV_FOREST.SplitVarList.size();
   
-  // Run prediction
-  Surv_Uni_Forest_Pred(Pred,
-                      (const Surv_Uni_Forest_Class&) SURV_FOREST,
-                      X,
-                      Ncat,
-                      NFail,
-                      usecores,
-                      verbose);
+  // all terminal nodes
+  umat AllTermNode(N, ntrees, fill::zeros);
   
-  // Initialize return list
-  List ReturnList;
+  // predictions
+  mat Hazard(N, NFail);
+  mat CHazard(N, NFail);
+  mat Surv(N, NFail);
   
-  mat H(Pred.n_slices, Pred.n_rows);
-  cube CumPred(size(Pred));
+  cube Cov;
+  mat Var;
+  if (VarEst){
+    Cov.zeros(NFail, NFail, N);
+    Var.zeros(N, NFail);
+  }
   
+  cube AllHazard;
+  if (keep_all)
+  {
+    AllHazard.zeros(ntrees, NFail, N);
+  }
+  
+  // get terminal node ids for all observations
 #pragma omp parallel num_threads(usecores)
-{
-  #pragma omp for schedule(static)
-  for (size_t i = 0; i < Pred.n_slices; i++)
   {
-    H.row(i) = mean(Pred.slice(i), 1).t();
-    CumPred.slice(i) = cumsum(Pred.slice(i), 0);
+#pragma omp for schedule(static)
+    for (size_t nt = 0; nt < ntrees; nt++)
+    {
+      // initiate all observations
+      uvec proxy_id = linspace<uvec>(0, N-1, N);
+      uvec real_id = linspace<uvec>(0, N-1, N);
+      uvec TermNode(N, fill::zeros);
+      
+      Tree_Class OneTree(SURV_FOREST.SplitVarList(nt),
+                         SURV_FOREST.SplitValueList(nt),
+                         SURV_FOREST.LeftNodeList(nt),
+                         SURV_FOREST.RightNodeList(nt),
+                         SURV_FOREST.NodeWeightList(nt));
+      
+      Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
+      
+      AllTermNode.col(nt) = TermNode;
+    }
+    
+#pragma omp barrier
+    
+    // calculate prediction for each observations
+    
+#pragma omp for schedule(static)
+    for (size_t i = 0; i < N; i++)
+    {
+      mat pred_i(ntrees, NFail + 1);
+
+      // get hazard functions of all trees
+      for (size_t nt = 0; nt < ntrees; nt++)
+        pred_i.row(nt) = SURV_FOREST.NodeHazList(nt).at(AllTermNode(i, nt)).t();
+      
+      pred_i.shed_col(0);
+      
+      if (keep_all)
+        AllHazard.slice(i) = pred_i;
+      
+      // get mean hazard, cumulative hazard and survival
+      Hazard.row(i) = mean(pred_i, 0);
+      CHazard.row(i) = cumsum(Hazard.row(i));
+      // Surv.row(i) = exp(- CHazard.row(i));
+      Surv.row(i) = cumprod( 1 - Hazard.row(i) );
+
+      // survival of all trees
+      // if we want the variance of CH, then use 
+      pred_i = cumsum(pred_i, 1);
+      // pred_i = cumprod(1 - pred_i, 1 ); // change to survival
+
+      // calculate variance
+      if (VarEst)
+      {
+        if (ntrees % 2 == 1){
+          RLTcout << "not an even number of trees for variance estimation\n" << std::endl;
+        }
+
+        size_t B = ntrees / 2; // ntrees must be an even number
+
+        // tree variance
+        mat Diff = pred_i.rows(0, B-1) - pred_i.rows(B, ntrees-1);
+        mat Vh = Diff.t() * Diff / ntrees;
+
+        // sample variance
+        mat Vs = cov(pred_i, 1); // use 1/N
+        
+        // diagonal
+        vec eigval;
+        mat eigvec;
+        eig_sym(eigval, eigvec, Vh - Vs);        
+        
+        // correct negative eigen values
+        eigval = eigval % (eigval > 0);
+        
+        // reconstruct estimated covariance matrix
+        Cov.slice(i) = eigvec * diagmat(eigval) * eigvec.t();
+
+        Var.row(i) = diagvec( Cov.slice(i) ).t();
+      }
+    }
   }
   
-}
-  
-  ReturnList["hazard"] = H; 
-  
-  mat CumHaz = cumsum(H,1);
-  ReturnList["CumHazard"] = CumHaz; 
-  
-  mat Surv(H);
-  vec surv(H.n_rows, fill::ones);
-  vec Ones(H.n_rows, fill::ones);
-  
-  for (size_t j=0; j < Surv.n_cols; j++)
-  {
-    surv = surv % (Ones - Surv.col(j)); //KM estimator
-    Surv.col(j) = surv;
-  }
-  
-  ReturnList["Survival"] = Surv;  
-  
-  if (keep_all){
-    ReturnList["Allhazard"] = Pred;
-    ReturnList["AllCHF"] = CumPred;
-  }
+  List ReturnList;
+  ReturnList["Hazard"] = Hazard;
+  ReturnList["CHF"] = CHazard;
+  ReturnList["Survival"] = Surv; 
   
   if (VarEst)
   {
-
-    size_t N = CumPred.n_slices;
-    //size_t ntrees = CumPred.n_cols;
-    size_t tmpts = CumPred.n_rows;
-    size_t B = (size_t) SURV_FOREST.SplitVarList.size()/2;
-
-    arma::mat Tree_Var_Est(N, tmpts, fill::zeros);
-    arma::mat tmp_slice;
-    arma::mat tmp_diff;
-    arma::cube Tree_Cov_Est(tmpts, tmpts, N, fill::zeros);
-    arma::cube Cov_Est(tmpts, tmpts, N, fill::zeros);
-    arma::mat Var_Est(N, tmpts, fill::zeros);
-    
-  #pragma omp parallel num_threads(usecores)
-  {
-    #pragma omp for schedule(static)
-    for(size_t n = 0; n < N; n++){
-        Tree_Cov_Est.slice(n)=Cov_Tree(CumPred.slice(n), B);
-        Cov_Est.slice(n)=cov(CumPred.slice(n).t(), 1);
-      }
+    ReturnList["CHFCov"] = Cov;
+    ReturnList["CHFMarVar"] = Var;
   }
-    
-    arma::cube cov = Tree_Cov_Est - Cov_Est;
-    
-  #pragma omp parallel num_threads(usecores)
+  
+  if (keep_all)
   {
-  #pragma omp for schedule(static)
-    for(size_t n=0; n<N; n++){
-        Var_Est.row(n)=cov.slice(n).diag();
-      }
-  }
-
-    ReturnList["Cov"] = cov;
-    ReturnList["Var"] = Var_Est;
+    ReturnList["AllHazard"] = AllHazard;
   }
   
   return ReturnList;
-  }
-
-arma::mat Cov_Tree(arma::mat& tmp_slice,
-                   size_t& B){
-  mat tmp_slice2 = tmp_slice.cols(0,B-1)-tmp_slice.cols(B,2*B);
-  return tmp_slice2*tmp_slice2.t()/(2*B);
 }
 
 // [[Rcpp::export()]]

@@ -10,17 +10,14 @@ using namespace Rcpp;
 using namespace arma;
 
 void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
-                          Surv_Uni_Forest_Class& SURV_FOREST,
-                          const PARAM_GLOBAL& Param,
-                          const uvec& obs_id,
-                          const uvec& var_id,
-                          imat& ObsTrack,
-                          bool do_prediction,
-                          mat& Prediction,
-                          mat& OOBPrediction,
-                          vec& VarImp,
-                          mat& AllImp,
-                          vec& cindex_tree)
+                           Surv_Uni_Forest_Class& SURV_FOREST,
+                           const PARAM_GLOBAL& Param,
+                           const uvec& obs_id,
+                           const uvec& var_id,
+                           imat& ObsTrack,
+                           bool do_prediction,
+                           mat& Prediction,
+                           vec& VarImp)
 {
   // parameters to use
   size_t ntrees = Param.ntrees;
@@ -47,16 +44,28 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
   else
     ObsTrack.zeros(N, ntrees);
   
+  // oob sample too small, turn off importance 
+  if (N - size < 2)
+    importance = 0;
+  
+  // 
+  if (importance) do_prediction = true;
+  
   // Calculate predictions
   uvec oob_count;
-  
+
   if (do_prediction)
   {
     Prediction.zeros(N, NFail+1);
-    OOBPrediction.zeros(N, NFail+1);
     oob_count.zeros(N);
   }
   
+  // importance
+  mat AllImp;
+  
+  if (importance)
+    AllImp.zeros(ntrees, P);
+
   #pragma omp parallel num_threads(usecores)
   {
     #pragma omp for schedule(dynamic)
@@ -95,7 +104,8 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
                                  SURV_FOREST.NodeWeightList(nt),
                                  SURV_FOREST.NodeHazList(nt));
       
-      OneTree.initiate(100 + 6*size/nmin);
+      size_t TreeLength = 100 + size/nmin*6;
+      OneTree.initiate(TreeLength);
       
       // build the tree
       if (reinforcement)
@@ -103,128 +113,107 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         uvec var_protect;
         RLTcout <<"Reinforced survival trees not yet implemented"<<std::endl;
         RLTcout <<"Ignoring command and using standard trees."<<std::endl;
+      }else{
+        Surv_Uni_Split_A_Node(0, OneTree, SURV_DATA, 
+                              Param, inbag_id, var_id, rngl);
       }
 
-      // const clock_t time_point = clock(); 
-
-      Surv_Uni_Split_A_Node(0, OneTree, SURV_DATA, 
-                             Param, inbag_id, var_id, rngl);
-      
-      // RLTcout << "Core " << omp_get_thread_num() << " Tree " << nt << "; Time Cost: P1 " << 
-      //      float(clock() - time_point)/CLOCKS_PER_SEC << std::endl;
-      
-      // const clock_t begin_time = clock();
-      
       // trim tree 
-      size_t TreeLength = OneTree.get_tree_length();
+      TreeLength = OneTree.get_tree_length();
       OneTree.trim(TreeLength);
 
-      // RLTcout << "Tree size reduce from " << 50 + 4*size/nmin << " to " << TreeLength << 
-      //  " cost time " << 1000 * float( clock() - begin_time ) / CLOCKS_PER_SEC << std::endl;
+      // for predictions
+      size_t NTest = oobagObs.n_elem;
+      uvec proxy_id;
+      uvec TermNode;
       
       // inbag and oobag predictions for all subjects
-      if (do_prediction)
+      if (do_prediction and NTest > 0)
       {
-        uvec proxy_id = linspace<uvec>(0, N-1, N);
-        uvec TermNode(N, fill::zeros);
+        // objects used for predicting oob samples
+        proxy_id = linspace<uvec>(0, NTest-1, NTest);
+        TermNode.zeros(NTest);
       
-        Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, obs_id, TermNode);
+        // find terminal codes
+        Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, 
+                           proxy_id, oobagObs, TermNode);
       
-        for (size_t i = 0; i < N; i++)
-          Prediction.row(i) += OneTree.NodeHaz(TermNode(i)).t();
+        for (size_t i = 0; i < NTest; i++)
+          Prediction.row(oobagObs(i)) += OneTree.NodeHaz(TermNode(i)).t();
       
-        if (oobagObs.n_elem > 0)
-        {
-          for (size_t i = 0; i < N; i++)
-          {
-            if (ObsTrack(i, nt) == 0)
-            {
-              OOBPrediction.row(i) += OneTree.NodeHaz(TermNode(i)).t();
-              oob_count(i) += 1;
-            }
-          }
-          
-          size_t NTest = oobagObs.n_elem;
-          
-          uvec oobY = SURV_DATA.Y(oobagObs);
-          uvec oobCensor = SURV_DATA.Censor(oobagObs);
-          vec oobpred(NTest);
-          
-          uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
-          uvec TermNode(NTest, fill::zeros);
-          
-          Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, oobagObs, TermNode);
-          
-          for (size_t i = 0; i < NTest; i++)
-            oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
-          
-          cindex_tree(nt) = 1 - cindex_i(oobY, oobCensor, oobpred);
-        }
+        oob_count(oobagObs) += 1;
       }
       
-      // calculate importance 
-      
-      if (importance and oobagObs.n_elem > 1)
+      // calculate importance
+      if (importance == 1 and NTest > 1)
       {
-        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitVar >= 0 ) ) ));
-        
-        size_t NTest = oobagObs.n_elem;
-        
+        // oob samples
         uvec oobY = SURV_DATA.Y(oobagObs);
         uvec oobCensor = SURV_DATA.Censor(oobagObs);
         vec oobpred(NTest);
         
-        uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
-        uvec TermNode(NTest, fill::zeros);
+        if (TermNode.n_elem == 0){// TermNode not already calculated
+          proxy_id = linspace<uvec>(0, NTest-1, NTest);
+          TermNode.zeros(NTest);
+          Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, 
+                             proxy_id, oobagObs, TermNode);
+        }
         
-        Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, oobagObs, TermNode);
-        
+        // oob sum of cumulative hazard as prediction
         for (size_t i = 0; i < NTest; i++)
-          oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
+          oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) );
         
-        double baseImp = 1-cindex_i( oobY, oobCensor, oobpred );  
-        cindex_tree(nt) = 1-cindex_i( oobY, oobCensor, oobpred );
+        // c-index error
+        double baseImp = cindex_i( oobY, oobCensor, oobpred );
         
-        for (size_t j = 0; j < P; j++)
+        // what variables are used in this tree
+        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitVar >= 0 ) ) ));
+        
+        // go through all variables
+        for (auto shuffle_var_j : AllVar)
         {
-          size_t suffle_var_j = var_id(j);
+          // reset proxy_id
+          proxy_id = linspace<uvec>(0, NTest-1, NTest);
           
-          if (!any(AllVar == suffle_var_j))
-            continue;
+          // create shuffled variable xj
+          vec tildex = SURV_DATA.X.col(shuffle_var_j);
+          tildex = tildex.elem( rngl.shuffle(oobagObs) );
           
-          uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
-          uvec TermNode(NTest, fill::zeros);
-
-          uvec oob_ind = rngl.shuffle(oobagObs);
-          vec tildex = SURV_DATA.X.col(suffle_var_j);
-          tildex = tildex.elem( oob_ind );  
+          // find terminal node of shuffled obs
+          Find_Terminal_Node_ShuffleJ(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, 
+                                      proxy_id, oobagObs, TermNode, tildex, shuffle_var_j);
           
-          Find_Terminal_Node_ShuffleJ(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, proxy_id, oobagObs, TermNode, tildex, suffle_var_j);
-          
-          // get prediction
+          // predicted CCH for permuted data
           for (size_t i = 0; i < NTest; i++)
             oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
           
-          // record
-          AllImp(nt, j) =  1-cindex_i( oobY, oobCensor, oobpred) - baseImp;
+          // c-index decreasing for permuted data
+          AllImp(nt, shuffle_var_j) = baseImp - cindex_i( oobY, oobCensor, oobpred );
         }
       }
     }
-  }  
+    
+    // #pragma omp barrier
+    // calculate things for all observations
+    // #pragma omp for schedule(dynamic, 1)
+    // for (size_t i = 0; i < N; i++)
+    // {    
+    //   // save for later
+    // }
+    
+  }
   
   if (do_prediction)
   {
     Prediction.shed_col(0);
-    Prediction /= ntrees;
-    OOBPrediction.shed_col(0);
-    for(size_t i = 0; i < N; i++){
-      OOBPrediction.row(i)/=oob_count(i);
-    }
+    
+    for(size_t i = 0; i < N; i++)
+      Prediction.row(i)/=oob_count(i);
   }
   
-  if (importance){
+  if (importance)
     VarImp = mean(AllImp, 0).t();
-  }
+
   
 
 }

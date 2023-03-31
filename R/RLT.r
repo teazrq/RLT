@@ -138,8 +138,8 @@
 #' \itemize{
 #' \item{FittedForest}{Fitted tree structures}
 #' \item{VarImp}{Variable importance measures, if \code{importance = TRUE}}
-#' \item{Prediction}{In-bag prediction values}
-#' \item{OOBPrediction}{Out-of-bag prediction values}
+#' \item{Prediction}{Out-of-bag prediction}
+#' \item{Error}{Out-of-bag prediction error, adaptive to the model type}
 #' \item{resample.preset}{An \code{n} \eqn{\times} \code{ntrees} matrix that indicates 
 #'                        which observations are used in each tree. Provided if 
 #'                        \code{resample.preset} was supplied, \code{resample.track = TRUE}, 
@@ -153,11 +153,8 @@
 #' 
 #' For survival forests, these items are further provided
 #' \itemize{
-#' \item{NFail}{The number of observed failure times}
-#' \item{VarImpCov}{if \code{VI.var=TRUE}, estimated covariance matrix for the variable importance}
-#' \item{cindex_tree}{Out-of-bag c-index for each tree}
-#' \item{cindex}{Out-of-bag c-index for the forest}
 #' \item{timepoints}{ordered observed failure times}
+#' \item{NFail}{The number of observed failure times}
 #' }
 #' 
 #' @references 
@@ -263,7 +260,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                "verbose" = verbose,
                "seed" = seed)
   
-  # failcount for survival
+  # failcount for survival (no effect for now)
   if (is.null(param$failcount)) {
     failcount <- 0
   } else failcount = param$failcount
@@ -276,24 +273,24 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   {
     if (param$resample.replace)
     {
-      if (verbose) warning("resample.replace is set to FALSE due to var.ready")
+      if (verbose) warning("resample.replace is set to FALSE due to var.ready\n")
       param$resample.replace = 0L
     }
     
     if (param$resample.prob > 0.5)
     {
-      if (verbose) warning("resample.prob is set to 0.5 due to var.ready")
+      if (verbose) warning("resample.prob is set to 0.5 due to var.ready\n")
       param$resample.prob = 0.5
     }
     
     if (param$ntrees %% 2 != 0)
     {
       param$ntrees = 2*floor(param$ntrees/2)
-      if (verbose) warning(paste("ntrees is set to", param$ntrees, "due to var.ready"))
+      if (verbose) warning(paste("ntrees is set to", param$ntrees, "due to var.ready\n"))
     }
     
     if (!is.null(resample.preset))
-      if (verbose) warning("resample.preset is overwritten due to var.ready")
+      if (verbose) warning("resample.preset is overwritten due to var.ready\n")
   }
   
   # construct resample.preset

@@ -9,7 +9,8 @@
 #'                 For survival forests, calculates the covariance matrix over all
 #'                 observed time points and calculates critical value for the confidence 
 #'                 band.
-#' @param keep.all whether to keep the prediction from all trees
+#' @param keep.all whether to keep the prediction from all trees. Warning: this can 
+#'                 occupy a large storage space, especially in survival model
 #' @param ncores   number of cores
 #' @param ... ...
 #'
@@ -21,7 +22,7 @@
 #' \item{Variance}{if \code{var.est = TRUE} and the fitted object is 
 #'                 \code{var.ready = TRUE}}
 #'                 
-#'  \strong{For Survival Forests}               
+#' \strong{For Survival Forests}
 #' \item{hazard}{predicted hazard functions}
 #' \item{CumHazard}{predicted cumulative hazard function}
 #' \item{Survival}{predicted survival function}
@@ -146,55 +147,7 @@ predict.RLT<- function(object,
                               verbose)
     
     pred$timepoints <- object$timepoints
-    
-    if(var.est){
-      #alpha_options = seq(1.5, 12, by=0.25)
-      cv_seq <- c(seq(0.5,0.95,.05),.99)
-      MarginalVar <- matrix(0, nrow = dim(testx)[1], 
-                            ncol=length(object$timepoints))
-      MarginalVarSmooth <- matrix(0, nrow = dim(testx)[1], 
-                                  ncol=length(object$timepoints))
-      CVproj <- matrix(0, nrow=dim(testx)[1],ncol=length(cv_seq))
-      CVprojSmooth <- matrix(0, nrow=dim(testx)[1],ncol=length(cv_seq))
-      
-      for(n in 1:dim(testx)[1]){
-        require(Matrix)
-        pd_proj <- nearPD(as.matrix(pred$Cov[,,n]), maxit = 100,
-                          ensureSymmetry = FALSE,
-                          conv.norm.type = "F", trace = FALSE,
-                          base.matrix = TRUE, corr = FALSE)
-        MarginalVar[n,] <- diag(pd_proj$mat)
-        
-        require(MASS)
 
-        CVproj[n,] <- quantile(MvnCV(1000, pred$CumHazard[n,], pd_proj$mat,
-                                           MarginalVar[n,]), cv_seq)
-        
-        b <- bw.nrd(c(1:length(object$timepoints)))
-        MarginalVarSmooth[n,] <- ksmooth(x=c(1:length(object$timepoints)),
-                                         y=MarginalVar[n,],
-                                         "normal",
-                                         bandwidth = b,
-                                         x.points = c(1:length(object$timepoints))
-        )$y
-        diag(pd_proj$mat) <- MarginalVarSmooth[n,]
-        pd_proj_sm <- nearPD(pd_proj$mat, maxit = 100,
-                             ensureSymmetry = FALSE,
-                             conv.norm.type = "F", trace = FALSE,
-                             base.matrix = TRUE, corr = FALSE)
-
-        CVprojSmooth[n,] <- quantile(MvnCV(1000, pred$CumHazard[n,], pd_proj_sm$mat,
-                                           MarginalVarSmooth[n,]), cv_seq)
-      }
-
-      pred$MarginalVar <- MarginalVar
-      pred$MarginalVarSmooth <- MarginalVarSmooth
-      colnames(CVproj) <- colnames(CVprojSmooth) <- paste0("CV", cv_seq)
-      pred$CVproj <- CVproj
-      pred$CVprojSmooth <- CVprojSmooth
-      
-    }
-    
     class(pred) <- c("RLT", "pred", "surv")
     return(pred)
   }

@@ -38,9 +38,7 @@ bool unpack_goright(double pack, const size_t cat)
   return(((size_t) pack & 1) ? 1 : 0);
 }
 
-// for resampling
-// set ObsTrack
-
+// for resampling set ObsTrack
 void set_obstrack(arma::imat& ObsTrack,
                   const size_t nt,
                   const size_t size,
@@ -58,33 +56,26 @@ void set_obstrack(arma::imat& ObsTrack,
 	
 }
 
-// get inbag and oobag samples from ObsTrackPre
+// get inbag and oobag samples from ObsTrack
 // Adjusted for new ObsTrack format
 void get_samples(arma::uvec& inbagObs,
                  arma::uvec& oobagObs,
                  const arma::uvec& subj_id,
                  const arma::ivec& ObsTrack_nt)
 {
-  arma::ivec ObsTrack_ntu = ObsTrack_nt.elem( find(ObsTrack_nt > 0) );
-	size_t N = sum(ObsTrack_ntu);
-
+  //oob samples
 	oobagObs = subj_id.elem( find(ObsTrack_nt == 0) );
-	
+  
+  //inbag samples
+  arma::uvec use_id = find(ObsTrack_nt > 0);
+	size_t N = sum( ObsTrack_nt.elem( use_id ) );
 	inbagObs.set_size(N);
 	
+	// record those to inbagObs
 	size_t mover = 0;
-	
-	for (size_t i = 0; i < ObsTrack_nt.n_elem; i++)
-	{
-		if (ObsTrack_nt(i) > 0)
-		{
-			for (int k = 0; k < ObsTrack_nt(i); k++)
-			{
-				inbagObs(mover) = subj_id(i);
-				mover ++;
-			}
-		}
-	}
+	for (auto i : use_id)
+		for (size_t k = 0; k < ObsTrack_nt(i); k++)
+			inbagObs(mover++) = subj_id(i);
 }
 
 void check_cont_index_sub(size_t& lowindex, 

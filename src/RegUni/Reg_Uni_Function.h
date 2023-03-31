@@ -33,7 +33,6 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
                           imat& ObsTrack,
                           bool do_prediction,
                           vec& Prediction,
-                          vec& OOBPrediction,
                           vec& VarImp);
 
 void Reg_Uni_Split_A_Node(size_t Node,

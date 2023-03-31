@@ -20,11 +20,14 @@ print.RLT<- function(x, ...)
       model = "quantile"   
   
   if(class(x)[2] == "fit")
-    cat(paste("A RLT fitted", model, "forest.\n"))
+    cat(paste("An RLT fitted", model, "forest \n"))
     
   if(class(x)[2] == "pred")
-    cat("\n This is an RLT prediction object \n")
+    cat(paste("An RLT", model, "prediction object \n"))
 
+  if(class(x)[2] == "band")
+    cat("An RLT survival confidence band object \n")
+  
   if(class(x)[2] == "Var")
-    cat(paste("A RLT", model, "variance estimation object.\n"))
+    cat(paste("An RLT", model, "variance estimation object.\n"))
 }

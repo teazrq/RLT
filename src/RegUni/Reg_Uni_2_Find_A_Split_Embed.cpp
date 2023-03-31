@@ -69,7 +69,6 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   
   // Initiate prediction objects
   vec Prediction;
-  vec OOBPrediction;
   
   // VarImp
   vec VarImp(P, fill::zeros);
@@ -82,9 +81,8 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
                        obs_id,
                        (const uvec&) var_id,
                        ObsTrack,
-                       false, // no prediction
+                       true, // do prediction for VI
                        Prediction,
-                       OOBPrediction,
                        VarImp);
   
   var_id = var_id(sort_index(VarImp, "descend"));

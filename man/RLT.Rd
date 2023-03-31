@@ -161,8 +161,8 @@ A \code{RLT} fitted object, constructed as a list consisting
 \itemize{
 \item{FittedForest}{Fitted tree structures}
 \item{VarImp}{Variable importance measures, if \code{importance = TRUE}}
-\item{Prediction}{In-bag prediction values}
-\item{OOBPrediction}{Out-of-bag prediction values}
+\item{Prediction}{Out-of-bag prediction}
+\item{Error}{Out-of-bag prediction error, adaptive to the model type}
 \item{resample.preset}{An \code{n} \eqn{\times} \code{ntrees} matrix that indicates
 which observations are used in each tree. Provided if
 \code{resample.preset} was supplied, \code{resample.track = TRUE},
@@ -176,11 +176,8 @@ For classification forests, these items are further provided
 
 For survival forests, these items are further provided
 \itemize{
-\item{NFail}{The number of observed failure times}
-\item{VarImpCov}{if \code{VI.var=TRUE}, estimated covariance matrix for the variable importance}
-\item{cindex_tree}{Out-of-bag c-index for each tree}
-\item{cindex}{Out-of-bag c-index for the forest}
 \item{timepoints}{ordered observed failure times}
+\item{NFail}{The number of observed failure times}
 }
 }
 \description{

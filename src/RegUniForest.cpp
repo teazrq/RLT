@@ -54,15 +54,16 @@ List RegUniForestFit(arma::mat& X,
   uvec obs_id = linspace<uvec>(0, N-1, N);
   uvec var_id = linspace<uvec>(0, P-1, P);
   
-  // Initiate prediction objects
+  // Initiate oob-prediction objects
   vec Prediction;
-  vec OOBPrediction;
   
   // VarImp
   vec VarImp;
   if (importance)
     VarImp.zeros(P);
   
+  bool do_prediction = Param.replacement or (Param.resample_prob < 1);
+    
   // Run model fitting
   Reg_Uni_Forest_Build((const RLT_REG_DATA&) REG_DATA,
                        REG_FOREST,
@@ -70,9 +71,8 @@ List RegUniForestFit(arma::mat& X,
                        (const uvec&) obs_id,
                        (const uvec&) var_id,
                        ObsTrack,
-                       true,
+                       do_prediction,
                        Prediction,
-                       OOBPrediction,
                        VarImp);
 
   //initialize return objects
@@ -95,10 +95,8 @@ List RegUniForestFit(arma::mat& X,
   if (importance) ReturnList["VarImp"] = VarImp;
   
   ReturnList["Prediction"] = Prediction;
-  ReturnList["OobPrediction"] = OOBPrediction;
 
-  ReturnList["Error"] = norm(Prediction - Y, 2) / N;
-  ReturnList["OobError"] = norm(OOBPrediction - Y, 2) / N;
+  ReturnList["Error"] = mean(square(Prediction - Y));
   
   return ReturnList;
 }

@@ -27,17 +27,14 @@ List SurvUniForestFit(mat& X,
           		       List& param);
 
 void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
-                          Surv_Uni_Forest_Class& SURV_FOREST,
-                          const PARAM_GLOBAL& Param,
-                          const uvec& obs_id,
-                          const uvec& var_id,
-                          imat& ObsTrack,
-                          bool do_prediction,
-                          mat& Prediction,
-                          mat& OOBPrediction,
-                          vec& VarImp,
-                          mat& AllImp,
-                          vec& cindex_tree);
+                           Surv_Uni_Forest_Class& SURV_FOREST,
+                           const PARAM_GLOBAL& Param,
+                           const uvec& obs_id,
+                           const uvec& var_id,
+                           imat& ObsTrack,
+                           bool do_prediction,
+                           mat& Prediction,
+                           vec& VarImp);
 
 void Surv_Uni_Split_A_Node(size_t Node,
                           Surv_Uni_Tree_Class& OneTree,
