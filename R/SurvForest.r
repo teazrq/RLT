@@ -12,11 +12,18 @@ SurvForest <- function(x, y, censor,
 {
   # prepare y
   timepoints = sort(unique(y[censor == 1]))
+  cat(paste("use failcount", failcount))
   
   # a smaller failcount
   if (failcount != 0 & failcount < length(timepoints))
-    timepoints = quantile(timepoints, probs = seq(0, 1, length.out = failcount))
-  
+  {
+    timeloc = floor(quantile(1:length(timepoints), 
+                             probs = seq(0, 1, length.out = failcount)))
+    
+    # reduced set of timepoints
+    timepoints = timepoints[timeloc]    
+  }
+
   y.point = rep(NA, length(y))
   
   for (i in 1:length(y))
@@ -68,7 +75,6 @@ SurvForest <- function(x, y, censor,
                           resample.preset,
                           param)
   
-    fit[["timepoints"]] = timepoints
     fit[["parameters"]] = param
     fit[["ncat"]] = ncat
     fit[["obs.w"]] = obs.w
@@ -76,6 +82,7 @@ SurvForest <- function(x, y, censor,
     fit[["y"]] = y
     fit[["censor"]] = censor
     fit[["failcount"]] = failcount
+    fit[["timepoints"]] = timepoints
     
     class(fit) <- c("RLT", "fit", "surv", "uni", "single")
   }else{

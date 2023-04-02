@@ -260,10 +260,10 @@ RLT <- function(x, y, censor = NULL, model = NULL,
                "verbose" = verbose,
                "seed" = seed)
   
-  # failcount for survival (no effect for now)
-  if (is.null(param$failcount)) {
+  # failcount for survival
+  if (is.null(param.control$failcount)) {
     failcount <- 0
-  } else failcount = param$failcount
+  } else failcount = param.control$failcount
   
   # check control parameters
   param.control = check_control(param.control, param)
