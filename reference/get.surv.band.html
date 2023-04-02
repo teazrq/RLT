@@ -45,7 +45,15 @@ a RLT survival prediction.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get.surv.band</span><span class="op">(</span><span class="va">x</span>, i <span class="op">=</span> <span class="fl">0</span>, alpha <span class="op">=</span> <span class="fl">0.05</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get.surv.band</span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  i <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"naive-mc"</span>,</span>
+<span>  nsim <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  r <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -56,11 +64,34 @@ with <code>var.ready = TRUE</code>.</p></dd>
 
 
 <dt>i</dt>
-<dd><p>Observation number in the prediction, default to calculate all</p></dd>
+<dd><p>Observation number in the prediction. Default to calculate all (\(i = 0\))</p></dd>
 
 
 <dt>alpha</dt>
 <dd><p>alpha level for interval \((\alpha/2, 1 - \alpha/2)\)</p></dd>
+
+
+<dt>method</dt>
+<dd><p>what method is used to calculate the confidence band. Can be</p><ul><li><p><code>naive-mc</code>: positive-definite projection of the covariance matrix.
+the confidence band is non-smooth</p></li>
+<li><p><code>smoothed-mc</code>: use a smoothed marginal variance to perform the Monte Carlo
+approximation of the critical value. This is only recommended for large
+number of time points.</p></li>
+<li><p><code>smoothed-lr</code>: use a smoothed low-rank approximation of the covariance
+matrix and apply an adaptive Bonferroni correction to derive the critical values.
+Note that this method relies on the assumption of the smoothness and low rank of the
+covariance matrix.</p></li>
+</ul></dd>
+
+
+<dt>nsim</dt>
+<dd><p>number of simulations for estimating the Monte Carlo critical value.
+Set this to be a large number. Default is 1000.</p></dd>
+
+
+<dt>r</dt>
+<dd><p>maximum number of ranks used in the <code>smoothed-lr</code> approximation. Usually 5 is
+enough for approximating the covariance matrix due to smoothness.</p></dd>
 
 
 <dt>...</dt>
