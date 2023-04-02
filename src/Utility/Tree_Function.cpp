@@ -74,7 +74,7 @@ void get_samples(arma::uvec& inbagObs,
 	// record those to inbagObs
 	size_t mover = 0;
 	for (auto i : use_id)
-		for (size_t k = 0; k < ObsTrack_nt(i); k++)
+		for (int k = 0; k < ObsTrack_nt(i); k++)
 			inbagObs(mover++) = subj_id(i);
 }
 

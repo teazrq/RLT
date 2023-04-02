@@ -256,17 +256,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// MvnCV
-arma::vec MvnCV(size_t& N, arma::vec& mean_vec, arma::mat& Cov_mat, arma::vec& var_vec);
-RcppExport SEXP _RLT_MvnCV(SEXP NSEXP, SEXP mean_vecSEXP, SEXP Cov_matSEXP, SEXP var_vecSEXP) {
+// mc_band
+arma::mat mc_band(const arma::vec& mar_sd, const arma::mat& S, const arma::vec& alpha, size_t N);
+RcppExport SEXP _RLT_mc_band(SEXP mar_sdSEXP, SEXP SSEXP, SEXP alphaSEXP, SEXP NSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< size_t& >::type N(NSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type mean_vec(mean_vecSEXP);
-    Rcpp::traits::input_parameter< arma::mat& >::type Cov_mat(Cov_matSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type var_vec(var_vecSEXP);
-    rcpp_result_gen = Rcpp::wrap(MvnCV(N, mean_vec, Cov_mat, var_vec));
+    Rcpp::traits::input_parameter< const arma::vec& >::type mar_sd(mar_sdSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type S(SSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< size_t >::type N(NSEXP);
+    rcpp_result_gen = Rcpp::wrap(mc_band(mar_sd, S, alpha, N));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -299,7 +299,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RLT_RegUniForestPred", (DL_FUNC) &_RLT_RegUniForestPred, 12},
     {"_RLT_SurvUniForestFit", (DL_FUNC) &_RLT_SurvUniForestFit, 8},
     {"_RLT_SurvUniForestPred", (DL_FUNC) &_RLT_SurvUniForestPred, 13},
-    {"_RLT_MvnCV", (DL_FUNC) &_RLT_MvnCV, 4},
+    {"_RLT_mc_band", (DL_FUNC) &_RLT_mc_band, 4},
     {"_RLT_cindex_d", (DL_FUNC) &_RLT_cindex_d, 3},
     {NULL, NULL, 0}
 };

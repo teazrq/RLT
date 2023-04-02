@@ -157,11 +157,9 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
   mat Surv(N, NFail);
   
   cube Cov;
-  mat Var;
-  if (VarEst){
+
+  if (VarEst)
     Cov.zeros(NFail, NFail, N);
-    Var.zeros(N, NFail);
-  }
   
   cube AllHazard;
   if (keep_all)
@@ -212,13 +210,13 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
       // get mean hazard, cumulative hazard and survival
       Hazard.row(i) = mean(pred_i, 0);
       CHazard.row(i) = cumsum(Hazard.row(i));
-      // Surv.row(i) = exp(- CHazard.row(i));
+      //Surv.row(i) = exp(- CHazard.row(i));
       Surv.row(i) = cumprod( 1 - Hazard.row(i) );
 
-      // survival of all trees
-      // if we want the variance of CH, then use 
-      pred_i = cumsum(pred_i, 1);
-      // pred_i = cumprod(1 - pred_i, 1 ); // change to survival
+      // survival of all trees, KM estimate
+      pred_i = cumprod(1 - pred_i, 1 ); // change to survival      
+      // if we want the variance of CH, then use NA
+      // pred_i = cumsum(pred_i, 1);
 
       // calculate variance
       if (VarEst)
@@ -236,18 +234,22 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
         // sample variance
         mat Vs = cov(pred_i, 1); // use 1/N
         
-        // diagonal
+        // correct negative eigen values
         vec eigval;
         mat eigvec;
-        eig_sym(eigval, eigvec, Vh - Vs);        
-        
-        // correct negative eigen values
-        eigval = eigval % (eigval > 0);
-        
-        // reconstruct estimated covariance matrix
-        Cov.slice(i) = eigvec * diagmat(eigval) * eigvec.t();
+        eig_sym(eigval, eigvec, Vh - Vs);
 
-        Var.row(i) = diagvec( Cov.slice(i) ).t();
+        // correct negative eigen values
+        eigval = abs(eigval) % (eigval > 0);
+        
+        // reconstruct corrected covariance matrix
+        Cov.slice(i) = (eigvec.each_row() % eigval.t()) * eigvec.t();
+        Cov.slice(i) = (Cov.slice(i) + Cov.slice(i).t())/2;
+        
+        // output raw covariance matrix estimation 
+        // Cov.slice(i) = Vh - Vs;
+        
+        // Var.row(i) = diagvec( Cov.slice(i) ).t();
       }
     }
   }
@@ -255,12 +257,12 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
   List ReturnList;
   ReturnList["Hazard"] = Hazard;
   ReturnList["CHF"] = CHazard;
-  ReturnList["Survival"] = Surv; 
+  ReturnList["Survival"] = Surv;
   
   if (VarEst)
   {
-    ReturnList["CHFCov"] = Cov;
-    ReturnList["CHFMarVar"] = Var;
+    ReturnList["Cov"] = Cov;
+    // ReturnList["MarVar"] = Var;
   }
   
   if (keep_all)
@@ -272,11 +274,20 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
 }
 
 // [[Rcpp::export()]]
-arma::vec MvnCV(size_t& N, arma::vec& mean_vec, arma::mat& Cov_mat, arma::vec& var_vec){
-  arma::mat X = mvnrnd(mean_vec, Cov_mat, N);
-  X.clamp(0, arma::datum::inf);
-  X.each_col() -= mean_vec;
-  X.each_col() /= sqrt(var_vec);
-  arma::rowvec cv = max(abs(X),0);
-  return(cv.t());
+arma::mat mc_band(const arma::vec& mar_sd, 
+                  const arma::mat& S,
+                  const arma::vec& alpha,
+                  size_t N)
+{
+  // generate random samples
+  arma::mat X = arma::mvnrnd( zeros( mar_sd.n_elem ), S, N );
+  X.each_col() /= mar_sd;
+  
+  // all cut-offs
+  arma::vec cutoffs = max(abs(X),0).t();
+  
+  arma::vec q = quantile(cutoffs, 1 - alpha);
+  
+  // RLTcout<< " quantile estimated:" << q << std::endl;
+  return(mar_sd * q.t());
 }

@@ -63,8 +63,8 @@ SurvUniForestPred <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWei
     .Call('_RLT_SurvUniForestPred', PACKAGE = 'RLT', SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, NodeHaz, X, Ncat, NFail, VarEst, keep_all, usecores, verbose)
 }
 
-MvnCV <- function(N, mean_vec, Cov_mat, var_vec) {
-    .Call('_RLT_MvnCV', PACKAGE = 'RLT', N, mean_vec, Cov_mat, var_vec)
+mc_band <- function(mar_sd, S, alpha, N) {
+    .Call('_RLT_mc_band', PACKAGE = 'RLT', mar_sd, S, alpha, N)
 }
 
 cindex_d <- function(Y, Censor, pred) {

@@ -268,7 +268,6 @@ You can use the `get.one.tree()` function to peek into a single tree.
 ```{r}
   # generate a simpler data
   set.seed(2)
-
   n = 600
   p = 20
   X = matrix(rnorm(n*p), n, p)
@@ -281,9 +280,10 @@ You can use the `get.one.tree()` function to peek into a single tree.
   Censor = as.numeric(FT <= CT)
   mean(Censor)
   
-  testx = matrix(rnorm(2*p), 2, p)
-  testx[1, 1:3] = c(0.5, 0, 0.5)
-  testx[2, 1:3] = c(-0.5, 0, -0.5)
+  ntest = 15
+  testx = matrix(rnorm(ntest*p), ntest, p)
+  #testx[1, 1:3] = c(0.5, 0, 0.5)
+  #testx[2, 1:3] = c(-0.5, 0, -0.5)
   
   # get true survival function 
   timepoints = sort(unique(Y[Censor==1]))
@@ -297,29 +297,163 @@ You can use the `get.one.tree()` function to peek into a single tree.
 ```
 
 
-```{r}
+```{r fig.width=6, fig.height=6}
   RLTfit <- RLT(X, Y, Censor, model = "survival", 
-                ntrees = 10000, nmin = 40, mtry = 20, split.gen = "random",
+                ntrees = 20000, nmin = 40, mtry = 20, split.gen = "random",
                 resample.prob = 0.5, resample.replace = FALSE, nsplit = 5,
                 param.control = list(split.rule = "logrank", "var.ready" = TRUE), 
                 importance = TRUE, verbose = TRUE, ncores = 10)
 
+  start_time <- Sys.time()
   RLTPred <- predict(RLTfit, testx, ncores = 10, var.est = TRUE)
-  format(object.size(RLTPred), units = "MB")
+  difftime(Sys.time(), start_time, units = "secs")
   
-  Band = get.surv.band(RLTPred, alpha = 0.05)
+  paste("Prediction object size:", format(object.size(RLTPred), units = "MB"))
 ```
 
-```{r}
-  par(mfrow = c(1, 2))
-  plot(log(1 + timepoints), SurvMat[1, ], type = "l", lwd = 2, col = "darkorange", ylab = "Subject 1")
-  lines(log(1 + timepoints), Band[[1]][, 1], type = "l", lty = 2, lwd = 2, col = "deepskyblue")
-  lines(log(1 + timepoints), Band[[1]][, 2], type = "l", lty = 2, lwd = 2, col = "deepskyblue")
+### Naive Monte Carlo
+
+Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.96 of diagonal. blue-dotted is the naive Monte Carlo approach.
+
+```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
+  alpha = 0.05
+
+  # original Monte Carlo approach
+  start_time <- Sys.time()
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "naive-mc")
+  difftime(Sys.time(), start_time, units = "secs")
+
+  par(mfrow = c(ceiling(ntest/3), 3))
+  logt = log(1 + timepoints)
   
+  for (i in 1:ntest)
+  {
+    # truth
+    plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red", ylab = paste("Subject",  i))
+    
+    # estimated and 1.96
+    lines(logt, RLTPred$Survival[i,], lwd = 2, col = "black")
+    lines(logt, RLTPred$Survival[i, ] - qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
+          lty = 2, col = "black")
+    lines(logt, RLTPred$Survival[i, ] + qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
+          lty = 2, col = "black")
+    
+    # naive
+    lines(logt, SurvBand[[i]]$lower[,1], lty = 2, lwd = 2, col = "deepskyblue")
+    lines(logt, SurvBand[[i]]$upper[,1], lty = 2, lwd = 2, col = "deepskyblue")
+  }
+```
+
+### Smoothed Monte Carlo
+
+```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
+  # original Monte Carlo approach
+  start_time <- Sys.time()
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "smoothed-mc", nsim = 1000)
+  difftime(Sys.time(), start_time, units = "secs")
+
+  par(mfrow = c(ceiling(ntest/3), 3))
+  logt = log(1 + timepoints)
   
-  plot(log(1 + timepoints), SurvMat[2, ], type = "l", lwd = 2, col = "darkorange", ylab = "Subject 2")
-  lines(log(1 + timepoints), Band[[2]][, 1], type = "l", lty = 2, lwd = 2, col = "deepskyblue")
-  lines(log(1 + timepoints), Band[[2]][, 2], type = "l", lty = 2, lwd = 2, col = "deepskyblue")
+  for (i in 1:ntest)
+  {
+    # truth
+    plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red", ylab = paste("Subject",  i))
+    
+    # estimated and 1.96
+    lines(logt, RLTPred$Survival[i,], lwd = 2, col = "black")
+    lines(logt, RLTPred$Survival[i, ] - qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
+          lty = 2, col = "black")
+    lines(logt, RLTPred$Survival[i, ] + qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
+          lty = 2, col = "black")
+    
+    # naive
+    lines(logt, SurvBand[[i]]$lower[,1], lty = 2, lwd = 2, col = "deepskyblue")
+    lines(logt, SurvBand[[i]]$upper[,1], lty = 2, lwd = 2, col = "deepskyblue")
+  }
+```
+
+### Smoothed low-rank Monte Carlo
+
+```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
+  # original Monte Carlo approach
+  start_time <- Sys.time()
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "smoothed-lr", r = 5)
+  difftime(Sys.time(), start_time, units = "secs")
+
+  par(mfrow = c(ceiling(ntest/3), 3))
+  logt = log(1 + timepoints)
+  
+  for (i in 1:ntest)
+  {
+    # truth
+    plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red", ylab = paste("Subject",  i))
+    
+    # estimated and 1.96
+    lines(logt, RLTPred$Survival[i,], lwd = 2, col = "black")
+    lines(logt, RLTPred$Survival[i, ] - qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
+          lty = 2, col = "black")
+    lines(logt, RLTPred$Survival[i, ] + qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
+          lty = 2, col = "black")
+    
+    # naive
+    lines(logt, SurvBand[[i]]$lower[,1], lty = 2, lwd = 2, col = "deepskyblue")
+    lines(logt, SurvBand[[i]]$upper[,1], lty = 2, lwd = 2, col = "deepskyblue")
+  }
+  
+  cat(paste("average approximation error:", mean(sapply(SurvBand, "[[", 3))))
+```
+
+Here is a demonstration of the smoothed covariance approximation code used internally in the `get.surv.band` function. The following is the comparison of two covariance matrices
+
+```{r fig.width=8, fig.height=8, out.width="45%"}
+  i = 10
+  ccov = RLTPred$Cov[,,i]
+  heatmap(ccov[rev(1:nrow(ccov)),], Rowv = NA, Colv = NA, symm = TRUE)
+
+  # to calculate the smoothed covariance matrix
+  # some matrix to store
+  
+  coveigen = eigen(ccov)
+  r = 4
+  r = min(r, sum(coveigen$values > coveigen$values[1]*1e-6))
+  
+  # some matrix to store
+  p = dim(ccov)[1]
+  U = matrix(NA, p, r)
+  d = rep(NA, r)
+  
+  # generate grid points for kernel
+  alltime = 1:p
+  alltime = alltime / sd(alltime) * 4
+  nknots = ceiling( max(alltime)/orthoDr::silverman(1, p) ) + 2
+  
+  basis = orthoDr::kernel_weight(matrix(alltime), 
+                                 matrix(seq(0, max(alltime), length.out = nknots)))
+  
+  for (j in 1:r)
+  {
+    uj = coveigen$vectors[, j]
+    uj = uj*sign(mean(uj))
+    
+    fit <- glmnet::glmnet(basis, uj, alpha = 0, intercept = FALSE,
+                          lower.limits = 0, lambda = 1e-5)
+    suj = predict(fit, basis)
+    suj = suj / sqrt(sum(suj^2))
+    
+    dj = sum(suj * uj) * coveigen$values[j]
+    
+    U[, j] = suj
+    d[j] = dj
+  }
+  
+  used = (d > max(d)*1e-6)
+  d = d[used]
+  U = U[, used, drop = FALSE]
+
+  newcov = sweep(U, 2, d, FUN = "*") %*% t(U)
+  sum((newcov - ccov)^2) / sum(ccov^2)
+  heatmap(newcov[rev(1:nrow(newcov)),], Rowv = NA, Colv = NA, symm = TRUE)
 ```
 
 ## Setting random seed

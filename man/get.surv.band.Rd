@@ -4,15 +4,42 @@
 \alias{get.surv.band}
 \title{get.surv.band}
 \usage{
-get.surv.band(x, i = 0, alpha = 0.05, ...)
+get.surv.band(
+  x,
+  i = 0,
+  alpha = 0.05,
+  method = "naive-mc",
+  nsim = 1000,
+  r = 5,
+  ...
+)
 }
 \arguments{
 \item{x}{A RLT prediction object. This must be an object calculated from a forest
 with \code{var.ready = TRUE}.}
 
-\item{i}{Observation number in the prediction, default to calculate all}
+\item{i}{Observation number in the prediction. Default to calculate all (\eqn{i = 0})}
 
 \item{alpha}{alpha level for interval \eqn{(\alpha/2, 1 - \alpha/2)}}
+
+\item{method}{what method is used to calculate the confidence band. Can be
+\itemize{
+\item \code{naive-mc}: positive-definite projection of the covariance matrix.
+the confidence band is non-smooth
+\item \code{smoothed-mc}: use a smoothed marginal variance to perform the Monte Carlo
+approximation of the critical value. This is only recommended for large
+number of time points.
+\item \code{smoothed-lr}: use a smoothed low-rank approximation of the covariance
+matrix and apply an adaptive Bonferroni correction to derive the critical values.
+Note that this method relies on the assumption of the smoothness and low rank of the
+covariance matrix.
+}}
+
+\item{nsim}{number of simulations for estimating the Monte Carlo critical value.
+Set this to be a large number. Default is 1000.}
+
+\item{r}{maximum number of ranks used in the \code{smoothed-lr} approximation. Usually 5 is
+enough for approximating the covariance matrix due to smoothness.}
 
 \item{...}{...}
 }
