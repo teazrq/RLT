@@ -1,14 +1,16 @@
 #' @title                 Reinforcement Learning Trees
-#' @description           Fit models for regression, classification and 
-#'                        survival analysis using reinforced splitting rules.
-#'                        The model reduces to regular random forests if 
-#'                        reinforcement is turned off.
-#'                      
-#' To activate embedded model for splitting variable selection, use \code{reinforcement = TRUE}.
-#' To specify parameters of embedded models, see definition of \code{param.control}.
+#' @description           Fit models for regression, classification and survival 
+#'                        analysis using reinforced splitting rules. The model 
+#'                        fits regular random forest models by default unless the
+#'                        parameter \code{reinforcement} is set to `"TRUE"`. Using 
+#'                        \code{reinforcement = TRUE} activates embedded model for 
+#'                        splitting variable selection and allows linear combination 
+#'                        split. To specify parameters of embedded models, see 
+#'                        definition of \code{param.control} for details.
 #'                        
-#' @param x               A `matrix` or `data.frame` of features. If \code{x} is a data.frame, 
-#'                        then all factors are treated as categorical variables.
+#' @param x               A `matrix` or `data.frame` of features. If \code{x} is 
+#'                        a data.frame, then all factors are treated as categorical 
+#'                        variables.
 #' 
 #' @param y               Response variable. a `numeric`/`factor` vector.
 #'                        
@@ -49,63 +51,87 @@
 #' @param resample.preset A pre-specified matrix for in-bag data indicator/count 
 #'                        matrix. It must be an \eqn{n \times} \code{ntrees}
 #'                        matrix with integer entries. Positive number indicates 
-#'                        the number of copies of that observation (row) in the corresponding
-#'                        tree (column); zero indicates out-of-bag; negative values
-#'                        indicates not being used in either. Extremely large counts are not 
-#'                        recommended. The sum of each column should not exceed \eqn{n}. 
+#'                        the number of copies of that observation (row) in the 
+#'                        corresponding tree (column); zero indicates out-of-bag; 
+#'                        negative values indicates not being used in either. 
+#'                        Extremely large counts should be avoided. The sum of 
+#'                        each column should not exceed \eqn{n}.
 #' 
 #' @param obs.w           Observation weights. The weights will be used for calculating 
-#'                        the splitting scores, but not for sampling observations. This is 
-#'                        An experimental feature currently only implemented for regression.
+#'                        the splitting scores, such as a weighted variance reduction 
+#'                        or weighted log-rank test. But they will not be used for 
+#'                        sampling observations. Once can use \code{resample.preset}
+#'                        instead for balanced sampling, etc. This feature is 
+#'                        experimental and is not implemented in all models.
 #' 
 #' @param var.w           Variable weights. If this is supplied, the default is to 
 #'                        perform weighted sampling of \code{mtry} variables. For 
 #'                        other usage, see the details of \code{split.rule} in 
 #'                        \code{param.control}.
 #'                        
-#' @param importance      Whether to calculate variable importance measures. The calculation 
-#'                        follows Breiman's original permutation strategy. 
+#' @param importance      Whether to calculate variable importance measures. When
+#'                        set to `"TRUE"`, the calculation follows Breiman's 
+#'                        original permutation strategy. 
 #'                        
 #' @param param.control   A list of additional parameters. This can be used to 
 #'                        specify other features in a random forest or set embedded 
 #'                        model parameters for reinforcement splitting rules. 
 #'                        Using \code{reinforcement = TRUE} will automatically
-#'                        generate some default tuning. They are not necessarily optimized.
+#'                        generate some default tuning for the embedded model. 
+#'                        They are not necessarily optimized.
 #'                        \itemize{
 #'                        \item \code{embed.ntrees}: number of trees in the embedded model
-#'                        \item \code{embed.resample.prob}: proportion of samples (of the internal node) in the embedded model 
+#'                        \item \code{embed.resample.prob}: proportion of samples 
+#'                              (of the internal node) in the embedded model 
 #'                        \item \code{embed.mtry}: number or proportion of variables
-#'                        \item \code{embed.split.gen} random cutting point search method (`"random"`, `"rank"` or `"best"`) 
+#'                        \item \code{embed.split.gen} random cutting point search 
+#'                              method (`"random"`, `"rank"` or `"best"`) 
 #'                        \item \code{embed.nsplit} number of random cutting points.
 #'                        }
 #'                        
-#'                        \code{linear.comb} is a separate feature that can be activated 
-#'                        with or without using reinforcement. It creates linear combination of 
-#'                        features as the splitting rule. Currently only available for regression and classification. 
+#'                        \code{linear.comb} is a separate feature that can be 
+#'                        activated with or without using reinforcement. It creates 
+#'                        linear combination of features as the splitting rule. 
+#'                        Currently only available for regression. 
 #'                        \itemize{
-#'                        \item In reinforcement mode, a linear combination is created using the top continuous 
-#'                        variables from the embedded model. If a categorical variable is the best, then a regular 
-#'                        split will be used. The splitting point will be searched based on \code{split.rule} of the
-#'                        model. 
-#'                        \item In non-reinforcement mode, a marginal screening is performed and the top features 
-#'                        are used to construct the linear combination. This is an experimental feature. 
+#'                        \item In reinforcement mode, a linear combination is created 
+#'                              using the top continuous variables from the embedded 
+#'                              model. If a categorical variable is the best, then 
+#'                              a regular split will be used. The splitting point 
+#'                              will be searched based on \code{split.rule} of the
+#'                              model. 
+#'                        \item In non-reinforcement mode, a marginal screening 
+#'                              is performed and the top features are used to construct 
+#'                              the linear combination. This is an experimental feature. 
 #'                        }
 #'                        
-#'                        \code{split.rule} is used to specify the criteria used to compare different splittings.
-#'                        Here are the available choices. The first one is the default:
+#'                        \code{split.rule} is used to specify the criteria used 
+#'                        to compare different splittings. Here are the available 
+#'                        choices. The first one is the default:
 #'                        \itemize{
-#'                        \item Regression: `"var"` (variance reduction); `"pca"` and `"sir"` can be used for linear combination splits
-#'                        \item Classification: `"gini"`
-#'                        \item Survival: `"logrank"`, `"suplogrank"`, `"coxgrad"`.
+#'                        \item Regression: `"var"` (variance reduction); `"pca"` 
+#'                              and `"sir"` can be used for linear combination splits
+#'                        \item Classification: `"gini"` (gini index)
+#'                        \item Survival: `"logrank"` (log-rank test), `"suplogrank"`, 
+#'                              `"coxgrad"`.
 #'                        \item Quantile: `"ks"` (Kolmogorov-Smirnov test)
-#'                        \item Graph: `"spectral"` (spectral embedding)
+#'                        \item Graph: `"spectral"` (spectral embedding with variance 
+#'                        reduction)
 #'                        }
 #'                        
-#'                        \code{resample.track} indicates whether to keep track of the observations used in each tree.
+#'                        \code{resample.track} indicates whether to keep track 
+#'                        of the observations used in each tree.
 #'                        
-#'                        \code{var.ready} this is a feature to calculate variance of the random forest prediction
-#'                        Currently only available for regression (Xu, Zhu & Shao, 2023) and survival models (Formentini, Liang & Zhu, 2023). 
-#'                        Specifying \code{var.ready = TRUE} has the following effect:
+#'                        \code{var.ready} this is a feature to allow calculating variance 
+#'                        (hence confidence intervals) of the random forest prediction. 
+#'                        Currently only available for regression (Xu, Zhu & Shao, 2023) 
+#'                        and confidence band in survival models (Formentini, Liang & Zhu, 2023). 
+#'                        Please note that this only perpares the model fitting 
+#'                        so that it is ready for the calculation. To obtain the 
+#'                        confidence intervals, please see the prediction function. 
+#'                        Specifying \code{var.ready = TRUE} has the following effect 
+#'                        if these parameters are not already provided. For details 
+#'                        of their restrictions, please see the orignal paper.
 #'                        \itemize{
 #'                        \item \code{resample.preset} is constructed automatically
 #'                        \item \code{resample.replace} is set to `FALSE`
@@ -113,22 +139,30 @@
 #'                        \item \code{resample.track} is set to `TRUE`
 #'                        }
 #'                        
-#'                        It is recommended to use a very large \code{ntrees}, e.g, 10000 or larger. 
-#'                        For \code{resample.prob} greater than \eqn{n / 2}, one should consider the approach in Xu, Zhu & Shao (2023).
+#'                        It is recommended to use a very large \code{ntrees}, 
+#'                        e.g, 10000 or larger. For \code{resample.prob} greater 
+#'                        than \eqn{n / 2}, one should consider the bootstrap 
+#'                        approach in Xu, Zhu & Shao (2023).
 #'                        
-#'                        \code{alpha} force a minimum proportion of samples in each child node.
+#'                        \code{alpha} force a minimum proportion of samples 
+#'                        (of the parent node) in each child node.
 #'                        
-#'                        \code{failcount} specifies the unique number of failure time points used in survival model. 
-#'                        By default, all failure time points will be used. A smaller number may speed up the computation. 
-#'                        The time points will be chosen uniformly on the quantiles of failure times. 
+#'                        \code{failcount} specifies the unique number of failure 
+#'                        time points used in survival model. By default, all failure 
+#'                        time points will be used. A smaller number may speed up 
+#'                        the computation. The time points will be chosen uniformly 
+#'                        on the quantiles of failure times, while must include the 
+#'                        minimum and the maximum. 
 #'                        
-#' @param ncores          Number of cores. Default is 0 (using all available cores).
+#' @param ncores          Number of cpu logical cores. Default is 0 (using all 
+#'                        available cores).
 #' 
 #' @param verbose         Whether info should be printed.
 #' 
 #' @param seed            Random seed number to replicate a previously fitted forest. 
-#'                        Internally, the `xoshiro256++` generator is used. If not specified, 
-#'                        a seed will be generated automatically. 
+#'                        Internally, the `xoshiro256++` generator is used. If not 
+#'                        specified, a seed will be generated automatically and 
+#'                        recorded.
 #'                        
 #' @param ...             Additional arguments.
 #' 
@@ -140,21 +174,24 @@
 #' \item{VarImp}{Variable importance measures, if \code{importance = TRUE}}
 #' \item{Prediction}{Out-of-bag prediction}
 #' \item{Error}{Out-of-bag prediction error, adaptive to the model type}
-#' \item{resample.preset}{An \code{n} \eqn{\times} \code{ntrees} matrix that indicates 
-#'                        which observations are used in each tree. Provided if 
-#'                        \code{resample.preset} was supplied, \code{resample.track = TRUE}, 
-#'                        or \code{var.ready = TRUE}}
+#' \item{ObsTrack}{Provided if \code{resample.track = TRUE}, \code{var.ready = TRUE},
+#'                 or if \code{resample.preset} was supplied. This is an \code{n} \eqn{\times} \code{ntrees} 
+#'                 matrix that has the same meaning as \code{resample.preset}.}
 #' }
 #' 
-#' For classification forests, these items are further provided
+#' For classification forests, these items are further provided or will replace 
+#' the regression version
 #' \itemize{
 #' \item{NClass}{The number of classes}
+#' \item{Prob}{Out-of-bag predicted probability}
 #' }
 #' 
-#' For survival forests, these items are further provided
+#' For survival forests, these items are further provided or will replace the 
+#' regression version
 #' \itemize{
 #' \item{timepoints}{ordered observed failure times}
 #' \item{NFail}{The number of observed failure times}
+#' \item{Prediction}{Out-of-bag prediciton of hazard function}
 #' }
 #' 
 #' @references 
