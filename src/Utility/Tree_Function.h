@@ -51,15 +51,15 @@ List ForestKernelUni(arma::field<arma::uvec>& NodeType,
                      int usecores,
                      int verbose);
 
-
 // ************************//
 // miscellaneous functions //
 // ************************//
 
-// catigorical variables pack
+// categorical variables arrangement
 double pack(const size_t nBits, const uvec& bits);
 void unpack(const double pack, const size_t nBits, uvec& bits);
 bool unpack_goright(double pack, const size_t cat);
+void goright_roller(arma::uvec& goright_cat);
 
 // sample both inbag and oobag samples
 void set_obstrack(arma::imat& ObsTrack,
@@ -73,14 +73,20 @@ void get_samples(arma::uvec& inbagObs,
                  const arma::uvec& subj_id,
                  const arma::ivec& ObsTrack_nt);
 
-void check_cont_index_sub(size_t& lowindex, size_t& highindex, const vec& x, const uvec& indices);
-void check_cont_index(size_t& lowindex, size_t& highindex, const vec& x);
+// splitting an interval node
 void split_id(const vec& x, double value, uvec& left_id, uvec& obs_id);
 void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_t ncat);
 
-bool cat_reduced_compare(Cat_Class& a, Cat_Class& b);
-bool cat_reduced_collapse(Cat_Class& a, Cat_Class& b); 
 
-void goright_roller(arma::uvec& goright_cat);
+// check cutoff points in continuous or categorical variables
+void check_cont_index_sub(size_t& lowindex, size_t& highindex, const vec& x, const uvec& indices);
+void check_cont_index(size_t& lowindex, size_t& highindex, const vec& x);
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Cat_Class*>& cat_reduced, 
+                    size_t true_cat, 
+                    size_t nmin);
+
+bool cat_class_compare(Cat_Class& a, Cat_Class& b);
 
 #endif

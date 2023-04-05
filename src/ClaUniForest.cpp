@@ -59,7 +59,8 @@ List ClaUniForestFit(arma::mat& X,
   
   // Initiate prediction objects
   mat Prediction;
-  mat OOBPrediction;
+  
+  bool do_prediction = Param.replacement or (Param.resample_prob < 1);
   
   // VarImp
   vec VarImp;
@@ -73,9 +74,8 @@ List ClaUniForestFit(arma::mat& X,
                        (const uvec&) obs_id,
                        (const uvec&) var_id,
                        ObsTrack,
-                       true,
+                       do_prediction,
                        Prediction,
-                       OOBPrediction,
                        VarImp);
 
   //initialize return objects
@@ -98,10 +98,7 @@ List ClaUniForestFit(arma::mat& X,
   if (importance) ReturnList["VarImp"] = VarImp;
   
   ReturnList["Prediction"] = index_max(Prediction, 1);
-  ReturnList["OOBPrediction"] = index_max(OOBPrediction, 1);
-  
   ReturnList["Prob"] = Prediction;
-  ReturnList["OOBProb"] = OOBPrediction;
   
   return ReturnList;
 }

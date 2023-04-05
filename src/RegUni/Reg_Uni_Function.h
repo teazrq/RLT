@@ -148,10 +148,6 @@ double reg_uni_cat_score_cut(std::vector<Reg_Cat_Class>& cat_reduced,
                              size_t temp_cat,
                              size_t true_cat);
 
-double reg_uni_cat_score_cut_w(std::vector<Reg_Cat_Class>& cat_reduced, 
-                               size_t temp_cat,
-                               size_t true_cat);
-
 void reg_uni_cat_score_best(std::vector<Reg_Cat_Class>& cat_reduced, 
                             size_t lowindex,
                             size_t highindex,
@@ -159,12 +155,19 @@ void reg_uni_cat_score_best(std::vector<Reg_Cat_Class>& cat_reduced,
                             size_t& best_cat,
                             double& best_score);
 
-void reg_uni_cat_score_best_w(std::vector<Reg_Cat_Class>& cat_reduced, 
-                              size_t lowindex,
-                              size_t highindex,
-                              size_t true_cat,
-                              size_t& best_cat,
-                              double& best_score);
+// for categorical split arrangement 
+
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Reg_Cat_Class>& cat_reduced, 
+                    size_t true_cat, 
+                    size_t nmin);
+
+// Record category split
+double record_cat_split(std::vector<Reg_Cat_Class>& cat_reduced,
+                        size_t best_cat, 
+                        size_t true_cat,
+                        size_t ncat);
 
 // for prediction 
 

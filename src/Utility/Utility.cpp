@@ -23,8 +23,7 @@ size_t checkCores(size_t usecores, size_t verbose)
   return(use_cores);
 }
 
-// debug function
-
+// debug function to print into a .txt file
 void printLog(const char* mode, const char* x, const int n1, const double n2)
 {
   FILE* pFile = fopen("RLT_Debug_log.txt", mode);
@@ -36,25 +35,7 @@ void printLog(const char* mode, const char* x, const int n1, const double n2)
   return;
 }
 
-// generate random integer in [min, max]
-/*
-int intRand(const int & min, const int & max) {
-  static thread_local std::mt19937 generator;
-  std::uniform_int_distribution<int> distribution(min, max); 
-  return distribution(generator);
-}
-*/
-// simple math
-
-template <class T> const T& max(const T& a, const T& b) {
-  return (a<b)?b:a;
-}
-
-template <class T> const T& min(const T& a, const T& b) {
-  return (a<b)?a:b;
-}
-
-// vector in-place reverse cumsum
+// vector *** in-place *** reverse cumsum
 void cumsum_rev(arma::uvec& seq)
 {
   // cumulative at risk counts for left
@@ -69,6 +50,53 @@ void cumsum_rev(arma::uvec& seq)
   seq(0) += seq(1);
 }
 
+// ****************//
+// field functions //
+// ****************//
+
+void field_vec_resize(arma::field<arma::vec>& A, size_t size)
+{
+  arma::field<arma::vec> B(size);
+  
+  size_t common_size = (A.n_elem > size) ? size : A.n_elem;
+  
+  for (size_t i = 0; i < common_size; i++)
+  {
+    //Was false, true. Triggered an error with new version of RcppArmadillo
+    //Less efficient than false, true but works
+    B[i] = vec(A[i].begin(), A[i].size(), true, false);
+  }
+  
+  A.set_size(size);
+  for (size_t i = 0; i < common_size; i++)
+  {
+    //Was false, true. Triggered an error with new version of RcppArmadillo
+    //Less efficient than false, true but works
+    A[i] = vec(B[i].begin(), B[i].size(), true, false);
+  }
+}
+
+void field_vec_resize(arma::field<arma::uvec>& A, size_t size)
+{
+  arma::field<arma::uvec> B(size);
+  
+  size_t common_size = (A.n_elem > size) ? size : A.n_elem;
+  
+  for (size_t i = 0; i < common_size; i++)
+  {
+    //Was false, true. Triggered an error with new version of RcppArmadillo
+    //Less efficient than false, true but works
+    B[i] = uvec(A[i].begin(), A[i].size(), true, false);
+  }
+  
+  A.set_size(size);
+  for (size_t i = 0; i < common_size; i++)
+  {
+    //Was false, true. Triggered an error with new version of RcppArmadillo
+    //Less efficient than false, true but works
+    A[i] = uvec(B[i].begin(), B[i].size(), true, false);
+  }
+}
 
 
 

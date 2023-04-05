@@ -55,6 +55,9 @@ void Cla_Uni_Find_A_Split(Split_Class& OneSplit,
                         useobsweight,
                         rngl);
       
+      //RLTcout << "categorical var " << j + 1 << " : cut at " << 
+      //  TempSplit.value << " score = " << TempSplit.score << std::endl;
+      
     }else{ // continuous variable
       
       Cla_Uni_Split_Cont(TempSplit,
@@ -70,7 +73,9 @@ void Cla_Uni_Find_A_Split(Split_Class& OneSplit,
                          alpha,
                          useobsweight,
                          rngl);
-      
+
+      //RLTcout << "continuous var " << j + 1 << " : cut at " << 
+      //  TempSplit.value << " score = " << TempSplit.score << std::endl;
     }
     
     //If this variable is better than the last one tried

@@ -317,6 +317,7 @@ void reg_uni_cont_score_best_sub_w(uvec& indices,
   double score = 0;
   
   size_t N = indices.size();
+  size_t subj;
   
   double LeftSum = 0;
   double RightSum = 0;
@@ -325,26 +326,28 @@ void reg_uni_cont_score_best_sub_w(uvec& indices,
   
   for (size_t i = 0; i <= lowindex; i++)
   {
-    LeftSum += Y(indices(i))*obs_weight(indices(i));
-    Left_w += obs_weight(indices(i));
+    subj = indices(i);
+    LeftSum += Y(subj)*obs_weight(subj);
+    Left_w += obs_weight(subj);
   }
 
   for (size_t i = lowindex+1; i < N; i++)
   {
-    RightSum += Y(indices(i))*obs_weight(indices(i));
-    Right_w += obs_weight(indices(i));
+    subj = indices(i);
+    RightSum += Y(subj)*obs_weight(subj);
+    Right_w += obs_weight(subj);
   }
   
   for (size_t i = lowindex; i <= highindex; i++)
   {
     while (x(indices(i)) == x(indices(i+1))){
       i++;
+      subj = indices(i);
+      LeftSum += Y(subj)*obs_weight(subj);
+      RightSum -= Y(subj)*obs_weight(subj);
       
-      LeftSum += Y(indices(i))*obs_weight(indices(i));
-      RightSum -= Y(indices(i))*obs_weight(indices(i));
-      
-      Left_w += obs_weight(indices(i));
-      Right_w += obs_weight(indices(i));
+      Left_w += obs_weight(subj);
+      Right_w -= obs_weight(subj);
     }
     
     score = LeftSum*LeftSum/Left_w + RightSum*RightSum/Right_w;
@@ -357,11 +360,13 @@ void reg_uni_cont_score_best_sub_w(uvec& indices,
     
     if (i + 1 <= highindex)
     {
-      LeftSum += Y(indices(i+1))*obs_weight(indices(i+1));
-      RightSum -= Y(indices(i+1))*obs_weight(indices(i+1));
+      subj = indices(i+1);
       
-      Left_w += obs_weight(indices(i+1));
-      Right_w += obs_weight(indices(i+1));
+      LeftSum += Y(subj)*obs_weight(subj);
+      RightSum -= Y(subj)*obs_weight(subj);
+      
+      Left_w += obs_weight(subj);
+      Right_w -= obs_weight(subj);
     }
   }
 }

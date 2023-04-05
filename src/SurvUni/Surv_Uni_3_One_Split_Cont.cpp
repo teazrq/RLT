@@ -226,17 +226,17 @@ double surv_cont_score_at_index(uvec& indices,
 void surv_cont_score_best(uvec& indices,
                           uvec& obs_ranked,
                           const vec& x,
-                    const uvec& Y,
-                    const uvec& Censor,
-                    const size_t NFail,
-                    uvec& All_Fail,
-                    vec& All_Risk,
-                    vec& Temp_Vec,
-                    size_t lowindex, 
-                    size_t highindex, 
-                    double& temp_cut, 
-                    double& temp_score,
-                    int split_rule)
+                          const uvec& Y,
+                          const uvec& Censor,
+                          const size_t NFail,
+                          uvec& All_Fail,
+                          vec& All_Risk,
+                          vec& Temp_Vec,
+                          size_t lowindex, 
+                          size_t highindex, 
+                          double& temp_cut, 
+                          double& temp_score,
+                          int split_rule)
 {
 
   double score = -1;

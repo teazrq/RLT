@@ -11,8 +11,8 @@ using namespace Rcpp;
 using namespace arma;
 
 // categorical variable packing
-
-double pack(const size_t nBits, const uvec& bits) // from Andy's rf package
+// some translated from Andy's rf package
+double pack(const size_t nBits, const uvec& bits)
 {
   double value = bits(nBits - 1);
 
@@ -22,7 +22,7 @@ double pack(const size_t nBits, const uvec& bits) // from Andy's rf package
   return(value);
 }
 
-void unpack(const double pack, const size_t nBits, uvec& bits) // from Andy's rf package
+void unpack(const double pack, const size_t nBits, uvec& bits)
 {
   double x = pack;
   for (size_t i = 0; i < nBits; ++i)
@@ -36,6 +36,20 @@ bool unpack_goright(double pack, const size_t cat)
 {
   for (size_t i = 0; i < cat; i++) pack /= 2;
   return(((size_t) pack & 1) ? 1 : 0);
+}
+
+void goright_roller(arma::uvec& goright_cat)
+{
+  size_t n = goright_cat.n_elem;
+  
+  for (size_t i = 0; i < n-1; i ++)
+  {
+    if (goright_cat(i) == 2)
+    {
+      goright_cat(i) = 0;
+      goright_cat(i+1)++;
+    }
+  }
 }
 
 // for resampling set ObsTrack
@@ -67,17 +81,60 @@ void get_samples(arma::uvec& inbagObs,
 	oobagObs = subj_id.elem( find(ObsTrack_nt == 0) );
   
   //inbag samples
-  arma::uvec use_id = find(ObsTrack_nt > 0);
-	size_t N = sum( ObsTrack_nt.elem( use_id ) );
+  arma::uvec use_row = find(ObsTrack_nt > 0);
+	size_t N = sum( ObsTrack_nt.elem( use_row ) );
 	inbagObs.set_size(N);
 	
 	// record those to inbagObs
 	size_t mover = 0;
-	for (auto i : use_id)
+	for (auto i : use_row)
 		for (int k = 0; k < ObsTrack_nt(i); k++)
 			inbagObs(mover++) = subj_id(i);
 }
 
+
+// splitting an interval node
+// construct id vectors for left and right nodes
+void split_id(const vec& x, double value, uvec& left_id, uvec& obs_id) // obs_id will be treated as the right node
+{
+  size_t LeftN = 0;
+  size_t RightN = 0;
+  
+  for (size_t i = 0; i < obs_id.n_elem; i++)
+  {
+    if ( x(obs_id(i)) <= value )
+      left_id(LeftN++) = obs_id(i);
+    else
+      obs_id(RightN++) = obs_id(i);
+  }
+  
+  left_id.resize(LeftN);
+  obs_id.resize(RightN);
+}
+
+void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_t ncat) // obs_id will be treated as the right node
+{
+  // the first (0-th) element (category) of goright will always be set to 0 --- go left, 
+  // but this category does not exist.
+  uvec goright(ncat + 1, fill::zeros);   
+  unpack(value, ncat + 1, goright);
+  
+  size_t LeftN = 0;
+  size_t RightN = 0;
+  
+  for (size_t i = 0; i < obs_id.n_elem; i++)
+  {
+    if ( goright[x(obs_id(i))] == 0 )
+      left_id(LeftN++) = obs_id(i);
+    else
+      obs_id(RightN++) = obs_id(i);
+  }
+  
+  left_id.resize(LeftN);
+  obs_id.resize(RightN);
+}
+
+// check cutoff points in continuous or categorical variables
 void check_cont_index_sub(size_t& lowindex, 
                           size_t& highindex, 
                           const vec& x,
@@ -88,30 +145,17 @@ void check_cont_index_sub(size_t& lowindex,
   // also x must contain different elements
   size_t N = indices.n_elem;
   
-  // as long as lowindex does not give min, push it lower to a non-tie
+  // as long as x at lowindex is not the same as minimum, push it lower to a non-tie
   if ( x(indices(lowindex)) > x(indices(0)) )
     while ( x(indices(lowindex)) == x(indices(lowindex+1)) ) lowindex--;
   else // otherwise, move up
     while ( x(indices(lowindex)) == x(indices(lowindex+1)) ) lowindex++;
   
-  // as long as highindex does not give max, push it higher to a non-tie
+  // as long as x at highindex does not the same as maximum, push it higher to a non-tie
   if ( x(indices(highindex)) < x(indices(N-1)) )
       while ( x(indices(highindex)) == x(indices(highindex+1)) ) highindex++;
   else // otherwise move down
       while ( x(indices(highindex)) == x(indices(highindex+1)) ) highindex--;
-
-  // // check with extremes
-  // // make sure lowindex has space to move up
-  // while ( x(indices(lowindex)) == x(indices(N-1)) ) lowindex--;
-  // 
-  // // make sure highindex has space to move down
-  // while ( x(indices(highindex+1)) == x(indices(0)) ) highindex++;
-  // 
-  // // make sure lowindex is not at a tie, o.w. move up
-  // while ( x(indices(lowindex)) == x(indices(lowindex+1)) ) lowindex++;
-  // 
-  // // make sure highindex is not at a tie, o.w. move down
-  // while ( x(indices(highindex)) == x(indices(highindex+1)) ) highindex--;  
 }
 
 
@@ -139,98 +183,93 @@ void check_cont_index(size_t& lowindex,
 }
 
 
-// construct id vectors for left and right nodes
-
-void split_id(const vec& x, double value, uvec& left_id, uvec& obs_id) // obs_id will be treated as the right node
-{
-  size_t LeftN = 0;
-  size_t RightN = 0;
-  
-  for (size_t i = 0; i < obs_id.n_elem; i++)
-  {
-      if ( x(obs_id(i)) <= value )
-          left_id(LeftN++) = obs_id(i);
-      else
-          obs_id(RightN++) = obs_id(i);
-  }
-  
-  left_id.resize(LeftN);
-  obs_id.resize(RightN);
-}
-
-void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_t ncat) // obs_id will be treated as the right node
-{
-  // the first (0-th) element (category) of goright will always be set to 0 --- go left, 
-  // but this category does not exist.
-  uvec goright(ncat + 1, fill::zeros);   
-  unpack(value, ncat + 1, goright);
-
-  size_t LeftN = 0;
-  size_t RightN = 0;
-  
-  for (size_t i = 0; i < obs_id.n_elem; i++)
-  {
-      if ( goright[x(obs_id(i))] == 0 )
-          left_id(LeftN++) = obs_id(i);
-      else
-          obs_id(RightN++) = obs_id(i);
-  }
-
-  left_id.resize(LeftN);
-  obs_id.resize(RightN);
-}
-
-// ****************//
-// field functions //
-// ****************//
-
-void field_vec_resize(arma::field<arma::vec>& A, size_t size)
-{
-  arma::field<arma::vec> B(size);
-  
-  size_t common_size = (A.n_elem > size) ? size : A.n_elem;
-  
-  for (size_t i = 0; i < common_size; i++)
-  {
-    //Was false, true. Triggered an error with new version of RcppArmadillo
-    //Less efficient than false, true but works
-    B[i] = vec(A[i].begin(), A[i].size(), true, false);
-  }
-  
-  A.set_size(size);
-  for (size_t i = 0; i < common_size; i++)
-  {
-    //Was false, true. Triggered an error with new version of RcppArmadillo
-    //Less efficient than false, true but works
-    A[i] = vec(B[i].begin(), B[i].size(), true, false);
-  }
-}
-
-void field_vec_resize(arma::field<arma::uvec>& A, size_t size)
-{
-  arma::field<arma::uvec> B(size);
-  
-  size_t common_size = (A.n_elem > size) ? size : A.n_elem;
-  
-  for (size_t i = 0; i < common_size; i++)
-  {
-    //Was false, true. Triggered an error with new version of RcppArmadillo
-    //Less efficient than false, true but works
-    B[i] = uvec(A[i].begin(), A[i].size(), true, false);
-  }
-  
-  A.set_size(size);
-  for (size_t i = 0; i < common_size; i++)
-  {
-    //Was false, true. Triggered an error with new version of RcppArmadillo
-    //Less efficient than false, true but works
-    A[i] = uvec(B[i].begin(), B[i].size(), true, false);
-  }
-}
-
 // for categorical variables
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Cat_Class*>& cat_reduced, 
+                    size_t true_cat, 
+                    size_t nmin)
+{
+  lowindex = 0;
+  highindex = true_cat - 2;
+  
+  if (true_cat == 2) //nothing we can do
+    return; 
+  
+  size_t lowcount = cat_reduced[0]->count;
+  size_t highcount = cat_reduced[true_cat-1]->count;
+  
+  // now both low and high index are not tied with the end
+  if ( lowcount >= nmin and highcount >= nmin ) // everything is good
+    return;
+  
+  if ( lowcount < nmin and highcount >= nmin ) // only need to fix lowindex
+  {
+    while( lowcount < nmin and lowindex <= highindex ){
+      lowindex++;
+      lowcount += cat_reduced[lowindex]->count;
+    }
+    
+    if ( lowindex > highindex ) lowindex = highindex;
+    
+    return;
+  }
+  
+  if ( lowcount >= nmin and highcount < nmin ) // only need to fix highindex
+  {
+    while( highcount < nmin and lowindex <= highindex ){
+      highcount += cat_reduced[highindex]->count;
+      highindex--;
+    }
+    
+    // sometimes highindex will be negative and turned into very large number 
+    if (highindex < lowindex or highindex > true_cat - 2 ) highindex = lowindex; 
+    return;
+  }
+  
+  // if both need to be fixed, start with one randomly
+  if ( lowcount < nmin and highcount < nmin ) 
+  {
+    if ( TRUE ) // we can fix this later with random choice
+    { // fix lowindex first
+      while( lowcount < nmin and lowindex <= highindex ){
+        lowindex++;
+        lowcount += cat_reduced[lowindex]->count;
+      }
+      
+      if (lowindex > highindex ) lowindex = highindex;
+      
+      while( highcount < nmin and lowindex <= highindex ){
+        highcount += cat_reduced[highindex]->count;
+        highindex--;
+      }
+      
+      if (highindex < lowindex or highindex > true_cat - 2 ) highindex = lowindex;
+      
+      return;
+      
+    }else{ // fix highindex first
+      while( highcount < nmin and lowindex <= highindex ){
+        highcount += cat_reduced[highindex]->count;
+        highindex--;
+      }
+      
+      if (highindex < lowindex or highindex > true_cat - 2 ) highindex = lowindex;
+      
+      while( lowcount < nmin and lowindex <= highindex ){
+        lowindex++;
+        lowcount += cat_reduced[lowindex]->count;
+      }
+      
+      if (lowindex > highindex) lowindex = highindex;
+      
+      return;
+    }
+  }
+}
 
-bool cat_reduced_compare(Cat_Class& a, Cat_Class& b)
+// for sorting a list of categorical class 
+bool cat_class_compare(Cat_Class& a, Cat_Class& b)
 {
   if (a.count == 0 and b.count == 0)
     return 0;
@@ -242,36 +281,6 @@ bool cat_reduced_compare(Cat_Class& a, Cat_Class& b)
     return 0;
   
   return ( a.score < b.score );
-}
-
-bool cat_reduced_collapse(Cat_Class& a, Cat_Class& b)
-{
-  if (a.count > 0 and b.count == 0)
-    return 1;
-  
-  return 0;
-}
-
-
-/*
- bool cat_reduced_compare_score(Cat_Class& a, Cat_Class& b)
- {
- return ( a.score < b.score );
- }
- */
-
-void goright_roller(arma::uvec& goright_cat)
-{
-  size_t n = goright_cat.n_elem;
-  
-  for (size_t i = 0; i < n-1; i ++)
-  {
-    if (goright_cat(i) == 2)
-    {
-      goright_cat(i) = 0;
-      goright_cat(i+1)++;
-    }
-  }
 }
 
 // Find the terminal node for X in one tree
@@ -352,7 +361,7 @@ void Find_Terminal_Node(size_t Node,
   
 }
 
-
+// Find the terminal node for X in one tree with variable j shuffled
 //Function for variable importance
 void Find_Terminal_Node_ShuffleJ(size_t Node, 
                                      const Tree_Class& OneTree,

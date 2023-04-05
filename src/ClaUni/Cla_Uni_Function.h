@@ -34,7 +34,6 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
                           imat& ObsTrack,
                           bool do_prediction,
                           mat& Prediction,
-                          mat& OOBPrediction,
                           vec& VarImp);
 
 void Cla_Uni_Split_A_Node(size_t Node,
@@ -45,13 +44,13 @@ void Cla_Uni_Split_A_Node(size_t Node,
                           const uvec& var_id,
                           Rand& rngl);
 
-void Cla_Uni_Terminate_Node(size_t Node,
-                            Cla_Uni_Tree_Class& OneTree,
-                            uvec& obs_id,
-                            const uvec& Y,
-                            const size_t nclass,
-                            const vec& obs_weight,
-                            bool useobsweight);
+void Cla_Uni_Record_Node(size_t Node,
+                         Cla_Uni_Tree_Class& OneTree,
+                         uvec& obs_id,
+                         const uvec& Y,
+                         const size_t nclass,
+                         const vec& obs_weight,
+                         bool useobsweight);
 
 void Cla_Uni_Find_A_Split(Split_Class& OneSplit,
                           const RLT_CLA_DATA& Cla_DATA,
@@ -88,6 +87,73 @@ void Cla_Uni_Split_Cont(Split_Class& TempSplit,
                         double alpha,
                         bool useobsweight,
                         Rand& rngl);
+
+// splitting score functions 
+
+double cla_uni_cont_score_cut_sub(const uvec& obs_id,
+                                  const vec& x,
+                                  const uvec& Y,
+                                  size_t nclass,
+                                  double a_random_cut);
+
+double cla_uni_cont_score_cut_sub_w(const uvec& obs_id,
+                                    const vec& x,
+                                    const uvec& Y,
+                                    size_t nclass,
+                                    double a_random_cut,
+                                    const vec& obs_weight);
+
+double cla_uni_cont_score_rank_sub(uvec& indices,
+                                   const uvec& Y,
+                                   size_t nclass,
+                                   size_t a_random_ind);
+
+double cla_uni_cont_score_rank_sub_w(uvec& indices,
+                                     const uvec& Y,
+                                     size_t nclass,
+                                     size_t a_random_ind,
+                                     const vec& obs_weight);
+
+void cla_uni_cont_score_best_sub(uvec& indices,
+                                 const vec& x,
+                                 const uvec& Y,
+                                 size_t nclass,
+                                 size_t lowindex, 
+                                 size_t highindex, 
+                                 double& temp_cut, 
+                                 double& temp_score);
+
+void cla_uni_cont_score_best_sub_w(uvec& indices,
+                                   const vec& x,
+                                   const uvec& Y,
+                                   size_t nclass,
+                                   size_t lowindex, 
+                                   size_t highindex, 
+                                   double& temp_cut, 
+                                   double& temp_score,
+                                   const vec& obs_weight);
+
+double cla_uni_cat_score_cut(std::vector<Cla_Cat_Class>& cat_reduced, 
+                             size_t temp_cat, 
+                             size_t true_cat);
+
+double cla_uni_cat_score_cut_w(std::vector<Cla_Cat_Class>& cat_reduced, 
+                               size_t temp_cat, 
+                               size_t true_cat);
+
+// categorical variable arranging 
+//Move categorical index
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Cla_Cat_Class>& cat_reduced, 
+                    size_t true_cat, 
+                    size_t nmin);
+
+//Record category
+double record_cat_split(std::vector<Cla_Cat_Class>& cat_reduced,
+                        size_t best_cat, 
+                        size_t true_cat,
+                        size_t ncat);
 
 // for prediction 
 

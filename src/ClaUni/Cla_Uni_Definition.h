@@ -137,29 +137,17 @@ public:
 
 class Cla_Cat_Class: public Cat_Class{
 public:
-  double y = 0;
-
-  void calculate_score()
+  arma::vec Prob;
+  
+  void initiate(size_t j, size_t nclass)
   {
-    if (weight > 0)
-      score = y / weight;
+    cat = j;
+    Prob.zeros(nclass); 
   }
-
+  
   void print(void) {
-    RLTcout << "Category is " << cat << " count is " << count << " weight is " << weight << " y sum is " << y << " score is " << score << std::endl;
+    RLTcout << "Category is " << cat << " count is " << count << std::endl;
   }
 };
 
-//Move categorical index
-void move_cat_index(size_t& lowindex, 
-                    size_t& highindex, 
-                    std::vector<Cla_Cat_Class>& cat_reduced, 
-                    size_t true_cat, 
-                    size_t nmin);
-
-//Record category
-double record_cat_split(std::vector<Cla_Cat_Class>& cat_reduced,
-                        size_t best_cat, 
-                        size_t true_cat,
-                        size_t ncat);
 #endif

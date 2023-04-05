@@ -21,16 +21,16 @@ void Cla_Uni_Split_A_Node(size_t Node,
   size_t N = obs_id.n_elem;
   size_t nmin = Param.nmin;
   bool useobsweight = Param.useobsweight;
+  
+  Cla_Uni_Record_Node(Node, OneTree, obs_id, CLA_DATA.Y, CLA_DATA.nclass, CLA_DATA.obsweight, useobsweight);
 
   // in rf, it is N <= nmin
-  if (N <= nmin)
+  if (N <= nmin or OneTree.NodeProb.row(Node).max() == 1 )
   {
-TERMINATENODE:
-      Cla_Uni_Terminate_Node(Node, OneTree, obs_id, CLA_DATA.Y, CLA_DATA.nclass, CLA_DATA.obsweight, useobsweight);
-
-  }else{
-    RLTcout << " split node " << std::endl;
+    OneTree.SplitVar(Node) = -1;
+    return;
     
+  }else{
     //Set up another split
     Split_Class OneSplit;
     
@@ -44,7 +44,7 @@ TERMINATENODE:
     
     // if did not find a good split, terminate
     if (OneSplit.score <= 0)
-      goto TERMINATENODE;    
+      return;    
     
     // record internal node weight 
     if (useobsweight)
@@ -66,7 +66,7 @@ TERMINATENODE:
     
     // if this happens something about the splitting rule is wrong
     if (left_id.n_elem == N or obs_id.n_elem == N)
-      goto TERMINATENODE;
+      return;
     
     // record internal node to tree 
     OneTree.SplitVar(Node) = OneSplit.var;
@@ -112,17 +112,14 @@ TERMINATENODE:
 
 // terminate and record a node
 
-void Cla_Uni_Terminate_Node(size_t Node,
-                            Cla_Uni_Tree_Class& OneTree,
-                            uvec& obs_id,
-                            const uvec& Y,
-                            const size_t nclass,
-                            const vec& obs_weight,
-                            bool useobsweight)
+void Cla_Uni_Record_Node(size_t Node,
+                         Cla_Uni_Tree_Class& OneTree,
+                         uvec& obs_id,
+                         const uvec& Y,
+                         const size_t nclass,
+                         const vec& obs_weight,
+                         bool useobsweight)
 {
-  
-  OneTree.SplitVar(Node) = -1; // -1 mean terminal node. Ow, it would be the variable num
-
   // calculate node probability
   if (useobsweight)
   {

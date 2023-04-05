@@ -269,10 +269,15 @@ size_t checkCores(size_t, size_t);
 // Calculations //
 // *************//
 
-template <class T> const T& max (const T& a, const T& b);
-template <class T> const T& min (const T& a, const T& b);
-
 void cumsum_rev(arma::uvec& seq);
+
+// *************** //
+// field functions //
+// *************** //
+
+void field_vec_resize(arma::field<arma::vec>& A, size_t size);
+void field_vec_resize(arma::field<arma::uvec>& A, size_t size);
+void field_vec_resize(arma::field<arma::ivec>& A, size_t size);
 
 // ************************//
 // Random Number Generator //

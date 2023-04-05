@@ -64,7 +64,7 @@ void Surv_Uni_Split_Cat(Split_Class& TempSplit,
       cat_reduced[j].calculate_score();
   
   // this will move the 0 categories to the tail
-  sort(cat_reduced.begin(), cat_reduced.end(), cat_reduced_compare);
+  sort(cat_reduced.begin(), cat_reduced.end(), cat_class_compare);
   
   sort(cat_reduced.begin(), cat_reduced.begin()+true_cat, cat_reduced_compare_score);
   
@@ -269,6 +269,56 @@ void surv_cat_score_best_w(std::vector<Surv_Cat_Class>& cat_reduced, size_t lowi
   }
 }
 */
+
+
+// find lower or upper bound
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Surv_Cat_Class>& cat_reduced, 
+                    size_t true_cat, 
+                    size_t nmin)
+{
+  // Create a vector of pointers to Cat_Class
+  std::vector<Cat_Class*> Categories(true_cat);
+  
+  for (size_t i = 0; i < true_cat; ++i) {
+    Categories[i] = &cat_reduced[i];
+  }
+  
+  // Call the function with the vector of Cat_Class pointers
+  move_cat_index(lowindex, highindex, Categories, true_cat, nmin);
+}
+
+
+// record
+double record_cat_split(std::vector<Surv_Cat_Class>& cat_reduced,
+                        size_t best_cat,
+                        size_t true_cat,
+                        size_t ncat)
+{
+  uvec goright(ncat + 1, fill::zeros); // the first element (category) of goright will always be set to 0 --- go left, but this category does not exist.
+  
+  for (size_t i = 0; i <= best_cat; i++)
+    goright[cat_reduced[i].cat] = 0;
+  
+  for (size_t i = best_cat + 1; i < true_cat; i++)
+    goright[cat_reduced[i].cat] = 1;
+  
+  for (size_t i = true_cat + 1; i < ncat + 1; i++)
+    goright[cat_reduced[i].cat] = 0; // for empty category, assign randomly
+  
+  return pack(ncat + 1, goright);
+}
+
+
+
+
+
+
+
+
+
+
 
 
 

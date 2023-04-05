@@ -365,7 +365,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   
   # set all parameters
   param.all = append(param, param.control)
-  
+
   # fit model
   
   if (model == "regression")

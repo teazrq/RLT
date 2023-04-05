@@ -189,6 +189,20 @@ void surv_cat_score_best_w(std::vector<Surv_Cat_Class>& cat_reduced,
                           size_t& best_cat,
                           double& best_score);
 
+// categorical variable arrangement
+//Move categorical index
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Surv_Cat_Class>& cat_reduced, 
+                    size_t true_cat, 
+                    size_t nmin);
+
+//Record category
+double record_cat_split(std::vector<Surv_Cat_Class>& cat_reduced,
+                        size_t best_cat, 
+                        size_t true_cat,
+                        size_t ncat);
+
 // for prediction 
 
 void Surv_Uni_Forest_Pred(cube& Pred,
@@ -220,10 +234,6 @@ double suplogrank(const uvec& Left_Fail,
 
 double CoxGrad(uvec& Pseudo_X,
                const vec& z_eta);
-
-arma::mat Cov_Tree(arma::mat& tmp_slice,
-                   size_t& B);
-
 
 // #############################
 // ## new splitting functions

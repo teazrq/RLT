@@ -85,5 +85,21 @@ get.one.tree <- function(x, tree = 1, ...)
     
   }
   
+  if ( class(x)[3] == "cla" )
+  {
+    cat(paste("Tree #", tree, " in the fitted classification forest: \n\n", sep = ""))
+    
+    probmat = x$FittedForest$NodeProb[[tree]]
+    colnames(probmat) = x$ylabels
+    
+    OneTree = data.frame("SplitVar" = newnames[SplitVar + 1],
+                         "SplitValue" = SplitValue,
+                         "LeftNode" = LeftNode,
+                         "RightNode" = RightNode,
+                         "NodeWeight" = NodeWeight,
+                         "Prob.of." = probmat)
+    
+  }  
+  
   return(OneTree)
 }

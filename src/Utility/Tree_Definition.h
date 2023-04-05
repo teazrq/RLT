@@ -15,14 +15,6 @@ using namespace arma;
 #ifndef RLT_TREE_DEFINITION
 #define RLT_TREE_DEFINITION
 
-// *************** //
-// field functions //
-// *************** //
-
-void field_vec_resize(arma::field<arma::vec>& A, size_t size);
-void field_vec_resize(arma::field<arma::uvec>& A, size_t size);
-void field_vec_resize(arma::field<arma::ivec>& A, size_t size);
-
 // *********************** //
 //  Tree and forest class  //
 // *********************** //
@@ -160,14 +152,18 @@ public:
 
 class Cat_Class{
 public:
-    size_t cat = 0;
-    size_t count = 0; // count is used for setting nmin
-    double weight = 0; // weight is used for calculation
-    double score = 0; // for sorting
+  
+  virtual ~Cat_Class() = default;
+  
+  size_t cat = 0; // category number
+  size_t count = 0; // count is used for setting nmin
+  double weight = 0; // weight is used for calculation
+  double score = 0; // for sorting
     
-    void print() {
-        RLTcout << "Category is " << cat << " count is " << count << " weight is " << weight << " score is " << score << std::endl;
-    }
+  void print() {
+      RLTcout << "Category " << cat << " N = " << count << 
+        " weight = " << weight << " score = " << score << std::endl;
+  }
 };
 
 #endif

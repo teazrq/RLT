@@ -14,7 +14,7 @@ arma::mat first_pc(arma::mat& newX,
                    arma::vec& newW,
                    bool useobsweight)
 {
-  size_t P = newX.n_cols;
+  //size_t P = newX.n_cols;
   size_t N = newX.n_rows;
   mat X = newX;
   mat C; // covariance matrix

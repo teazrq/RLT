@@ -21,7 +21,7 @@ SurvForest <- function(x, y, censor,
                              probs = seq(0, 1, length.out = failcount)))
     
     # reduced set of timepoints
-    timepoints = timepoints[timeloc]    
+    timepoints = timepoints[timeloc]
   }
 
   y.point = rep(NA, length(y))
