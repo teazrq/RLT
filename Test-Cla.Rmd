@@ -55,12 +55,12 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   trainn <- 800
   testn <- 1000
   n <- trainn + testn
-  p <- 100
+  p <- 20
 
   # Generate continuous variables (X1) and categorical variables (X2)
   X1 <- matrix(rnorm(n * p / 2), n, p / 2)
   #X2 <- matrix(rnorm(n * p / 2), n, p / 2)
-  X2 <- matrix(as.integer(runif(n * p / 2) * 5), n, p / 2)
+  X2 <- matrix(as.integer(runif(n * p / 2) * 15), n, p / 2)
 
   # Combine continuous and categorical variables into a data frame (X)
   X <- data.frame(X1, X2)
@@ -72,16 +72,16 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   logit <- function(x) exp(x) / (1 + exp(x))
 #  y <- as.factor(rbinom(n, 1, prob = logit(1 + rowSums(X[, 1:5]) + 2 * (X[, p / 2 + 1] %in% c(1, 3)) + rnorm(n))) + 2)
   
-  y <- as.factor(rbinom(n, 1, prob = logit(1 + X[, 1] + 1.5*(X[, p] %in% c(2,4) ))) + 2)
+  y <- as.factor(rbinom(n, 1, prob = logit(1 + 1*X[, 2] + 2*(X[, p] %in% c(1, 3, 5, 7)))) + 2)
   
   # Set tuning parameters
-  ntrees <- 500
+  ntrees <- 1000
   ncores <- 10
-  nmin <- 40
+  nmin <- 20
   mtry <- p/2
   samplereplace <- TRUE
   sampleprob <- 0.75
-  rule <- "random"
+  rule <- "best"
   nsplit <- ifelse(rule == "best", 0, 3)
   importance <- TRUE
 
@@ -95,10 +95,10 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
 
 ```{r class.source = NULL}
   # recording results
-  metric = data.frame(matrix(NA, 4, 5))
+  metric = data.frame(matrix(NA, 4, 6))
   rownames(metric) = c("RLT", "randomForestSRC", "randomForest", "ranger")
-  colnames(metric) = c("fit.time", "pred.time", "pred.error",
-                       "obj.size", "tree.size")
+  colnames(metric) = c("fit.time", "pred.time", "oob.error",
+                       "pred.error", "obj.size", "ave.tree.size")
 
   # using RLT package 
   start_time <- Sys.time()
@@ -113,9 +113,10 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   start_time <- Sys.time()
   RLTPred <- predict(RLTfit, testX, ncores = ncores)
   metric[1, 2] = difftime(Sys.time(), start_time, units = "secs")
-  metric[1, 3] = mean(RLTPred$Prediction != testY)
-  metric[1, 4] = object.size(RLTfit)
-  metric[1, 5] = mean(unlist(lapply(RLTfit$FittedForest$SplitVar, length)))
+  metric[1, 3] = mean(RLTfit$Prediction != trainY)
+  metric[1, 4] = mean(RLTPred$Prediction != testY)
+  metric[1, 5] = object.size(RLTfit)
+  metric[1, 6] = mean(unlist(lapply(RLTfit$FittedForest$SplitVar, length)))
 ```
 
 ```{r}
@@ -123,7 +124,7 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   options(rf.cores = ncores)
   start_time <- Sys.time()
   rsffit <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 
-                  ntree = ntrees, nodesize = nmin, mtry = mtry, 
+                  ntree = ntrees, nodesize = nmin/2, mtry = mtry, 
                   samptype = ifelse(samplereplace == TRUE, "swor", "swr"),
                   nsplit = nsplit, sampsize = trainn*sampleprob, 
                   importance = ifelse(importance, "permute", "none"))
@@ -131,9 +132,10 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   start_time <- Sys.time()
   rsfpred = predict(rsffit, data.frame(testX))
   metric[2, 2] = difftime(Sys.time(), start_time, units = "secs")
-  metric[2, 3] = mean(rsfpred$class != testY)
-  metric[2, 4] = object.size(rsffit)
-  metric[2, 5] = rsffit$forest$totalNodeCount / rsffit$ntree
+  metric[2, 3] = mean(apply(rsffit$predicted.oob, 1, which.max) + 1 != trainY)
+  metric[2, 4] = mean(rsfpred$class != testY)
+  metric[2, 5] = object.size(rsffit)
+  metric[2, 6] = rsffit$forest$totalNodeCount / rsffit$ntree
   
   # use randomForest
   start_time <- Sys.time()
@@ -146,9 +148,10 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   start_time <- Sys.time()
   rf.pred <- predict(rf.fit, testX)
   metric[3, 2] = difftime(Sys.time(), start_time, units = "secs")
-  metric[3, 3] = mean(rf.pred != testY)
-  metric[3, 4] = object.size(rf.fit)
-  metric[3, 5] = mean(colSums(rf.fit$forest$nodestatus != 0))
+  metric[3, 3] = mean(rf.fit$predicted != trainY)
+  metric[3, 4] = mean(rf.pred != testY)
+  metric[3, 5] = object.size(rf.fit)
+  metric[3, 6] = mean(colSums(rf.fit$forest$nodestatus != 0))
   
   # use ranger  
   start_time <- Sys.time()
@@ -163,9 +166,10 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   start_time <- Sys.time()
   rangerpred = predict(rangerfit, data.frame(testX))
   metric[4, 2] = difftime(Sys.time(), start_time, units = "secs")
-  metric[4, 3] = mean(rangerpred$predictions != testY)
-  metric[4, 4] = object.size(rangerfit)
-  metric[4, 5] = mean(unlist(lapply(rangerfit$forest$split.varIDs, length)))
+  metric[4, 3] = mean(rangerfit$predictions != trainY)
+  metric[4, 4] = mean(rangerpred$predictions != testY)
+  metric[4, 5] = object.size(rangerfit)
+  metric[4, 6] = mean(unlist(lapply(rangerfit$forest$split.varIDs, length)))
   
   # performance summary
   metric

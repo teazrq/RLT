@@ -38,9 +38,10 @@ bool unpack_goright(double pack, const size_t cat)
   return(((size_t) pack & 1) ? 1 : 0);
 }
 
-void goright_roller(arma::uvec& goright_cat)
+void goright_roll_one(arma::uvec& goright_cat)
 {
   size_t n = goright_cat.n_elem;
+  goright_cat(0) ++;
   
   for (size_t i = 0; i < n-1; i ++)
   {
@@ -50,6 +51,9 @@ void goright_roller(arma::uvec& goright_cat)
       goright_cat(i+1)++;
     }
   }
+  
+  if (goright_cat(n-1) > 1)
+    RLTcout << "goright_cat reaches max" << std::endl;
 }
 
 // for resampling set ObsTrack

@@ -137,9 +137,21 @@ double cla_uni_cat_score_cut(std::vector<Cla_Cat_Class>& cat_reduced,
                              size_t temp_cat, 
                              size_t true_cat);
 
-double cla_uni_cat_score_cut_w(std::vector<Cla_Cat_Class>& cat_reduced, 
-                               size_t temp_cat, 
-                               size_t true_cat);
+void cla_uni_cat_score_best(std::vector<Cla_Cat_Class>& cat_reduced,
+                            size_t true_cat,
+                            size_t ncat,
+                            size_t nmin,
+                            size_t& best_cat,
+                            double& best_score,
+                            Rand& rngl);
+
+void cla_uni_cat_score_best_large(std::vector<Cla_Cat_Class>& cat_reduced,
+                                  size_t true_cat,
+                                  size_t ncat,
+                                  size_t nmin,
+                                  size_t& best_cat,
+                                  double& best_score,
+                                  Rand& rngl);
 
 // categorical variable arranging 
 //Move categorical index

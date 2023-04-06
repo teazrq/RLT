@@ -10,7 +10,8 @@
 #'                        
 #' @param x               A `matrix` or `data.frame` of features. If \code{x} is 
 #'                        a data.frame, then all factors are treated as categorical 
-#'                        variables.
+#'                        variables, which will go through an exhaustive search of 
+#'                        splitting criteria.
 #' 
 #' @param y               Response variable. a `numeric`/`factor` vector.
 #'                        

@@ -59,7 +59,7 @@ List ForestKernelUni(arma::field<arma::uvec>& NodeType,
 double pack(const size_t nBits, const uvec& bits);
 void unpack(const double pack, const size_t nBits, uvec& bits);
 bool unpack_goright(double pack, const size_t cat);
-void goright_roller(arma::uvec& goright_cat);
+void goright_roll_one(arma::uvec& goright_cat);
 
 // sample both inbag and oobag samples
 void set_obstrack(arma::imat& ObsTrack,

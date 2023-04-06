@@ -300,14 +300,14 @@ public:
   }
   
   // Random
+  // generate number [min, max]
   size_t rand_sizet(size_t min, size_t max){
     
-    boost::random::uniform_int_distribution<int> rand(min, max);
+    boost::random::uniform_int_distribution<size_t> rand(min, max);
     
     return  rand(this -> lrng);
-    
   };
-  
+
   // Random 01
   double rand_01(){
     
@@ -321,7 +321,7 @@ public:
     
     if (max < min) max = min;
     
-    boost::random::uniform_int_distribution<int> rand(min, max);
+    boost::random::uniform_int_distribution<size_t> rand(min, max);
     
     arma::uvec x(Num);
     
@@ -375,7 +375,7 @@ public:
       
     for (size_t i = 0; i < Num; i++){
 
-      boost::random::uniform_int_distribution<int> rand(i, N-1);
+      boost::random::uniform_int_distribution<size_t> rand(i, N-1);
       
       size_t randomloc = rand(this->lrng);
       
@@ -408,7 +408,7 @@ public:
       
       //boost::uniform_01<dqrng::xoshiro256plus> rand(this -> lrng);
       
-      boost::random::uniform_int_distribution<int> rand(min, max);
+      boost::random::uniform_int_distribution<size_t> rand(min, max);
       
       arma::uvec x(Num);
       

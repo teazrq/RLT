@@ -67,7 +67,6 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
     #pragma omp for schedule(dynamic)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
     {
-      
       // set xoshiro random seed
       Rand rngl(seed_vec(nt));
       
@@ -123,7 +122,7 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
         // record terminal node prediction
         mat AllPred(N, nclass);
         for (size_t i = 0; i < NTest; i++)
-          AllPred.row(i) = OneTree.NodeProb.row(TermNode(i));
+          AllPred.row(oobagObs(i)) = OneTree.NodeProb.row(TermNode(i));
         
         Prediction += AllPred;
         oob_count(oobagObs) += 1;
