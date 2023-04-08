@@ -97,7 +97,8 @@
     <dl><dt>x</dt>
 <dd><p>A <code>matrix</code> or <code>data.frame</code> of features. If <code>x</code> is
 a data.frame, then all factors are treated as categorical
-variables.</p></dd>
+variables, which will go through an exhaustive search of
+splitting criteria.</p></dd>
 
 
 <dt>y</dt>
@@ -163,10 +164,14 @@ each column should not exceed \(n\).</p></dd>
 <dt>obs.w</dt>
 <dd><p>Observation weights. The weights will be used for calculating
 the splitting scores, such as a weighted variance reduction
-or weighted log-rank test. But they will not be used for
-sampling observations. Once can use <code>resample.preset</code>
-instead for balanced sampling, etc. This feature is
-experimental and is not implemented in all models.</p></dd>
+or weighted gini index. But they will not be used for
+sampling observations. In that case, one can pre-specify
+<code>resample.preset</code> instead for balanced sampling, etc.
+For survival analysis, observation weights are not implemented
+in the <code>"logrank"</code> or <code>"suplogrank"</code> tests, due to the difficulty
+of calculating the variance of test statistic. However,
+it is used in the <code>"coxgrad"</code> splitting rule. For other
+models, this feature is currently not available.</p></dd>
 
 
 <dt>var.w</dt>
