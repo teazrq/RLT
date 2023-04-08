@@ -66,7 +66,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
   if (importance)
     AllImp.zeros(ntrees, P);
 
-  #pragma omp parallel num_threads(usecores)
+ #pragma omp parallel num_threads(usecores)
   {
     #pragma omp for schedule(dynamic)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees

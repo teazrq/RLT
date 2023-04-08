@@ -43,21 +43,21 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
   //Initialize objects
   Split_Class TempSplit; 
   
-  // initiate the failure and at-risk counts
-  uvec All_Risk_u(NFail+1, fill::zeros);
-  uvec All_Fail(NFail+1, fill::zeros);
-  
-  for (size_t i = 0; i<N; i++)
+
+  if (split_rule == 1) // logrank test
   {
-    All_Risk_u(Y_collapse(i)) ++;
-    All_Fail(Y_collapse(i)) += Censor_collapse(i);
-  }
-  
-  // cumulative at risk counts for left
-  cumsum_rev(All_Risk_u);
-  
-  if (split_rule == 1) // testing
-  {
+    // initiate the failure and at-risk counts
+    uvec All_Risk_Cum(NFail+1, fill::zeros);
+    uvec All_Fail(NFail+1, fill::zeros);
+    
+    for (size_t i = 0; i<N; i++)
+    {
+      All_Risk_Cum(Y_collapse(i)) ++;
+      All_Fail(Y_collapse(i)) += Censor_collapse(i);
+    }
+    
+    // cumulative at risk counts for left
+    cumsum_rev(All_Risk_Cum);
     
     //For each variable in var_try
     for (auto j : var_try)
@@ -78,12 +78,13 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
                              Censor_collapse, // Censor is collapsed
                              NFail,
                              All_Fail,
-                             All_Risk_u,
+                             All_Risk_Cum, // cumulative
                              split_gen,
                              nsplit,
                              alpha,
                              rngl);
         
+        //RLTcout << "Split on cat var " << j << "| get score " << TempSplit.score << std::endl;
       }else{
 
         Surv_Uni_Logrank_Cont(TempSplit,
@@ -93,11 +94,13 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
                               Censor_collapse, 
                               NFail,
                               All_Fail,
-                              All_Risk_u,
+                              All_Risk_Cum, // cumulative
                               split_gen,
                               nsplit,
                               alpha,
                               rngl);
+        
+        //RLTcout << "Split on cont var " << j << "| get score " << TempSplit.score << std::endl;
 
       }
       
@@ -114,33 +117,34 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
     return;
   }
 
-  // initiate the failure and at-risk counts
-  vec All_Risk(NFail+1, fill::zeros);
-  All_Fail.zeros();
-  
-  for (size_t i = 0; i<N; i++)
-  {
-    All_Risk(Y_collapse(i)) ++;
-    All_Fail(Y_collapse(i)) += Censor_collapse(i);
-  }
-  
-  // cumulative at risk counts for left
-  for (size_t j = NFail-1; j >0; j--)
-    All_Risk(j) += All_Risk(j+1);
-  All_Risk(0) += All_Risk(1);
-  
-  // if suplogrank, calculate the cc/temp*vterms
-  vec Temp_Vec(NFail+1, fill::zeros);
-  
-  Temp_Vec = 1.0 - conv_to< vec >::from(All_Fail - 1.0)/(All_Risk-1.0); 
-  Temp_Vec = Temp_Vec % All_Fail/All_Risk;
-  
-  for (size_t i =0; i < All_Risk.n_elem; i++)
-    if (All_Risk(i) < 2)
-      Temp_Vec(i) = 0;
-  
   if (split_rule == 2) // suplogrank test
   {
+    
+    // initiate the failure and at-risk counts
+    vec All_Risk(NFail+1, fill::zeros);
+    uvec All_Fail(NFail+1, fill::zeros);
+    
+    for (size_t i = 0; i<N; i++)
+    {
+      All_Risk(Y_collapse(i)) ++;
+      All_Fail(Y_collapse(i)) += Censor_collapse(i);
+    }
+    
+    // cumulative at risk counts for left
+    for (size_t j = NFail-1; j >0; j--)
+      All_Risk(j) += All_Risk(j+1);
+    All_Risk(0) += All_Risk(1);
+    
+    // if suplogrank, calculate the cc/temp*vterms
+    vec Temp_Vec(NFail+1, fill::zeros);
+    
+    Temp_Vec = 1.0 - conv_to< vec >::from(All_Fail - 1.0)/(All_Risk-1.0); 
+    Temp_Vec = Temp_Vec % All_Fail/All_Risk;
+    
+    for (size_t i =0; i < All_Risk.n_elem; i++)
+      if (All_Risk(i) < 2)
+        Temp_Vec(i) = 0;    
+    
     //For each variable in var_try
     for (auto j : var_try)
     {
@@ -193,38 +197,72 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
     return;
   }
   
-  // coxgradient split (split_rule == 3)
-  //Define CoxGrad parameters
-  vec z_etaF;
-  vec z_etaC;
-  vec z_eta(N);
-  z_eta.zeros();
-  
-  //Calculate z & w.  Pass into split function Surv_..._Cont_Pseudo. 
-  vec etaj = All_Risk;
-  
-  vec tmp = All_Fail/etaj;
-  tmp = cumsum(tmp);
-  tmp(All_Risk.n_elem-1) = 0;
-  tmp = shift(tmp, 1);
-  
-  z_etaF = (1 - tmp);
-  z_etaF.elem( find_nonfinite(z_etaF) ).zeros();
-  z_etaC = (0 - tmp);
-  z_etaC.elem( find_nonfinite(z_etaC) ).zeros();
-  
-  for (size_t i = 0; i<obs_id.n_elem; i++)
-  {
-    
-    if (Censor_collapse(i) == 1){
-      z_eta(i) = z_etaF(Y_collapse(i));
-    }else{
-      z_eta(i) = z_etaC(Y_collapse(i));
-    }
-  }
   
   if(split_rule==3)
   {
+    
+    
+    
+    // initiate the failure and at-risk counts
+    vec All_Risk(NFail+1, fill::zeros);
+    uvec All_Fail(NFail+1, fill::zeros);
+    
+    for (size_t i = 0; i<N; i++)
+    {
+      All_Risk(Y_collapse(i)) ++;
+      All_Fail(Y_collapse(i)) += Censor_collapse(i);
+    }
+    
+    // cumulative at risk counts for left
+    for (size_t j = NFail-1; j >0; j--)
+      All_Risk(j) += All_Risk(j+1);
+    All_Risk(0) += All_Risk(1);
+    
+    // coxgradient split (split_rule == 3)
+    //Define CoxGrad parameters
+    vec z_etaF;
+    vec z_etaC;
+    vec z_eta(N);
+    z_eta.zeros();
+    
+    //Calculate z & w.  Pass into split function Surv_..._Cont_Pseudo. 
+    vec etaj = All_Risk;
+    
+    vec tmp = All_Fail/etaj;
+    tmp = cumsum(tmp);
+    tmp(All_Risk.n_elem-1) = 0;
+    tmp = shift(tmp, 1);
+    
+    z_etaF = (1 - tmp);
+    z_etaF.elem( find_nonfinite(z_etaF) ).zeros();
+    z_etaC = (0 - tmp);
+    z_etaC.elem( find_nonfinite(z_etaC) ).zeros();
+    
+    for (size_t i = 0; i<obs_id.n_elem; i++)
+    {
+      
+      if (Censor_collapse(i) == 1){
+        z_eta(i) = z_etaF(Y_collapse(i));
+      }else{
+        z_eta(i) = z_etaC(Y_collapse(i));
+      }
+    }    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     //For each variable in var_try
     for (auto j : var_try)

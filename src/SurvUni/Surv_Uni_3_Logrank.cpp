@@ -10,7 +10,7 @@ using namespace Rcpp;
 using namespace arma;
 
 
-// logrank split socres
+// logrank split scores
 void Surv_Uni_Logrank_Cont(Split_Class& TempSplit,
                            const uvec& obs_id,
                            const vec& x,
@@ -18,7 +18,7 @@ void Surv_Uni_Logrank_Cont(Split_Class& TempSplit,
                            const uvec& Censor, // Censor is collapsed
                            const size_t NFail,
                            const uvec& All_Fail,
-                           const uvec& All_Risk,
+                           const uvec& All_Risk, // cumulative
                            int split_gen,
                            int nsplit,
                            double alpha,
@@ -240,7 +240,7 @@ void logrank_best(const uvec& indices, // index for Y, sorted by x
 double logrank(const uvec& Left_Fail, 
                const uvec& Left_Risk, // left Fail is already cumulative
                const uvec& All_Fail,
-               const uvec& All_Risk)
+               const uvec& All_Risk) // also cumulative 
 {
 
   // cumulative at risk counts for left
@@ -275,7 +275,7 @@ double logrank(const uvec& Left_Fail,
   return Z*Z / V;
 }
 
-//Calculate logrank score at x value cut, sequential calculation without vector
+// Calculate logrank score at x value cut, sequential calculation without vector
 // this is not validated yet, not currently used, maybe for later?
 double logrank_at_x_cut_novec(const uvec& obs_id,
                               const vec& x,
@@ -335,9 +335,10 @@ double logrank_at_x_cut_novec(const uvec& obs_id,
 }
 
 
+/////////////////////////////////////////////
+// logrank split for categorical variables //
+/////////////////////////////////////////////
 
-
-// logrank split scores
 void Surv_Uni_Logrank_Cat(Split_Class& TempSplit,
                           const uvec& obs_id,
                           const vec& x,
@@ -346,36 +347,230 @@ void Surv_Uni_Logrank_Cat(Split_Class& TempSplit,
                           const uvec& Censor, // Censor is collapsed
                           const size_t NFail,
                           const uvec& All_Fail,
-                          const uvec& All_Risk,
+                          const uvec& All_Risk, // cumulative
                           int split_gen,
                           int nsplit,
                           double alpha,
                           Rand& rngl)
 {
-  RLTcout << " use catigorical split" << std::endl;
+  // record each observation 
+  size_t N = obs_id.n_elem;
+  size_t nmin = N*alpha < 1 ? 1 : N*alpha;
+
+  // I will initiate ncat+1 categories since factor x come from R and starts from 1
+  // the first category will be empty
+  std::vector<Surv_Cat_Class> cat_reduced(ncat + 1);
   
-  // categorical splitting class
-  // std::vector<Cat_Class_2*> cat_reduced(ncat + 1);  
-  
-  /*
-  // initiate 
-  for (size_t j = 0; j < cat_reduced.size(); j++)
+  // initiate values, ignore 0
+  for (size_t j = 1; j < cat_reduced.size(); j++)
   {
-    Cat_Class_2 NewCat;
-    NewCat.cat = j;
-    NewCat.surv_value = 3;
-    cat_reduced[j] = &NewCat;
+    cat_reduced[j].initiate(j, NFail);
   }
-  */
-  // test a function 
+
+  // copy data into reduced list 
+  for (size_t i = 0; i < N; i++)
+  {
+    size_t temp_cat = (size_t) x(obs_id(i));
+    
+    cat_reduced[temp_cat].count++;
+    cat_reduced[temp_cat].weight++;
+    
+    if (Censor(i)) // failure obs
+    {
+      cat_reduced[temp_cat].RiskCount(Y(i))++;
+      cat_reduced[temp_cat].FailCount(Y(i))++;
+      cat_reduced[temp_cat].nfail++;
+    }else{
+      cat_reduced[temp_cat].RiskCount(Y(i))++;
+    }
+  }
   
-  // surv_print(cat_reduced);
+  // calculate other things
+  size_t true_cat = 0;  
   
-  //RLTcout << "finished reducing" << std::endl;
+  for (size_t j = 1; j < cat_reduced.size(); j++)
+  {
+    if (cat_reduced[j].count)
+    {
+      true_cat++; // nonempty category
+      cat_reduced[j].score = 1; // for sorting (random split)
+      cumsum_rev(cat_reduced[j].RiskCount);
+    }
+  }
+
+  if (true_cat <= 1)
+    return;
+  
+  // reorder them, nonempty categories comes first
+  sort(cat_reduced.begin(), cat_reduced.end(), cat_class_compare);
+
+  // used for recording
+  size_t best_cat;
+  double temp_score = 0;
+  double best_score = -1;
+  
+  // start split 
+  if ( split_gen == 1 or split_gen == 2 )
+  {
+    for ( int k = 0; k < nsplit; k++ )
+    {
+      // first generate a random order of the categories 
+      for (size_t j = 1; j < true_cat; j++)
+        cat_reduced[j].score = rngl.rand_01();
+      
+      // sort the categories based on the probability of class j
+      sort(cat_reduced.begin(), cat_reduced.begin() + true_cat, cat_class_compare);
+      
+      // rank split, figure out low and high index
+      size_t lowindex = 0;
+      size_t highindex = true_cat - 2;
+      
+      // if alpha > 0, this will (try to) force nmin for each child node
+      if (alpha > 0)
+        move_cat_index(lowindex, highindex, cat_reduced, true_cat, nmin);
+      
+      // generate a random cut to split the categories
+      size_t temp_cat = rngl.rand_sizet( lowindex, highindex );
+      
+      // copy things into fail and risk vectors
+      uvec Left_Fail(NFail+1, fill::zeros);
+      uvec Left_Risk(NFail+1, fill::zeros);
+
+      for (size_t i = 0; i <= temp_cat; i++)
+      {
+        Left_Fail += cat_reduced[i].FailCount;
+        Left_Risk += cat_reduced[i].RiskCount;
+      }
+      
+      // cumulative at risk counts for left
+      // cumsum_rev(Left_Risk);
+
+      temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);      
+
+      if (temp_score > best_score)
+      {
+        best_cat = record_cat_split(cat_reduced, temp_cat, true_cat, ncat);
+        best_score = temp_score;
+      }
+    }
+  }else{
+    // best split
+    if (true_cat > 10) // maxrun = 511
+    {
+      // first generate a random order of the categories 
+      for (size_t j = 1; j < true_cat; j++)
+        cat_reduced[j].score = rngl.rand_01();
+      
+      // sort the categories based on the probability of class j
+      sort(cat_reduced.begin(), cat_reduced.begin() + true_cat, cat_class_compare);
+      
+      // calculate the score for first 511 = 2^(10-1)-1 types
+      
+    }else{
+      
+      logrank_best_cat(cat_reduced, true_cat, ncat, nmin, N,
+                       All_Fail, All_Risk, 
+                       best_cat, best_score, rngl);      
+
+    }
+  }
+  
+  
+  if (best_score > TempSplit.score)
+  {
+    TempSplit.value = best_cat;
+    TempSplit.score = best_score;
+  }
+
+  
 }
 
 
 
+
+
+// best split this will go through all combinations
+void logrank_best_cat(std::vector<Surv_Cat_Class>& cat_reduced,
+                      size_t true_cat,
+                      size_t ncat,
+                      size_t nmin,
+                      size_t N,
+                      const uvec& All_Fail,
+                      const uvec& All_Risk, // cumulative
+                      size_t& best_cat,
+                      double& best_score,
+                      Rand& rngl)
+{
+  // this is not the real goright indicator, it only has true_cat
+  // and the first element is used
+  uvec temp_go(true_cat, fill::zeros);
+  
+  // number of all possible combinations
+  size_t maxrun = (size_t) std::pow(2, true_cat - 1) - 1;
+  
+  // prepare for tests
+  size_t tlength = All_Fail.n_elem;
+  size_t Left_n = 0;
+  uvec Left_Fail(tlength, fill::zeros);
+  uvec Left_Risk(tlength, fill::zeros);
+  
+  double tempscore;
+  uvec best_go;
+  
+  for (size_t k = 0; k < maxrun; k++)
+  {
+    // add one to first cat, then adjust the binary indicators
+    goright_roll_one(temp_go);
+    
+    // check sample size 
+    Left_n = 0;
+    Left_Fail.zeros();
+    Left_Risk.zeros();
+    
+    for (size_t j = 0; j < true_cat; j++)
+    {
+      if (temp_go(j) == 0)
+        Left_n += cat_reduced[j].count;
+    }
+    
+    // check nmin
+    if (Left_n < nmin or (N - Left_n) < nmin)
+      continue;
+    
+    // calculate scores
+    for (size_t j = 0; j < true_cat; j++)
+    {
+      if (temp_go(j) == 1)
+      {
+        Left_Fail += cat_reduced[j].FailCount;
+        Left_Risk += cat_reduced[j].RiskCount;
+      }
+      
+      // cumsum_rev(Left_Risk);
+    }
+
+    tempscore = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+    
+    if (tempscore > best_score)
+    {
+      best_go = temp_go;
+      best_score = tempscore;
+    }
+  }
+  
+  // convert best_go to best_cat
+  if (best_score > 0)
+  {
+    // RLTcout << " best split is " << best_go.t() << std::endl;
+    
+    uvec goright(ncat + 1, fill::zeros); 
+    
+    for (size_t j = 0; j < true_cat; j++)
+      goright(cat_reduced[j].cat) = best_go(j);
+    
+    best_cat = pack(ncat + 1, goright);    
+  }
+}
 
 
 

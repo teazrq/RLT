@@ -69,12 +69,11 @@ get.surv.band <- function(x,
     if (method == "naive-mc")
     {
       marsd = sqrt(diag(x$Cov[,,k]))
-      marsd = marsd / sqrt(sum(marsd^2))
+      # marsd = marsd / sqrt(sum(marsd^2))
       bandk = mc_band(marsd, x$Cov[,,k], alpha, nsim)
       approxerror = NULL
     }
-      
-
+    
     if (method == "smoothed-mc")
     {
       # will add two points at the boundary to improve the behavior. 
@@ -87,24 +86,33 @@ get.surv.band <- function(x,
       
       # raw marginal variance
       mar_var = diag(x$Cov[,,k])
-
+      
       fit <- glmnet::glmnet(basis, c(mar_var[1], mar_var, tail(mar_var, 1)),
                             alpha = 0, intercept = FALSE,
                             lower.limits = 0, lambda = 1e-5)
       smarvar = predict(fit, basis)
       smarvar = smarvar[2:(p+1)]
       
-      # plot(1:p, mar_var)
-      # lines(1:p, smarvar, type = "l", col = "red", lwd = 2)     
+      newmat = x$Cov[,,k]
+      diag(newmat) = smarvar
+      
+      # find positive definite projection
+      pdmat = suppressWarnings(Matrix::nearPD(newmat, 
+                               keepDiag = TRUE, # keep the diagonal
+                               base.matrix = TRUE, 
+                               conv.norm.type = "F",
+                               trace = FALSE, maxit = 10))
 
+      # heatmap(pdmat$mat, Rowv = NA, Colv = NA, symm = TRUE)
+      
       smarsd = sqrt(smarvar)
-      smarsd = smarsd / sqrt(sum(smarsd^2))
+      # smarsd = smarsd / sqrt(sum(smarsd^2))
       
-      bandk = mc_band(smarsd, x$Cov[,,k], alpha, nsim)
-      approxerror = NULL
+      bandk = mc_band(smarsd, pdmat$mat, alpha, nsim)
+      approxerror = sum((pdmat$mat - x$Cov[,,k])^2) / sum(x$Cov[,,k]^2)
     }
-      
-    if (method == "smoothed-lr")
+    
+    if (method == "smoothed-lr2")
     {
       ccov = x$Cov[,,k]
       coveigen = eigen(ccov)

@@ -38,8 +38,6 @@ void Cla_Uni_Split_Cat(Split_Class& TempSplit,
     cat_reduced[j].initiate(j, nclass);
   }
   
-
-  
   if (useobsweight){
     for (size_t i = 0; i < N; i++)
     {
@@ -113,7 +111,7 @@ void Cla_Uni_Split_Cat(Split_Class& TempSplit,
       
       if (temp_score > best_score)
       {
-        best_cat = record_cat_split(cat_reduced, temp_cat, true_cat, ncat);;
+        best_cat = record_cat_split(cat_reduced, temp_cat, true_cat, ncat);
         best_score = temp_score;
       }
     }

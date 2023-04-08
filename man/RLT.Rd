@@ -32,7 +32,8 @@ RLT(
 \arguments{
 \item{x}{A \code{matrix} or \code{data.frame} of features. If \code{x} is
 a data.frame, then all factors are treated as categorical
-variables.}
+variables, which will go through an exhaustive search of
+splitting criteria.}
 
 \item{y}{Response variable. a \code{numeric}/\code{factor} vector.}
 
@@ -74,10 +75,14 @@ each column should not exceed \eqn{n}.}
 
 \item{obs.w}{Observation weights. The weights will be used for calculating
 the splitting scores, such as a weighted variance reduction
-or weighted log-rank test. But they will not be used for
-sampling observations. Once can use \code{resample.preset}
-instead for balanced sampling, etc. This feature is
-experimental and is not implemented in all models.}
+or weighted gini index. But they will not be used for
+sampling observations. In that case, one can pre-specify
+\code{resample.preset} instead for balanced sampling, etc.
+For survival analysis, observation weights are not implemented
+in the \code{"logrank"} or \code{"suplogrank"} tests, due to the difficulty
+of calculating the variance of test statistic. However,
+it is used in the \code{"coxgrad"} splitting rule. For other
+models, this feature is currently not available.}
 
 \item{var.w}{Variable weights. If this is supplied, the default is to
 perform weighted sampling of \code{mtry} variables. For

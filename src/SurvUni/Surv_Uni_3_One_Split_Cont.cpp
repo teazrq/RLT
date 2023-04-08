@@ -174,7 +174,7 @@ double surv_cont_score_at_cut(const uvec& obs_id,
   
   // calculate score
   if (split_rule == 1){
-    temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+    RLTcout << "logrank should be done at new functions " << std::endl;
   }
   if (split_rule == 2){
     temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec);
@@ -213,7 +213,7 @@ double surv_cont_score_at_index(uvec& indices,
   }
   
   if (split_rule == 1)
-    temp_score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+    RLTcout << "logrank should be done at new functions " << std::endl;
   if (split_rule == 2){
     temp_score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec);
   }
@@ -270,7 +270,7 @@ void surv_cont_score_best(uvec& indices,
     }
     
     if (split_rule == 1)
-      score = logrank(Left_Fail, Left_Risk, All_Fail, All_Risk);
+      RLTcout << "logrank should be done at new functions " << std::endl;
     if (split_rule == 2){
       score = suplogrank(Left_Fail, Left_Risk, All_Fail, All_Risk, Temp_Vec);
     }
@@ -293,7 +293,7 @@ void surv_cont_score_best(uvec& indices,
     }
 
 }
-
+/*
 double logrank(const uvec& Left_Fail, 
                const uvec& Left_Risk, 
                uvec& All_Fail,
@@ -330,7 +330,7 @@ double logrank(const uvec& Left_Fail,
 
   return num/var;
 }
-
+*/
 double suplogrank(const uvec& Left_Fail, 
                   const uvec& Left_Risk, 
                   const uvec& All_Fail, 

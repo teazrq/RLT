@@ -126,7 +126,47 @@ void Surv_Uni_Split_Cat(Split_Class& TempSplit,
                        bool useobsweight,
                        Rand& rngl);
 
-// splitting score calculations (continuous)
+////////////////////
+// for prediction 
+///////////////////
+
+void Surv_Uni_Forest_Pred(cube& Pred,
+                          const Surv_Uni_Forest_Class& SURV_FOREST,
+                          const mat& X,
+                          const uvec& Ncat,
+                          size_t& NFail,
+                          size_t usecores,
+                          size_t verbose);
+
+////////////////////////////////////////////////////////////
+// Survival specific utility functions
+////////////////////////////////////////////////////////////
+
+// arrange Y and Censor
+void collapse(const uvec& Y, const uvec& Censor, 
+              uvec& Y_collapse, uvec& Censor_collapse, 
+              uvec& obs_id, size_t& NFail);
+
+// categorical variable arrangement
+//Move categorical index
+void move_cat_index(size_t& lowindex, 
+                    size_t& highindex, 
+                    std::vector<Surv_Cat_Class>& cat_reduced, 
+                    size_t true_cat, 
+                    size_t nmin);
+
+//Record category
+double record_cat_split(std::vector<Surv_Cat_Class>& cat_reduced,
+                        size_t best_cat, 
+                        size_t true_cat,
+                        size_t ncat);
+
+
+
+
+////////////////////////////////////////
+// splitting score calculations (continuous) old
+////////////////////////////////////////
 
 double surv_cont_score_at_cut(const uvec& obs_id,
                              const vec& x,
@@ -165,66 +205,7 @@ void surv_cont_score_best(uvec& indices,
                          double& temp_score,
                          int split_rule);
 
-// splitting score calculations (categorical)
-
-double surv_cat_score(std::vector<Surv_Cat_Class>& cat_reduced, 
-                     size_t temp_cat, 
-                     size_t true_cat);
-
-double surv_cat_score_w(std::vector<Surv_Cat_Class>& cat_reduced, 
-                       size_t temp_cat, 
-                       size_t true_cat);
-
-void surv_cat_score_best(std::vector<Surv_Cat_Class>& cat_reduced, 
-                        size_t lowindex,
-                        size_t highindex,
-                        size_t true_cat,
-                        size_t& best_cat,
-                        double& best_score);
-
-void surv_cat_score_best_w(std::vector<Surv_Cat_Class>& cat_reduced, 
-                          size_t lowindex,
-                          size_t highindex,
-                          size_t true_cat,
-                          size_t& best_cat,
-                          double& best_score);
-
-// categorical variable arrangement
-//Move categorical index
-void move_cat_index(size_t& lowindex, 
-                    size_t& highindex, 
-                    std::vector<Surv_Cat_Class>& cat_reduced, 
-                    size_t true_cat, 
-                    size_t nmin);
-
-//Record category
-double record_cat_split(std::vector<Surv_Cat_Class>& cat_reduced,
-                        size_t best_cat, 
-                        size_t true_cat,
-                        size_t ncat);
-
-// for prediction 
-
-void Surv_Uni_Forest_Pred(cube& Pred,
-                         const Surv_Uni_Forest_Class& SURV_FOREST,
-                         const mat& X,
-                         const uvec& Ncat,
-                         size_t& NFail,
-                         size_t usecores,
-                         size_t verbose);
-
-// Survival specific functions
-
-void collapse(const uvec& Y, const uvec& Censor, 
-              uvec& Y_collapse, uvec& Censor_collapse, 
-              uvec& obs_id, size_t& NFail);
-
 // splitting score calculations
-
-double logrank(const uvec& Left_Fail, 
-               const uvec& Left_Risk, 
-               uvec& All_Fail, 
-               vec& All_Risk);
 
 double suplogrank(const uvec& Left_Fail, 
                   const uvec& Left_Risk, 
@@ -239,6 +220,8 @@ double CoxGrad(uvec& Pseudo_X,
 // ## new splitting functions
 // #############################
 
+//// logrank splits 
+
 // calculate logrank scores for all types of split.gen
 void Surv_Uni_Logrank_Cont(Split_Class& TempSplit,
                            const uvec& obs_id,
@@ -247,11 +230,25 @@ void Surv_Uni_Logrank_Cont(Split_Class& TempSplit,
                            const uvec& Censor, // Censor is collapsed
                            const size_t NFail,
                            const uvec& All_Fail,
-                           const uvec& All_Risk,
+                           const uvec& All_Risk, // cumulative
                            int split_gen,
                            int nsplit,
                            double alpha,
                            Rand& rngl);
+
+void Surv_Uni_Logrank_Cat(Split_Class& TempSplit,
+                          const uvec& obs_id,
+                          const vec& x,
+                          const size_t ncat,
+                          const uvec& Y, // Y is collapsed
+                          const uvec& Censor, // Censor is collapsed
+                          const size_t NFail,
+                          const uvec& All_Fail,
+                          const uvec& All_Risk, // cumulative
+                          int split_gen,
+                          int nsplit,
+                          double alpha,
+                          Rand& rngl);
 
 // logrank score at random cut of x value, with pre-calculated at risk and fail
 double logrank_at_x_cut(const uvec& obs_id,
@@ -286,30 +283,25 @@ void logrank_best(const uvec& indices, // index for Y, sorted by x
                   double& temp_cut, 
                   double& temp_score);
 
-// logrank score 
+// best score for categorical variable
+void logrank_best_cat(std::vector<Surv_Cat_Class>& cat_reduced,
+                      size_t true_cat,
+                      size_t ncat,
+                      size_t nmin,
+                      size_t N,
+                      const uvec& All_Fail,
+                      const uvec& All_Risk, // cumulative
+                      size_t& best_cat,
+                      double& best_score,
+                      Rand& rngl);
+
+// general logrank score calculation
 double logrank(const uvec& Left_Fail,
                const uvec& Left_Risk,
                const uvec& All_Fail,
                const uvec& All_Risk);
 
 
-// categorical split 
-
-void Surv_Uni_Logrank_Cat(Split_Class& TempSplit,
-                          const uvec& obs_id,
-                          const vec& x,
-                          const size_t ncat,
-                          const uvec& Y, // Y is collapsed
-                          const uvec& Censor, // Censor is collapsed
-                          const size_t NFail,
-                          const uvec& All_Fail,
-                          const uvec& All_Risk,
-                          int split_gen,
-                          int nsplit,
-                          double alpha,
-                          Rand& rngl);
-    
-    
 // #############################
 // ## Combination Split Trees - NOT IMPLEMENTED##
 // #############################

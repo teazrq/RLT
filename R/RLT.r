@@ -60,10 +60,14 @@
 #' 
 #' @param obs.w           Observation weights. The weights will be used for calculating 
 #'                        the splitting scores, such as a weighted variance reduction 
-#'                        or weighted log-rank test. But they will not be used for 
-#'                        sampling observations. Once can use \code{resample.preset}
-#'                        instead for balanced sampling, etc. This feature is 
-#'                        experimental and is not implemented in all models.
+#'                        or weighted gini index. But they will not be used for 
+#'                        sampling observations. In that case, one can pre-specify 
+#'                        \code{resample.preset} instead for balanced sampling, etc. 
+#'                        For survival analysis, observation weights are not implemented 
+#'                        in the `"logrank"` or `"suplogrank"` tests, due to the difficulty 
+#'                        of calculating the variance of test statistic. However, 
+#'                        it is used in the `"coxgrad"` splitting rule. For other 
+#'                        models, this feature is currently not available. 
 #' 
 #' @param var.w           Variable weights. If this is supplied, the default is to 
 #'                        perform weighted sampling of \code{mtry} variables. For 
@@ -226,8 +230,16 @@ RLT <- function(x, y, censor = NULL, model = NULL,
 {
   # check model type
   if (is.null(model))
-    stop("Please specify the model type")
-  
+  {
+    if (is.factor(y)) model = "classification"
+    
+    if (is.numeric(y) & !is.null(censor)) model = "survival"
+    
+    if (is.numeric(y) & is.null(censor)) model = "regression"
+    
+    if (is.null(model)) stop("Please specify the model type")
+  }
+
   if (!match(model, c("regression", "classification", "quantile", 
                      "survival", "graph"), nomatch = 0))
     stop("model type not recognized")
@@ -379,7 +391,6 @@ RLT <- function(x, y, censor = NULL, model = NULL,
 
   if (model == "classification")
   {
-    if (verbose > 0) cat("runing classification forest ... \n ")
     RLT.fit = ClaForest(x, y, ncat,
                         obs.w, var.w, 
                         resample.preset, 
@@ -388,7 +399,6 @@ RLT <- function(x, y, censor = NULL, model = NULL,
 
   if (model == "survival")
   {
-    if (verbose > 0) cat("runing survival forest ... \n ")
     RLT.fit = SurvForest(x, y, censor, 
                          ncat, failcount,
                          obs.w, var.w, 

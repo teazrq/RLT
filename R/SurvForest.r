@@ -12,8 +12,7 @@ SurvForest <- function(x, y, censor,
 {
   # prepare y
   timepoints = sort(unique(y[censor == 1]))
-  cat(paste("use failcount", failcount))
-  
+
   # a smaller failcount
   if (failcount != 0 & failcount < length(timepoints))
   {

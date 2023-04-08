@@ -71,3 +71,7 @@ cindex_d <- function(Y, Censor, pred) {
     .Call('_RLT_cindex_d', PACKAGE = 'RLT', Y, Censor, pred)
 }
 
+testcpp <- function(n) {
+    invisible(.Call('_RLT_testcpp', PACKAGE = 'RLT', n))
+}
+

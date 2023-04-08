@@ -60,7 +60,7 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   # Generate continuous variables (X1) and categorical variables (X2)
   X1 <- matrix(rnorm(n * p / 2), n, p / 2)
   #X2 <- matrix(rnorm(n * p / 2), n, p / 2)
-  X2 <- matrix(as.integer(runif(n * p / 2) * 15), n, p / 2)
+  X2 <- matrix(as.integer(runif(n * p / 2) * 10), n, p / 2)
 
   # Combine continuous and categorical variables into a data frame (X)
   X <- data.frame(X1, X2)
@@ -117,9 +117,7 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   metric[1, 4] = mean(RLTPred$Prediction != testY)
   metric[1, 5] = object.size(RLTfit)
   metric[1, 6] = mean(unlist(lapply(RLTfit$FittedForest$SplitVar, length)))
-```
 
-```{r}
   # use randomForestSRC
   options(rf.cores = ncores)
   start_time <- Sys.time()

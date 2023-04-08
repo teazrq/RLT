@@ -283,6 +283,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// testcpp
+void testcpp(size_t n);
+RcppExport SEXP _RLT_testcpp(SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< size_t >::type n(nSEXP);
+    testcpp(n);
+    return R_NilValue;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RLT_ClaUniForestFit", (DL_FUNC) &_RLT_ClaUniForestFit, 8},
@@ -301,6 +311,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RLT_SurvUniForestPred", (DL_FUNC) &_RLT_SurvUniForestPred, 13},
     {"_RLT_mc_band", (DL_FUNC) &_RLT_mc_band, 4},
     {"_RLT_cindex_d", (DL_FUNC) &_RLT_cindex_d, 3},
+    {"_RLT_testcpp", (DL_FUNC) &_RLT_testcpp, 1},
     {NULL, NULL, 0}
 };
 

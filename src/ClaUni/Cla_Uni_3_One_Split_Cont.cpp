@@ -9,7 +9,7 @@
 using namespace Rcpp;
 using namespace arma;
 
-//Find a split on a particular variable
+// Find a split on a particular variable
 void Cla_Uni_Split_Cont(Split_Class& TempSplit,
                         const uvec& obs_id,
                         const vec& x,
@@ -24,25 +24,24 @@ void Cla_Uni_Split_Cont(Split_Class& TempSplit,
                         bool useobsweight,
                         Rand& rngl)
 {
-
-  size_t N = obs_id.n_elem;
+  size_t N = obs_id.n_elem; // Number of elements in obs_id
   
-  double temp_score;
+  double temp_score; // Temporary score for comparison
   
-  if (split_gen == 1) // random split
+  // Case 1: Random split
+  if (split_gen == 1)
   {
     for (size_t k = 0; k < nsplit; k++)
     {
-      // generate a random cut off
-      size_t temp_id = obs_id( rngl.rand_sizet(0,N-1) );
+      // Generate a random cut off
+      size_t temp_id = obs_id(rngl.rand_sizet(0, N - 1));
       double temp_cut = x(temp_id);
       
-      // calculate score
-      if (useobsweight)
-        temp_score = cla_uni_cont_score_cut_sub_w(obs_id, x, Y, nclass, temp_cut, obs_weight);
-      else
-        temp_score = cla_uni_cont_score_cut_sub(obs_id, x, Y, nclass, temp_cut);
+      // Calculate score based on weights
+      temp_score = useobsweight ? cla_uni_cont_score_cut_sub_w(obs_id, x, Y, nclass, temp_cut, obs_weight)
+        : cla_uni_cont_score_cut_sub(obs_id, x, Y, nclass, temp_cut);
       
+      // Update TempSplit if a better score is found
       if (temp_score > TempSplit.score)
       {
         TempSplit.value = temp_cut;
@@ -53,30 +52,28 @@ void Cla_Uni_Split_Cont(Split_Class& TempSplit,
     return;
   }
   
-  // indices is obs_id sorted based on x values
+  // Sort obs_id based on x values
   uvec indices = obs_id(sort_index(x(obs_id)));
   
-  // check identical
-  if ( x(indices(0)) == x(indices(N-1)) ) return;
+  // Check identical values and return if identical
+  if (x(indices(0)) == x(indices(N - 1))) return;
   
-  // set low and high index
-  size_t lowindex = 0; // less equal goes to left
+  // Set low and high index
+  size_t lowindex = 0; // Less equal goes to left
   size_t highindex = N - 2;
   
-  // alpha is only effective when x can be sorted 
-  // this will force a portion of alpha for each child node 
+  // Apply alpha when x can be sorted
   if (alpha > 0)
   {
-    // size on each side
-    size_t nmin = N*alpha < 1 ? 1 : N*alpha;
+    size_t nmin = N * alpha < 1 ? 1 : N * alpha; // Size on each side
     
-    lowindex = nmin-1; // less equal goes to left
+    lowindex = nmin - 1; // Less equal goes to left
     highindex = N - nmin - 1;
   }
   
-  // if ties, move index to better locations
-  if ( x(indices(lowindex)) == x(indices(lowindex+1)) or 
-         x(indices(highindex)) == x(indices(highindex+1)) )
+  // Adjust indices for ties
+  if (x(indices(lowindex)) == x(indices(lowindex + 1)) ||
+      x(indices(highindex)) == x(indices(highindex + 1)))
   {
     check_cont_index_sub(lowindex, highindex, x, indices);
     
@@ -86,36 +83,36 @@ void Cla_Uni_Split_Cont(Split_Class& TempSplit,
       return;
     }
   }
-
-  // rank split
+  
+  // Case 2: Rank split
   if (split_gen == 2)
   {
     for (size_t k = 0; k < nsplit; k++)
     {
-      // generate a cut off
-      size_t temp_ind = rngl.rand_sizet( lowindex, highindex );
+      // Generate a cut off
+      size_t temp_ind = rngl.rand_sizet(lowindex, highindex);
       
-      // there could be ties here. move up or down
-      if ( x(indices(temp_ind)) == x(indices(temp_ind+1)) )
+      // Adjust index for ties
+      if (x(indices(temp_ind)) == x(indices(temp_ind + 1)))
       {
         if (rngl.rand_01() > 0.5)
-        { // move up
-          while( x(indices(temp_ind)) == x(indices(temp_ind+1)) ) temp_ind++;
-        }else{ // move down
-          while( x(indices(temp_ind)) == x(indices(temp_ind+1)) ) temp_ind--;
+        { // Move up
+          while (x(indices(temp_ind)) == x(indices(temp_ind + 1))) temp_ind++;
+        }
+        else
+        { // Move down
+          while (x(indices(temp_ind)) == x(indices(temp_ind + 1))) temp_ind--;
         }
       }
       
-      // calculate scores
-      if (useobsweight)
-        temp_score = cla_uni_cont_score_rank_sub_w(indices, Y, nclass, temp_ind, obs_weight);
-      else
-        temp_score = cla_uni_cont_score_rank_sub(indices, Y, nclass, temp_ind);
+      // Calculate scores based on weights
+      temp_score = useobsweight ? cla_uni_cont_score_rank_sub_w(indices, Y, nclass, temp_ind, obs_weight)
+        : cla_uni_cont_score_rank_sub(indices, Y, nclass, temp_ind);
       
-      // record
+      // Update TempSplit if a better score is found
       if (temp_score > TempSplit.score)
       {
-        TempSplit.value = (x(indices(temp_ind)) + x(indices(temp_ind+1)))/2 ;
+        TempSplit.value = (x(indices(temp_ind)) + x(indices(temp_ind + 1))) / 2;
         TempSplit.score = temp_score;
       }
     }
@@ -123,15 +120,17 @@ void Cla_Uni_Split_Cont(Split_Class& TempSplit,
     return;
   }
   
-  if (split_gen == 3) // best split  
+  // Case 3: Best split
+  if (split_gen == 3)
   {
-    // get score
+    // Calculate the best score based on weights
     if (useobsweight)
-      cla_uni_cont_score_best_sub_w(indices, x, Y, nclass, lowindex, highindex, 
+      cla_uni_cont_score_best_sub_w(indices, x, Y, nclass, lowindex, highindex,
                                     TempSplit.value, TempSplit.score, obs_weight);
     else
-      cla_uni_cont_score_best_sub(indices, x, Y, nclass, lowindex, highindex, 
+      cla_uni_cont_score_best_sub(indices, x, Y, nclass, lowindex, highindex,
                                   TempSplit.value, TempSplit.score);
+    
     return;
   }
 }

@@ -58,8 +58,8 @@ We generate a dataset with 300 observations and 200 variables, with 100 continuo
   X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
 
   X = data.frame(X1, X2)
-  xlink <- function(x) exp(x[, 7] + x[, 16] + x[, 25] + x[, p]) 
-  FT = rexp(n, rate = xlink(X) )
+  xlink <- function(x) exp(x[, 7] + x[, 16] + x[, 25] + x[, p])
+  FT = rexp(n, rate = xlink(X))
   CT = rexp(n, rate = 0.5)
   
   y = pmin(FT, CT)
@@ -299,7 +299,7 @@ You can use the `get.one.tree()` function to peek into a single tree.
 
 ```{r fig.width=6, fig.height=6}
   RLTfit <- RLT(X, Y, Censor, model = "survival", 
-                ntrees = 20000, nmin = 40, mtry = 20, split.gen = "random",
+                ntrees = 10000, nmin = 40, mtry = 20, split.gen = "random",
                 resample.prob = 0.5, resample.replace = FALSE, nsplit = 5,
                 param.control = list(split.rule = "logrank", "var.ready" = TRUE), 
                 importance = TRUE, verbose = TRUE, ncores = 10)
@@ -350,6 +350,35 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
   # original Monte Carlo approach
   start_time <- Sys.time()
   SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "smoothed-mc", nsim = 1000)
+  difftime(Sys.time(), start_time, units = "secs")
+
+  par(mfrow = c(ceiling(ntest/3), 3))
+  logt = log(1 + timepoints)
+  
+  for (i in 1:ntest)
+  {
+    # truth
+    plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red", ylab = paste("Subject",  i))
+    
+    # estimated and 1.96
+    lines(logt, RLTPred$Survival[i,], lwd = 2, col = "black")
+    lines(logt, RLTPred$Survival[i, ] - qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
+          lty = 2, col = "black")
+    lines(logt, RLTPred$Survival[i, ] + qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
+          lty = 2, col = "black")
+    
+    # naive
+    lines(logt, SurvBand[[i]]$lower[,1], lty = 2, lwd = 2, col = "deepskyblue")
+    lines(logt, SurvBand[[i]]$upper[,1], lty = 2, lwd = 2, col = "deepskyblue")
+  }
+```
+
+### Smoothed Rescaling Approach
+
+```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
+  # original Monte Carlo approach
+  start_time <- Sys.time()
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "smoothed-nearpd", nsim = 1000)
   difftime(Sys.time(), start_time, units = "secs")
 
   par(mfrow = c(ceiling(ntest/3), 3))
@@ -477,5 +506,112 @@ Here is a demonstration of the smoothed covariance approximation code used inter
   # check predictions are identical
   all(RLTPred1$Prediction == RLTPred2$Prediction)
 ```
+
+
+
+
+
+
+
+## Categorical Variables 
+
+
+
+## Benchmark Against Existing Packages
+
+We generate a dataset with 300 observations and 200 variables, with 100 continuous variables and 100 categorical ones with three categories. The survival time and censoring time all follow an exponential distribution. 
+
+```{r}
+  # generate date
+  # set.seed(1)
+  trainn = 500
+  testn = 1000
+  n = trainn + testn
+  p = 20
+  
+  # Generate continuous variables (X1) and categorical variables (X2)
+  X1 = matrix(rnorm(n*p/2), n, p/2)
+  X2 = matrix(as.integer(runif(n*p/2)*5), n, p/2)
+  
+  # combine and create factors
+  X = data.frame(X1, X2)
+  X[, (p / 2 + 1):p] <- lapply(X[, (p / 2 + 1):p], as.factor)
+  
+  
+  xlink <- function(x) exp(x[, 1] + x[, 3] - 1.5*(x[, p] %in% c(1, 3, 5)))
+  FT = rexp(n, rate = xlink(X))
+  CT = rexp(n, rate = 0.5)
+  
+  y = pmin(FT, CT)
+  Censor = as.numeric(FT <= CT)
+  cat(paste("overall censoring rate:", 1-mean(Censor), "\n"))
+  
+  # parameters
+  ntrees = 100
+  ncores = 10
+  nmin = 20
+  mtry = p/2
+  samplereplace <- FALSE
+  sampleprob = 0.85
+  rule = "best"
+  nsplit = ifelse(rule == "best", 0, 3)
+  importance = TRUE
+  
+  trainX = X[1:trainn, ]
+  trainY = y[1:trainn]
+  trainCensor = Censor[1:trainn]
+  
+  testX = X[1:testn + trainn, ]
+  testY = y[1:testn + trainn]
+  testCensor = Censor[1:testn + trainn]
+  
+  # get true survival function 
+  timepoints = sort(unique(trainY[trainCensor==1]))
+  
+  SurvMat = matrix(NA, testn, length(timepoints))
+  expxlink = xlink(testX)
+    
+  for (j in 1:length(timepoints))
+  {
+    SurvMat[, j] = 1 - pexp(timepoints[j], rate = expxlink )
+  }
+
+  
+  # fit RLT
+  start_time <- Sys.time()
+  RLTfit <- RLT(trainX, trainY, trainCensor, model = "survival",
+              ntrees = ntrees, mtry = mtry, nmin = nmin,
+              resample.prob = sampleprob, split.gen = rule,
+              resample.replace = samplereplace, 
+              nsplit = nsplit, importance = importance,
+              param.control = list("alpha" = 0),
+              ncores = ncores, verbose = TRUE)
+  
+  metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  RLTPred <- predict(RLTfit, testX, ncores = ncores)
+  metric[1, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[1, 3] = RLTfit$Error
+  metric[1, 4] = 1 - cindex(testY, testCensor, colSums(apply(RLTPred$Hazard, 1, cumsum)))
+  metric[1, 5] = mean(colMeans(abs(RLTPred$Survival - SurvMat)))
+  metric[1, 6] = format(object.size(RLTfit), units = "MB")
+  metric[1, 7] = mean(unlist(lapply(RLTfit$FittedForest$SplitVar, length)))
+  
+  
+  barplot(as.vector(RLTfit$VarImp), main = "RLT")
+  get.one.tree(RLTfit, 1)
+  metric
+  
+```
+
+
+
+
+
+
+
+
+
+
 
 
