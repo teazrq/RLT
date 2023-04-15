@@ -157,15 +157,16 @@ check_varw <- function(var.w, n)
 #' @keywords internal
 check_importance <- function(importance)
 {
-  storage.mode(importance) <- "integer"
+  if (  match(importance, c(TRUE), nomatch = 0) )
+    importance = "permute"
   
-  if (is.na(importance))
-    stop("importance should be logical")
-    
-  importance = ifelse(importance != 0, 1L, 0L)
+  importance.num = match(importance, c("permute", "random"), 
+                         nomatch = 0)
   
-  return(importance)
+  storage.mode(importance.num) <- "integer"
+  return(importance.num)
 }
+
 
 #' @title check_reinforcement
 #' @name check_reinforcement

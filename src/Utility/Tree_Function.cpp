@@ -454,3 +454,99 @@ void Find_Terminal_Node_ShuffleJ(size_t Node,
   
 }
 
+// find terminal weight given the randomness of one variable 
+void Assign_Terminal_Node_Prob_RandomJ(size_t Node,
+                                       const Tree_Class& OneTree,
+                                       const mat& X,
+                                       const uvec& Ncat,
+                                       size_t id,
+                                       double Multipler,
+                                       vec& Prob,
+                                       size_t j)
+{
+  // If the current node is a terminal node
+  if ( OneTree.SplitVar[Node] == -1 )
+  {
+    // Assign probability to this terminal node
+    Prob(Node) = Multipler;
+    return;
+  }
+  
+  size_t SplitVar = OneTree.SplitVar(Node);
+  
+  // for splitting j, randomly distribute into left and right
+  // using the child node sizes
+  if (SplitVar == j)
+  {
+    double LeftWeight = OneTree.NodeWeight(OneTree.LeftNode(Node));
+    double RightWeight = OneTree.NodeWeight(OneTree.RightNode(Node));
+    
+    Assign_Terminal_Node_Prob_RandomJ(OneTree.LeftNode(Node),
+                                      OneTree,
+                                      X,
+                                      Ncat,
+                                      id,
+                                      Multipler * LeftWeight / (LeftWeight + RightWeight),
+                                      Prob,
+                                      j);
+      
+    
+    Assign_Terminal_Node_Prob_RandomJ(OneTree.RightNode(Node),
+                                      OneTree,
+                                      X,
+                                      Ncat,
+                                      id,
+                                      Multipler * RightWeight / (LeftWeight + RightWeight),
+                                      Prob,
+                                      j);
+  }else{
+    // splitting on other variables
+    // determine where to go
+
+    double SplitValue = OneTree.SplitValue(Node);
+    double xtemp = X( id, SplitVar );      
+    bool right = false; 
+    
+    if ( Ncat(SplitVar) > 1 ) // categorical var 
+    {
+      
+      uvec goright(Ncat(SplitVar) + 1);
+      unpack(SplitValue, Ncat(SplitVar) + 1, goright);
+      
+      if ( goright( (size_t) xtemp ) == 1 )
+        right = true;
+
+    }else{ // continuous var 
+      
+      if (xtemp > SplitValue)
+        right = true;
+      
+    }
+    
+    // go further down 
+    
+    if (right)
+    {
+      Assign_Terminal_Node_Prob_RandomJ(OneTree.RightNode(Node),
+                                        OneTree,
+                                        X,
+                                        Ncat,
+                                        id,
+                                        Multipler,
+                                        Prob,
+                                        j);
+    }else{
+      Assign_Terminal_Node_Prob_RandomJ(OneTree.LeftNode(Node),
+                                        OneTree,
+                                        X,
+                                        Ncat,
+                                        id,
+                                        Multipler,
+                                        Prob,
+                                        j);
+    }
+  }
+  
+  return;
+}
+

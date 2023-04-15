@@ -26,7 +26,7 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
   size_t N = obs_id.n_elem;
   size_t size = (size_t) N*Param.resample_prob;
   size_t nmin = Param.nmin;
-  bool importance = Param.importance;
+  size_t importance = Param.importance;
   bool reinforcement = Param.reinforcement;
   size_t usecores = checkCores(Param.ncores, Param.verbose);
   size_t seed = Param.seed;
@@ -172,6 +172,66 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
           AllImp(nt, shuffle_var_j) = (double) sum(oobY != oobpred) / NTest - baseImp;
         }
       }
+      
+      // probability variable importance
+      if (importance == 2)
+      {
+        uvec oobY = CLA_DATA.Y(oobagObs);
+        
+        if (TermNode.n_elem == 0){// TermNode not already calculated
+          proxy_id = linspace<uvec>(0, NTest-1, NTest);
+          TermNode.zeros(NTest);
+          Find_Terminal_Node(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat, 
+                             proxy_id, oobagObs, TermNode);
+        }
+        
+        // oob prediction error for this tree
+        uvec oobpred(NTest);
+        
+        for (size_t i = 0; i < NTest; i++)
+          oobpred(i) = index_max(OneTree.NodeProb.row(TermNode(i)));
+        
+        double baseImp = (double) sum(oobY != oobpred) / NTest; 
+        
+        // what variables are used in this tree
+        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitVar >= 0 ) ) ));
+
+        vec allerror( oobagObs.n_elem, fill::zeros);
+        
+        vec Prob(TreeLength, fill::zeros);
+        
+        // go through all variables
+        for (auto randj : AllVar)
+        {
+          for (size_t i = 0; i < oobagObs.n_elem; i ++)
+          {
+            size_t id = oobagObs(i);            
+            Prob.zeros();
+            
+            Assign_Terminal_Node_Prob_RandomJ(0,
+                                              OneTree,
+                                              CLA_DATA.X, 
+                                              CLA_DATA.Ncat,
+                                              id,
+                                              1.0,
+                                              Prob,
+                                              randj);
+            
+            uvec nonzeronodes = find(Prob > 0);
+            mat allprob = OneTree.NodeProb.rows(nonzeronodes);
+            uvec label(nonzeronodes.n_elem, fill::zeros);
+            
+            for (size_t k = 0; k < nonzeronodes.n_elem; k ++)
+              label(k) = allprob.row(k).index_max();
+            
+            allerror(i) = accu( Prob(nonzeronodes) % ( label != oobY(i) ) );
+          }
+          
+          AllImp(nt, randj) = mean(allerror) - baseImp;
+        }
+      }
+      
+      
     }
     
   }

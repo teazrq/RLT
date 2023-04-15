@@ -26,7 +26,7 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
   size_t N = obs_id.n_elem;
   size_t size = (size_t) N*Param.resample_prob;
   size_t nmin = Param.nmin;
-  bool importance = Param.importance;
+  size_t importance = Param.importance;
   bool reinforcement = Param.reinforcement;
   size_t usecores = checkCores(Param.ncores, Param.verbose);
   size_t seed = Param.seed;
@@ -127,7 +127,7 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
       }
 
       // calculate importance
-      if (importance and NTest > 1)
+      if (importance == 1 and NTest > 1)
       {
         vec oobY = REG_DATA.Y(oobagObs);
         
@@ -160,6 +160,55 @@ void Reg_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
           
           // record
           AllImp(nt, shuffle_var_j) =  mean(square(oobY - OneTree.NodeAve(TermNode))) - baseImp;
+        }
+      }
+      
+      // probability variable importance
+      if (importance == 2)
+      {
+        vec oobY = REG_DATA.Y(oobagObs);
+        
+        if (TermNode.n_elem == 0){// TermNode not already calculated
+          proxy_id = linspace<uvec>(0, NTest-1, NTest);
+          TermNode.zeros(NTest);
+          Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, 
+                             proxy_id, oobagObs, TermNode);
+        }
+        
+        // otherwise directly calculate error
+        double baseImp = mean(square(oobY - OneTree.NodeAve(TermNode)));
+        
+        // what variables are used in this tree
+        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitVar >= 0 ) ) ));
+        
+        vec allerror( oobagObs.n_elem, fill::zeros);
+        
+        vec Prob(TreeLength, fill::zeros);
+        
+        // go through all variables
+        for (auto randj : AllVar)
+        {
+          for (size_t i = 0; i < oobagObs.n_elem; i ++)
+          {
+            size_t id = oobagObs(i);            
+            Prob.zeros();
+
+            Assign_Terminal_Node_Prob_RandomJ(0,
+                                              OneTree,
+                                              REG_DATA.X, 
+                                              REG_DATA.Ncat,
+                                              id,
+                                              1.0,
+                                              Prob,
+                                              randj);
+            
+            uvec nonzeronodes = find(Prob > 0);
+            
+            allerror(i) = accu( Prob(nonzeronodes) % square(OneTree.NodeAve(nonzeronodes) - oobY(i)) );
+
+          }
+          
+          AllImp(nt, randj) =  mean(allerror) - baseImp;
         }
       }
     }

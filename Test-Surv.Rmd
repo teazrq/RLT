@@ -47,7 +47,7 @@ Load other packages used in this guide.
 
 We generate a dataset with 300 observations and 200 variables, with 100 continuous variables and 100 categorical ones with three categories. The survival time and censoring time all follow an exponential distribution. 
 
-```{r}
+```{r generate-data}
   # generate date
   set.seed(1)
   trainn = 500
@@ -102,7 +102,7 @@ We generate a dataset with 300 observations and 200 variables, with 100 continuo
 ```
 
 
-```{r class.source = NULL}
+```{r speed-comparison, class.source = NULL}
   # recording results
   metric = data.frame(matrix(NA, 6, 7))
   rownames(metric) = c("rlt", "rltsup", "rltcox", "rltcoxpen", "rsf", "ranger")
@@ -225,7 +225,7 @@ We generate a dataset with 300 observations and 200 variables, with 100 continuo
 
 ## Variable Importance Check
 
-```{r class.source = NULL, out.width="90%", fig.width=15, fig.height=7}
+```{r var-imp, class.source = NULL, out.width="90%", fig.width=15, fig.height=7}
   par(mfrow=c(3,2))
   par(mar = c(1, 2, 2, 2))
   
@@ -241,7 +241,7 @@ We generate a dataset with 300 observations and 200 variables, with 100 continuo
 
 You can use the `get.one.tree()` function to peek into a single tree.  
 
-```{r}
+```{r print-tree}
   # print one tree
   tree_num = 1
   get.one.tree(RLTfit.logrank, tree_num)
@@ -259,7 +259,7 @@ You can use the `get.one.tree()` function to peek into a single tree.
 
 ## Random Forest Kernel
 
-```{r}
+```{r kernel}
   KernelW = forest.kernel(RLTfit.logrank, X1 = testX[1, ], X2 = trainX)$Kernel
 ```
 
@@ -297,12 +297,12 @@ You can use the `get.one.tree()` function to peek into a single tree.
 ```
 
 
-```{r fig.width=6, fig.height=6}
+```{r conf-band, fig.width=6, fig.height=6}
   RLTfit <- RLT(X, Y, Censor, model = "survival", 
-                ntrees = 10000, nmin = 40, mtry = 20, split.gen = "random",
+                ntrees = 20000, nmin = 20, mtry = 20, split.gen = "random",
                 resample.prob = 0.5, resample.replace = FALSE, nsplit = 5,
                 param.control = list(split.rule = "logrank", "var.ready" = TRUE), 
-                importance = TRUE, verbose = TRUE, ncores = 10)
+                importance = FALSE, verbose = TRUE, ncores = 10)
 
   start_time <- Sys.time()
   RLTPred <- predict(RLTfit, testx, ncores = 10, var.est = TRUE)
@@ -320,7 +320,7 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
 
   # original Monte Carlo approach
   start_time <- Sys.time()
-  SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "naive-mc")
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "naive-mc")
   difftime(Sys.time(), start_time, units = "secs")
 
   par(mfrow = c(ceiling(ntest/3), 3))
@@ -347,9 +347,9 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
 ### Smoothed Monte Carlo
 
 ```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
-  # original Monte Carlo approach
+  # naive Monte Carlo approach withtout smooth band
   start_time <- Sys.time()
-  SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "smoothed-mc", nsim = 1000)
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-mc", nsim = 1000)
   difftime(Sys.time(), start_time, units = "secs")
 
   par(mfrow = c(ceiling(ntest/3), 3))
@@ -378,7 +378,7 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
 ```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
   # original Monte Carlo approach
   start_time <- Sys.time()
-  SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "smoothed-nearpd", nsim = 1000)
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-mc", nsim = 1000)
   difftime(Sys.time(), start_time, units = "secs")
 
   par(mfrow = c(ceiling(ntest/3), 3))
@@ -407,7 +407,7 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
 ```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
   # original Monte Carlo approach
   start_time <- Sys.time()
-  SurvBand = get.surv.band(RLTPred, alpha = alpha, method = "smoothed-lr", r = 5)
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-lr", r = 5)
   difftime(Sys.time(), start_time, units = "secs")
 
   par(mfrow = c(ceiling(ntest/3), 3))

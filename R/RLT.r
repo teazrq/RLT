@@ -76,7 +76,11 @@
 #'                        
 #' @param importance      Whether to calculate variable importance measures. When
 #'                        set to `"TRUE"`, the calculation follows Breiman's 
-#'                        original permutation strategy. 
+#'                        original permutation strategy. If set to `"random"`, then 
+#'                        it randomly send the target point down to one of the child
+#'                        nodes with probabilities proportional to their sample sizes.
+#'                        This feature is only available in regression and classification
+#'                        models.  
 #'                        
 #' @param param.control   A list of additional parameters. This can be used to 
 #'                        specify other features in a random forest or set embedded 

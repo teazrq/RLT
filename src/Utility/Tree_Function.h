@@ -39,6 +39,15 @@ void Find_Terminal_Node_ShuffleJ(size_t Node,
                                      const vec& tildex,
                                      const size_t j);
 
+void Assign_Terminal_Node_Prob_RandomJ(size_t Node,
+                                       const Tree_Class& OneTree,
+                                       const mat& X,
+                                       const uvec& Ncat,
+                                       size_t id,
+                                       double Multipler,
+                                       vec& Prob,
+                                       size_t j);
+
 List ForestKernelUni(arma::field<arma::uvec>& NodeType,
                      arma::field<arma::ivec>& SplitVar,
                      arma::field<arma::vec>& SplitValue,

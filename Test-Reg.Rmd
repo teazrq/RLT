@@ -40,7 +40,6 @@ Load other packages used in this guide.
   library(randomForest)
   library(randomForestSRC)
   library(ranger)
-  library(parallel)
 ```
 
 ## Benchmark Against Existing Packages
@@ -48,14 +47,15 @@ Load other packages used in this guide.
 We generate a dataset with 1000 observations and 400 variables, with 200 continuous variables and 200 categorical ones with three categories.
 
 ```{r}
+  library(parallel)
   # Set seed for reproducibility
   set.seed(1)
 
   # Define data size
-  trainn <- 1000
+  trainn <- 800
   testn <- 1000
   n <- trainn + testn
-  p <- 400
+  p <- 30
 
   # Generate continuous variables (X1) and categorical variables (X2)
   X1 <- matrix(rnorm(n * p / 2), n, p / 2)
@@ -68,15 +68,15 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   X[, (p / 2 + 1):p] <- lapply(X[, (p / 2 + 1):p], as.factor)
 
   # Generate outcomes (y)
-  y <- 1 + rowSums(X[, 1:5]) + 2 * (X[, p / 2 + 1] %in% c(1, 3)) + rnorm(n)
+  y <- 1 + rowSums(X[, 2:6]) + 2 * (X[, p / 2 + 1] %in% c(1, 3)) + rnorm(n)
 
   # Set tuning parameters
-  ntrees <- 100
+  ntrees <- 1000
   ncores <- detectCores() - 1
   nmin <- 30
   mtry <- p / 2
   samplereplace <- TRUE
-  sampleprob <- 0.85
+  sampleprob <- 0.80
   rule <- "best"
   nsplit <- ifelse(rule == "best", 0, 3)
   importance <- TRUE
@@ -114,7 +114,6 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   metric[1, 5] = object.size(RLTfit)
   metric[1, 6] = mean(unlist(lapply(RLTfit$FittedForest$SplitVar, length)))
   
-  
   # use randomForestSRC
   options(rf.cores = ncores)
   start_time <- Sys.time()
@@ -131,7 +130,6 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   metric[2, 4] = mean((rsfpred$predicted - testY)^2)
   metric[2, 5] = object.size(rsffit)
   metric[2, 6] = rsffit$forest$totalNodeCount / rsffit$ntree
-  
   
   # use randomForest
   start_time <- Sys.time()
@@ -172,7 +170,9 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   metric
 ```
 
-## Variable Importance Check
+## Variable Importance
+
+We first plot the variable importance from the permutation version. This usually requires a significant number of out-of-bag samples. 
 
 ```{r class.source = NULL, out.width="90%", fig.width=15, fig.height=7}
   par(mfrow=c(2,2))
@@ -182,6 +182,33 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   barplot(as.vector(rsffit$importance), main = "rsf")
   barplot(rf.fit$importance[, 1], main = "rf")
   barplot(as.vector(rangerfit$variable.importance), main = "ranger")
+```
+
+We also calculate the variable importance from the random child node assignment approach. In this case, a subject is randomly send down to one of the two child nodes with probability proportional to the child node sizes. For example, we use sample without replacement with just one out-of-bag sample. 
+
+```{r class.source = NULL, out.width="90%", fig.width=10, fig.height=3.5}
+  # using RLT package 
+  RLTfit <- RLT(trainX, trainY, model = "regression", 
+                ntrees = ntrees, mtry = mtry, nmin = nmin, 
+                split.gen = rule, nsplit = nsplit, 
+                resample.prob = (trainn - 1)/trainn, 
+                resample.replace = FALSE, 
+                importance = "random", 
+                ncores = ncores, 
+                verbose = TRUE)
+  
+  # use randomForestSRC
+  rsffit <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 
+                  ntree = ntrees, nodesize = nmin/2, mtry = mtry, 
+                  samptype = "swor", nsplit = nsplit, 
+                  sampsize = trainn - 1, 
+                  importance = "random")
+
+  par(mfrow=c(1,2))
+  par(mar = c(1, 2, 2, 2))
+  
+  barplot(as.vector(RLTfit$VarImp), main = "RLT")
+  barplot(as.vector(rsffit$importance), main = "rsf")  
 ```
 
 ## Print a Single Tree

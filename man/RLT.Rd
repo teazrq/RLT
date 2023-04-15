@@ -91,7 +91,11 @@ other usage, see the details of \code{split.rule} in
 
 \item{importance}{Whether to calculate variable importance measures. When
 set to \code{"TRUE"}, the calculation follows Breiman's
-original permutation strategy.}
+original permutation strategy. If set to \code{"random"}, then
+it randomly send the target point down to one of the child
+nodes with probabilities proportional to their sample sizes.
+This feature is only available in regression and classification
+models.}
 
 \item{reinforcement}{Should reinforcement splitting rule be used. Default
 is \code{"FALSE"}, i.e., regular random forests with marginal

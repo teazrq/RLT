@@ -73,7 +73,7 @@ public:
  double resample_prob = 0.8;
  bool useobsweight = 0;
  bool usevarweight = 0;
- bool importance = 0;
+ size_t importance = 0;
  bool reinforcement = 0;
  
  // other control parameters  
@@ -197,6 +197,8 @@ public:
    if (linear_comb > 1)
      RLTcout << "  linear combination = " << linear_comb << std::endl;
    
+   RLTcout << "          importance = " << (importance == 2 ? "random" : (importance == 2 ? "permute" : "none")) << std::endl;
+   
    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
    if (reinforcement) rlt_print();
@@ -225,6 +227,7 @@ public:
    if (linear_comb > 1)
      RLTcout << "  linear combination = " << linear_comb << std::endl;
    
+   RLTcout << "          importance = " << (importance == 2 ? "random" : (importance == 2 ? "permute" : "none")) << std::endl;
    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
    if (reinforcement) rlt_print();

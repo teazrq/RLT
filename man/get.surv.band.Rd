@@ -2,15 +2,16 @@
 % Please edit documentation in R/get.surv.band.r
 \name{get.surv.band}
 \alias{get.surv.band}
-\title{get.surv.band}
+\title{\if{html}{\out{<div class="sourceCode">}}\preformatted{      get.surv.band
+}\if{html}{\out{</div>}}}
 \usage{
 get.surv.band(
   x,
   i = 0,
   alpha = 0.05,
-  method = "naive-mc",
+  approach = "naive-mc",
   nsim = 1000,
-  r = 5,
+  r = 3,
   ...
 )
 }
@@ -22,7 +23,7 @@ with \code{var.ready = TRUE}.}
 
 \item{alpha}{alpha level for interval \eqn{(\alpha/2, 1 - \alpha/2)}}
 
-\item{method}{what method is used to calculate the confidence band. Can be
+\item{approach}{What approach is used to calculate the confidence band. Can be
 \itemize{
 \item \code{naive-mc}: positive-definite projection of the covariance matrix.
 the confidence band is non-smooth
@@ -31,7 +32,7 @@ approximation of the critical value. This is only recommended for large
 number of time points.
 \item \code{smoothed-lr}: use a smoothed low-rank approximation of the covariance
 matrix and apply an adaptive Bonferroni correction to derive the critical values.
-Note that this method relies on the assumption of the smoothness and low rank of the
+Note that this approach relies on the assumption of the smoothness and low rank of the
 covariance matrix.
 }}
 
@@ -44,6 +45,7 @@ enough for approximating the covariance matrix due to smoothness.}
 \item{...}{...}
 }
 \description{
-Calculate the survival function (two-sided) confidence band from
-a RLT survival prediction.
+\if{html}{\out{<div class="sourceCode">}}\preformatted{Calculate the survival function (two-sided) confidence band from 
+             a RLT survival prediction. 
+}\if{html}{\out{</div>}}
 }

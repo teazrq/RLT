@@ -1,34 +1,34 @@
-#' @title get.surv.band
-#' @description Calculate the survival function (two-sided) confidence band from 
-#'              a RLT survival prediction. 
-#' @param x A RLT prediction object. This must be an object calculated from a forest 
-#'          with \code{var.ready = TRUE}.
-#' @param i Observation number in the prediction. Default to calculate all (\eqn{i = 0})
-#' @param alpha alpha level for interval \eqn{(\alpha/2, 1 - \alpha/2)}
-#' @param method what method is used to calculate the confidence band. Can be
-#'               \itemize{
-#'               \item \code{naive-mc}: positive-definite projection of the covariance matrix.
-#'               the confidence band is non-smooth
-#'               \item \code{smoothed-mc}: use a smoothed marginal variance to perform the Monte Carlo 
-#'               approximation of the critical value. This is only recommended for large 
-#'               number of time points. 
-#'               \item \code{smoothed-lr}: use a smoothed low-rank approximation of the covariance 
-#'               matrix and apply an adaptive Bonferroni correction to derive the critical values.
-#'               Note that this method relies on the assumption of the smoothness and low rank of the
-#'               covariance matrix. 
-#'               }
-#' @param r    maximum number of ranks used in the \code{smoothed-lr} approximation. Usually 5 is 
-#'             enough for approximating the covariance matrix due to smoothness. 
-#' @param nsim number of simulations for estimating the Monte Carlo critical value. 
-#'             Set this to be a large number. Default is 1000.          
+#' @title           get.surv.band
+#' @description     Calculate the survival function (two-sided) confidence band from 
+#'                  a RLT survival prediction. 
+#' @param x         A RLT prediction object. This must be an object calculated from a forest 
+#'                  with \code{var.ready = TRUE}.
+#' @param i         Observation number in the prediction. Default to calculate all (\eqn{i = 0})
+#' @param alpha     alpha level for interval \eqn{(\alpha/2, 1 - \alpha/2)}
+#' @param approach  What approach is used to calculate the confidence band. Can be
+#'                  \itemize{
+#'                  \item \code{naive-mc}: positive-definite projection of the covariance matrix.
+#'                  the confidence band is non-smooth
+#'                  \item \code{smoothed-mc}: use a smoothed marginal variance to perform the Monte Carlo 
+#'                  approximation of the critical value. This is only recommended for large 
+#'                  number of time points. 
+#'                  \item \code{smoothed-lr}: use a smoothed low-rank approximation of the covariance 
+#'                  matrix and apply an adaptive Bonferroni correction to derive the critical values.
+#'                  Note that this approach relies on the assumption of the smoothness and low rank of the
+#'                  covariance matrix. 
+#'                  }
+#' @param r         maximum number of ranks used in the \code{smoothed-lr} approximation. Usually 5 is 
+#'                  enough for approximating the covariance matrix due to smoothness. 
+#' @param nsim      number of simulations for estimating the Monte Carlo critical value. 
+#'                  Set this to be a large number. Default is 1000.          
 #' @param ... ...
 #' @export
 get.surv.band <- function(x, 
                           i = 0, 
                           alpha = 0.05, 
-                          method = "naive-mc",
+                          approach = "naive-mc",
                           nsim = 1000, 
-                          r = 5,
+                          r = 3,
                           ...)
 {
   if (any(class(x)[1:3] != c("RLT", "pred", "surv")))
@@ -37,10 +37,10 @@ get.surv.band <- function(x,
   if (is.null(x$Cov))
     stop("Not an RLT object fitted with var.ready")
   
-  all.methods = c("naive-mc", "smoothed-mc", "smoothed-lr")
+  all.approach = c("naive-mc", "smoothed-mc", "smoothed-lr")
   
-  if(match(method, all.methods, nomatch = 0) == 0)
-    stop("method not avaliable")
+  if(match(approach, all.approach, nomatch = 0) == 0)
+    stop("approach not avaliable")
   
   
   N = dim(x$Cov)[3]
@@ -65,8 +65,8 @@ get.surv.band <- function(x,
 
   for (k in allid)
   {
-    # naive method 
-    if (method == "naive-mc")
+    # naive approach 
+    if (approach == "naive-mc")
     {
       marsd = sqrt(diag(x$Cov[,,k]))
       # marsd = marsd / sqrt(sum(marsd^2))
@@ -74,7 +74,7 @@ get.surv.band <- function(x,
       approxerror = NULL
     }
     
-    if (method == "smoothed-mc")
+    if (approach == "smoothed-mc")
     {
       # will add two points at the boundary to improve the behavior. 
       alltime = 0:(p+1)
@@ -112,7 +112,7 @@ get.surv.band <- function(x,
       approxerror = sum((pdmat$mat - x$Cov[,,k])^2) / sum(x$Cov[,,k]^2)
     }
     
-    if (method == "smoothed-lr2")
+    if (approach == "smoothed-lr")
     {
       ccov = x$Cov[,,k]
       coveigen = eigen(ccov)
