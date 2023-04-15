@@ -184,7 +184,11 @@ other usage, see the details of <code>split.rule</code> in
 <dt>importance</dt>
 <dd><p>Whether to calculate variable importance measures. When
 set to <code>"TRUE"</code>, the calculation follows Breiman's
-original permutation strategy.</p></dd>
+original permutation strategy. If set to <code>"random"</code>, then
+it randomly send the target point down to one of the child
+nodes with probabilities proportional to their sample sizes.
+This feature is only available in regression and classification
+models.</p></dd>
 
 
 <dt>reinforcement</dt>
