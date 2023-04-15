@@ -204,11 +204,17 @@ We also calculate the variable importance from the random child node assignment 
                   sampsize = trainn - 1, 
                   importance = "random")
 
-  par(mfrow=c(1,2))
+  rsffit2 <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 
+                  ntree = ntrees, nodesize = nmin/2, mtry = mtry, 
+                  samptype = "swor", nsplit = nsplit, 
+                  sampsize = trainn - 1, 
+                  importance = "anti")
+  par(mfrow=c(1,3))
   par(mar = c(1, 2, 2, 2))
   
   barplot(as.vector(RLTfit$VarImp), main = "RLT")
-  barplot(as.vector(rsffit$importance), main = "rsf")  
+  barplot(as.vector(rsffit$importance), main = "rsf random")
+  barplot(as.vector(rsffit2$importance), main = "rsf anti")
 ```
 
 ## Print a Single Tree
