@@ -193,7 +193,7 @@ For random assignment variable importance. Leave one observation as the oob data
   # using RLT package 
   RLTfit <- RLT(trainX, trainY, model = "classification", 
                 ntrees = ntrees, mtry = mtry, nmin = nmin, 
-                split.gen = rule, nsplit = nsplit, 
+                split.gen = rule, nsplit = nsplit,
                 resample.prob = (trainn - 1)/trainn, 
                 resample.replace = FALSE, 
                 importance = "random", 
@@ -228,6 +228,90 @@ You can use the `get.one.tree()` function to peek into a single tree.
 ```{r}
   get.one.tree(RLTfit, 1)
 ```
+
+## Variance Estimation for Probability
+
+
+```{r out.width="75%", fig.width=8, fig.height=6}
+
+  # Set seed for reproducibility
+  set.seed(1)
+
+  # Define data size
+  trainn <- 1000
+  testn <- 100
+  n <- trainn + testn
+  p <- 20
+
+  # Generate continuous variables (X1) and categorical variables (X2)
+  X1 <- matrix(rnorm(n * p / 2), n, p / 2)
+  X2 <- matrix(as.integer(runif(n * p / 2) * 4), n, p / 2)
+
+  # Combine continuous and categorical variables into a data frame (X)
+  X <- data.frame(X1, X2)
+
+  # Convert the second half of the columns in X to factors
+  X[, (p / 2 + 1):p] <- lapply(X[, (p / 2 + 1):p], as.factor)
+
+  # Generate outcomes (y)
+  logit <- function(x) exp(x) / (1 + exp(x))
+  y <- as.factor(rbinom(n, 1, prob = logit(-0.5 + 2*X[, 1])))
+  
+  trainX = X[1:trainn, ]
+  trainY = y[1:trainn]
+  
+  testX = X[1:testn + trainn, ]
+  testY = y[1:testn + trainn]
+  
+  xorder = order(testX[, 1])
+  testX = testX[xorder, ]
+  testY = testY[xorder]
+  testprob = logit(-0.5 + 2*testX$X1)
+  ## Variance Estimation of Probability
+  
+  RLTfit <- RLT(trainX, trainY, model = "classification", ntrees = 20000, 
+                mtry = p, nmin = 20, split.gen = "random", resample.prob = 0.5,
+                param.control = list("var.ready" = TRUE, "resample.track" = TRUE),
+                verbose = TRUE)
+  
+  RLTPred <- predict(RLTfit, testX, var.est = TRUE, keep.all = TRUE)
+  
+  # coverage on the testing data for P(Y = 1)
+  upper = RLTPred$Prob[, 2] + 1.96*sqrt(RLTPred$Variance[,2])
+  lower = RLTPred$Prob[, 2] - 1.96*sqrt(RLTPred$Variance[,2])
+  cover = (testprob > lower) & (testprob < upper)
+  
+  plot(testX$X1, RLTPred$Prob[,2], pch = 19, 
+       col = ifelse(is.na(cover), "red", ifelse(cover, "green", "black")),
+       xlab = "Truth", ylab = "Predicted", 
+       xlim = c(min(testX$X1)-0.1, max(testX$X1)+0.1), 
+       ylim = c(min(RLTPred$Prob[,1])-0.1, max(RLTPred$Prob[,1])+0.1))
+  
+  lines(testX$X1, testprob, col = "darkorange", lwd = 2)
+  
+  for (i in 1:testn)
+    segments(testX$X1[i], lower[i], testX$X1[i], upper[i], 
+             col = ifelse(is.na(cover[i]), "red", ifelse(cover[i], "green", "black")))
+  
+  legend("topleft", c("covered", "not covered"), col = c("green", "black"), 
+         lty = 1, pch = 19, ce = 2)
+  
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

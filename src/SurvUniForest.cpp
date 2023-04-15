@@ -162,6 +162,7 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
     Cov.zeros(NFail, NFail, N);
   
   cube AllHazard;
+  
   if (keep_all)
   {
     AllHazard.zeros(ntrees, NFail, N);

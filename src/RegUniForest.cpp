@@ -150,7 +150,8 @@ List RegUniForestPred(arma::field<arma::ivec>& SplitVar,
     uvec firsthalf = linspace<uvec>(0, B-1, B);
     uvec secondhalf = linspace<uvec>(B, 2*B-1, B);
     
-    vec SVar = var(PredAll, 0, 1); // norm_type = 1 means using n-1 as constant
+    // PredAll is n by ntrees
+    vec SVar = var(PredAll, 0, 1); // norm_type = 0 means using n-1 as constant
     
     mat TreeDiff = PredAll.cols(firsthalf) - PredAll.cols(secondhalf);
     vec TreeVar = mean(square(TreeDiff), 1) / 2;

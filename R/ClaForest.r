@@ -62,6 +62,7 @@ ClaForest <- function(x, y,
     fit[["ylabels"]] = ylabels
     fit[["nclass"]] = nclass
 
+    # the returned prediction starts with 0
     fit$Prediction = as.factor( c(1:nclass, fit$Prediction+1) )[-(1:fit$parameters$n)]
     levels(fit$Prediction) = ylabels
     

@@ -119,9 +119,9 @@ List ClaUniForestPred(arma::field<arma::ivec>& SplitVar,
 {
   // check number of cores
   usecores = checkCores(usecores, verbose);
+  size_t N = X.n_rows;
   
   // convert R object to forest
-  
   Cla_Uni_Forest_Class CLA_FOREST(SplitVar, 
                                   SplitValue, 
                                   LeftNode, 
@@ -130,25 +130,82 @@ List ClaUniForestPred(arma::field<arma::ivec>& SplitVar,
                                   NodeProb);
   
   // Initialize prediction objects  
-  cube PredAll;
-
-  // run prediction
-  Cla_Uni_Forest_Pred(PredAll,
-                      (const Cla_Uni_Forest_Class&) CLA_FOREST,
-                      X,
-                      Ncat,
-                      usecores,
-                      verbose);
+  size_t ntrees = CLA_FOREST.SplitVarList.size();
+  size_t nclass = CLA_FOREST.NodeProbList(0).n_cols;  
   
+  cube PredAll(ntrees, nclass, N, fill::zeros);
+  mat Prob(N, nclass, fill::zeros);  
+  uvec Pred(N, fill::zeros);
+  
+  mat Var;
+  
+  if (VarEst)
+    Var.zeros(N, nclass);
+  
+#pragma omp parallel num_threads(usecores)
+{
+  #pragma omp for schedule(static)
+  for (size_t nt = 0; nt < ntrees; nt++)
+  {
+    // initiate all observations
+    uvec proxy_id = linspace<uvec>(0, N-1, N);
+    uvec real_id = linspace<uvec>(0, N-1, N);
+    uvec TermNode(N, fill::zeros);
+    
+    Tree_Class OneTree(CLA_FOREST.SplitVarList(nt),
+                       CLA_FOREST.SplitValueList(nt),
+                       CLA_FOREST.LeftNodeList(nt),
+                       CLA_FOREST.RightNodeList(nt),
+                       CLA_FOREST.NodeWeightList(nt));
+    
+    Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
+    
+    for (size_t i = 0; i < N; i++)
+    {
+      PredAll.slice(i).row(nt) = CLA_FOREST.NodeProbList(nt).row(TermNode(i));
+    }
+  }
+
+#pragma omp barrier
+
+  // predicted label
+#pragma omp for schedule(static)
+  for (size_t i = 0; i < N; i++)
+  {
+    Prob.row(i) = mean(PredAll.slice(i), 0);
+    Pred(i) = index_max(Prob.row(i));
+  }
+
+#pragma omp barrier
+
+  // PredAll is ntrees by nclass by n
+  if (VarEst)
+  {
+    size_t B = ntrees/2;
+    
+#pragma omp for schedule(static)
+    for (size_t i = 0; i < N; i++)
+    {
+      // calculate var of each column (0) 
+      // norm_type = 1 means using n-1 as constant
+      rowvec Vs = var(PredAll.slice(i), 1, 0);
+      
+      mat TreeDiff = PredAll.slice(i).rows(0, B-1) - PredAll.slice(i).rows(B, 2*B-1);
+      rowvec Vh = mean(square(TreeDiff), 0) / 2;
+      
+      Var.row(i) = Vh - Vs;
+    }
+  }
+}
   // Initialize return list
   List ReturnList;
-  
-  uvec Pred(X.n_rows, fill::zeros);
-  for (size_t i = 0; i < X.n_rows; i++)
-    Pred(i) = index_max( mean(PredAll.slice(i), 0) );
-  
+
   ReturnList["Prediction"] = Pred;
+  ReturnList["Prob"] = Prob;
   
+  if (VarEst)
+    ReturnList["Variance"] = Var;
+
   // If keeping predictions for every tree  
   if (keep_all)
     ReturnList["PredictionAll"] = PredAll;

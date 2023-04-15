@@ -20,7 +20,7 @@ get.one.tree <- function(x, tree = 1, ...)
     newnames = x$xnames
   
   # newnames = gsub("\\s", " ", format(newnames, width=max(nchar(newnames))))
-  newnames = paste(newnames, ifelse(x$ncat > 1, "(F)", "(C)"))
+  newnames = paste(newnames, ifelse(x$ncat > 1, "(F)", ""))
   newnames = c(newnames, " ")
   
   p = x$parameters$p
