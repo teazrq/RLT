@@ -87,7 +87,8 @@ public:
  double embed_mtry = 0;
  size_t embed_nmin = 0;  
  size_t embed_split_gen = 0;
- size_t embed_nsplit = 0;  
+ size_t embed_nsplit = 0;
+ bool embed_replacement = 0;
  double embed_resample_prob = 0;
  double embed_mute = 0;
  size_t embed_protect = 0;  
@@ -121,14 +122,15 @@ public:
    split_rule    = param["split.rule"];
    
    // RLT parameters
-   embed_ntrees        = param["embed.ntrees"];
-   embed_mtry          = param["embed.mtry"];
-   embed_nmin          = param["embed.nmin"];  
-   embed_split_gen     = param["embed.split.gen"];
-   embed_nsplit        = param["embed.nsplit"];    
-   embed_resample_prob = param["embed.resample.prob"];
-   embed_mute          = param["embed.mute"];
-   embed_protect       = param["embed.protect"];  
+   embed_ntrees           = param["embed.ntrees"];
+   embed_mtry             = param["embed.mtry"];
+   embed_nmin             = param["embed.nmin"];  
+   embed_split_gen        = param["embed.split.gen"];
+   embed_nsplit           = param["embed.nsplit"];
+   embed_replacement      = param["embed.resample.replace"];
+   embed_resample_prob    = param["embed.resample.prob"];
+   embed_mute             = param["embed.mute"];
+   embed_protect          = param["embed.protect"];
    
    // system related
    ncores        = param["ncores"];
@@ -159,14 +161,15 @@ public:
    split_rule    = Input.split_rule;
    
    // RLT parameters 
-   embed_ntrees        = Input.embed_ntrees;
-   embed_mtry          = Input.embed_mtry;
-   embed_nmin          = Input.embed_nmin;
-   embed_split_gen     = Input.embed_split_gen;
-   embed_nsplit        = Input.embed_nsplit;
-   embed_resample_prob = Input.embed_resample_prob;
-   embed_mute          = Input.embed_mute;
-   embed_protect       = Input.embed_protect;  
+   embed_ntrees           = Input.embed_ntrees;
+   embed_mtry             = Input.embed_mtry;
+   embed_nmin             = Input.embed_nmin;
+   embed_split_gen        = Input.embed_split_gen;
+   embed_nsplit           = Input.embed_nsplit;
+   embed_replacement      = Input.embed_replacement;
+   embed_resample_prob    = Input.embed_resample_prob;
+   embed_mute             = Input.embed_mute;
+   embed_protect          = Input.embed_protect;  
    
    // system related
    ncores        = Input.ncores;
@@ -197,7 +200,7 @@ public:
    if (linear_comb > 1)
      RLTcout << "  linear combination = " << linear_comb << std::endl;
    
-   RLTcout << "          importance = " << (importance == 2 ? "random" : (importance == 2 ? "permute" : "none")) << std::endl;
+   RLTcout << "          importance = " << (importance == 2 ? "random" : (importance == 1 ? "permute" : "none")) << std::endl;
    
    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
@@ -227,7 +230,7 @@ public:
    if (linear_comb > 1)
      RLTcout << "  linear combination = " << linear_comb << std::endl;
    
-   RLTcout << "          importance = " << (importance == 2 ? "random" : (importance == 2 ? "permute" : "none")) << std::endl;
+   RLTcout << "          importance = " << (importance == 2 ? "random" : (importance == 1 ? "permute" : "none")) << std::endl;
    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
    if (reinforcement) rlt_print();
@@ -235,28 +238,54 @@ public:
  
  void rlt_print() {
    
-   RLTcout << " embed.ntrees        = " << embed_ntrees << std::endl;
-   RLTcout << " embed.mtry          = " << embed_mtry << std::endl;    
-   RLTcout << " embed.nmin          = " << embed_nmin << std::endl;
-   RLTcout << " embed.split_gen     = " << embed_split_gen << std::endl;
-   RLTcout << " embed.nsplit        = " << embed_nsplit << std::endl;    
-   RLTcout << " embed.resample_prob = " << embed_resample_prob << std::endl;
-   RLTcout << " embed.mute          = " << embed_mute << std::endl;
-   RLTcout << " embed.protect       = " << embed_protect << std::endl;
+   RLTcout << " embed.ntrees            = " << embed_ntrees << std::endl;
+   
+   if (embed_mtry < 1)
+     RLTcout << " embed.mtry              = " << std::setprecision(3) << embed_mtry * 100 << "%" << std::endl;
+   
+   if (embed_mtry >= 1)
+     RLTcout << " embed.mtry              = " << embed_mtry << std::endl;
+   
+   RLTcout << " embed.nmin              = " << embed_nmin << std::endl;
+   
+   if (embed_split_gen == 3)
+     RLTcout << "         embed.split.gen = Best" << std::endl;
+   
+   if (embed_split_gen < 3)
+     RLTcout << "         embed.split.gen = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+   
+   RLTcout << " embed.nsplit            = " << embed_nsplit << std::endl; 
+   RLTcout << " embed.resample.replace  = " << (embed_replacement ? "TRUE" : "FALSE") << std::endl;
+   RLTcout << " embed.resample.prob     = " << embed_resample_prob << std::endl;
+   RLTcout << " embed.mute              = " << embed_mute << std::endl;
+   RLTcout << " embed.protect           = " << embed_protect << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
    
  };
  
  void rlt_print() const {
    
-   RLTcout << " embed.ntrees        = " << embed_ntrees << std::endl;
-   RLTcout << " embed.mtry          = " << embed_mtry << std::endl;    
-   RLTcout << " embed.nmin          = " << embed_nmin << std::endl;
-   RLTcout << " embed.split_gen     = " << embed_split_gen << std::endl;
-   RLTcout << " embed.nsplit        = " << embed_nsplit << std::endl;    
-   RLTcout << " embed.resample_prob = " << embed_resample_prob << std::endl;
-   RLTcout << " embed.mute          = " << embed_mute << std::endl;
-   RLTcout << " embed.protect       = " << embed_protect << std::endl;
+   RLTcout << " embed.ntrees            = " << embed_ntrees << std::endl;
+
+   if (embed_mtry < 1)
+     RLTcout << " embed.mtry              = " << std::setprecision(3) << embed_mtry * 100 << "%" << std::endl;
+   
+   if (embed_mtry >= 1)
+     RLTcout << " embed.mtry              = " << embed_mtry << std::endl;
+   
+   RLTcout << " embed.nmin              = " << embed_nmin << std::endl;
+   
+   if (embed_split_gen == 3)
+     RLTcout << " embed.split.gen         = Best" << std::endl;
+   
+   if (embed_split_gen < 3)
+     RLTcout << " embed.split.gen         = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+   
+   RLTcout << " embed.nsplit            = " << embed_nsplit << std::endl;
+   RLTcout << " embed.resample.replace  = " << (embed_replacement ? "TRUE" : "FALSE") << std::endl;
+   RLTcout << " embed.resample_prob     = " << embed_resample_prob << std::endl;
+   RLTcout << " embed.mute              = " << embed_mute << std::endl;
+   RLTcout << " embed.protect           = " << embed_protect << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
    
  };

@@ -15,7 +15,7 @@ get.one.tree <- function(x, tree = 1, ...)
   
   if (is.null(x$xnames))
   {
-    newnames = paste("var ", 1:x$parameters$p)
+    newnames = paste("V", 1:x$parameters$p)
   }else
     newnames = x$xnames
   
@@ -64,7 +64,7 @@ get.one.tree <- function(x, tree = 1, ...)
   {
     cat(paste("Tree #", tree, " in the fitted regression forest: \n\n", sep = ""))
 
-    OneTree = data.frame("SplitVar (Type)" = newnames[SplitVar + 1],
+    OneTree = data.frame("SplitVar" = newnames[SplitVar + 1],
                          "SplitValue" = SplitValue,
                          "LeftNode" = LeftNode,
                          "RightNode" = RightNode,

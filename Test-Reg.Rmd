@@ -195,7 +195,8 @@ We also calculate the variable importance from the random child node assignment 
                 resample.replace = FALSE, 
                 importance = "random", 
                 ncores = ncores, 
-                verbose = TRUE)
+                verbose = TRUE, 
+                param.control = list("resample.track" = TRUE))
   
   # use randomForestSRC
   rsffit <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 

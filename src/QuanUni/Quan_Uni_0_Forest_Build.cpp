@@ -68,15 +68,17 @@ void Quan_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
       // set xoshiro random seed
       Rand rngl(seed_vec(nt));
       
-      // get inbag and oobag samples
-      uvec inbag_id, oobagObs;
-
+      // get inbag and oobag index
+      uvec inbag_index, oobag_index;
+      
       //If ObsTrack isn't given, set ObsTrack
       if (!obs_track_pre)
         set_obstrack(ObsTrack, nt, size, replacement, rngl);
-      
+
       // Find the samples from pre-defined ObsTrack
-      get_samples(inbag_id, oobagObs, obs_id, ObsTrack.unsafe_col(nt));
+      get_index(inbag_index, oobag_index, ObsTrack.unsafe_col(nt));
+      uvec inbag_id = obs_id(inbag_index);
+      uvec oobag_id = obs_id(oobag_index);
 
       // initialize a tree (univariate split)
       Reg_Uni_Tree_Class OneTree(REG_FOREST.SplitVarList(nt),
@@ -117,7 +119,7 @@ void Quan_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
       
         Prediction += AllPred;
   
-        if (oobagObs.n_elem > 0)
+        if (oobag_id.n_elem > 0)
         {
           for (size_t i = 0; i < N; i++)
           {
@@ -132,18 +134,18 @@ void Quan_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
 
       // calculate importance 
       
-      if (importance and oobagObs.n_elem > 1)
+      if (importance and oobag_id.n_elem > 1)
       {
         uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitVar >= 0 ) ) ));
         
-        size_t NTest = oobagObs.n_elem;
+        size_t NTest = oobag_id.n_elem;
         
-        vec oobY = REG_DATA.Y(oobagObs);
+        vec oobY = REG_DATA.Y(oobag_id);
         
         uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
         uvec TermNode(NTest, fill::zeros);
         
-        Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobagObs, TermNode);
+        Find_Terminal_Node(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobag_id, TermNode);
         
         vec oobpred = OneTree.NodeAve(TermNode);
         
@@ -159,11 +161,11 @@ void Quan_Uni_Forest_Build(const RLT_REG_DATA& REG_DATA,
           uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
           uvec TermNode(NTest, fill::zeros);
           
-          uvec oob_ind = rngl.shuffle(oobagObs);
+          uvec oob_ind = rngl.shuffle(oobag_id);
           vec tildex = REG_DATA.X.col(suffle_var_j);
           tildex = tildex.elem( oob_ind );  //shuffle( REG_DATA.X.unsafe_col(j).elem( oobagObs ) );
           
-          Find_Terminal_Node_ShuffleJ(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobagObs, TermNode, tildex, suffle_var_j);
+          Find_Terminal_Node_ShuffleJ(0, OneTree, REG_DATA.X, REG_DATA.Ncat, proxy_id, oobag_id, TermNode, tildex, suffle_var_j);
           
           // get prediction
           vec oobpred = OneTree.NodeAve(TermNode);

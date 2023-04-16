@@ -271,10 +271,15 @@ check_control <- function(control, param)
   } else embed.nsplit = max(1, control$embed.nsplit)
   storage.mode(embed.nsplit) <- "integer"
   
+  # embed.resample.replace
+  if (is.null(control$embed.resample.replace)) {
+    embed.resample.replace = 1
+  }else embed.resample.replace = ifelse(control$embed.resample.replace!= 0, 1L, 0L)
+  
   # embed.resample.prob
   if (is.null(control$embed.resample.prob)) {
       embed.resample.prob <- 0.9
-  } else embed.resample.prob = max(0, min(control$embed.resample.prob, 1))
+  } else embed.resample.prob = max(0, min(control$embed.resample.prob, 0.99)) # must leave some oob samples
   storage.mode(embed.resample.prob) <- "double"
   
   # embed.mute
@@ -329,6 +334,7 @@ check_control <- function(control, param)
               "embed.nmin" = embed.nmin,
               "embed.split.gen" = embed.split.gen,
               "embed.nsplit" = embed.nsplit,
+              "embed.resample.replace" = embed.resample.replace,
               "embed.resample.prob" = embed.resample.prob,              
               "embed.mute" = embed.mute,
               "embed.protect" = embed.protect,

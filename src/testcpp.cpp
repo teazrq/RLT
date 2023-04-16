@@ -13,12 +13,12 @@ using namespace arma;
 void testcpp(size_t n)
 {
   // Generate all possible combinations
-  std::vector<int> comb(n, 0);
-  std::set<std::vector<int>> combinations;
+  std::vector<size_t> comb(n, 0);
+  std::set<std::vector<size_t>> combinations;
   
-  for (int i = 0; i < (1 << n); i++) {
+  for (size_t i = 0; i < ((size_t) 1 << n); i++) {
     combinations.insert(comb);
-    int j = n - 1;
+    size_t j = n - 1;
     while (j >= 0 && comb[j] == 1) {
       comb[j] = 0;
       j--;
@@ -31,11 +31,11 @@ void testcpp(size_t n)
   }
   
   // Output the visited vertices as binary vectors
-  for (int i = 0; i < n; i++) {
+  for (size_t i = 0; i < n; i++) {
     for (auto it = combinations.begin(); it != std::prev(combinations.end()); it++) {
       auto next = std::next(it);
       if ((*it)[i] != (*next)[i]) {
-        for (int k = 0; k < n; k++) {
+        for (size_t k = 0; k < n; k++) {
           RLTcout << (*it)[k] << " ";
         }
         RLTcout << std::endl;
@@ -43,7 +43,7 @@ void testcpp(size_t n)
     }
   }
   
-  for (int k = 0; k < n; k++) {
+  for (size_t k = 0; k < n; k++) {
     RLTcout << combinations.rbegin()->at(k) << " ";
   }
   RLTcout << std::endl;

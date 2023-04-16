@@ -69,15 +69,17 @@ void Reg_Uni_Comb_Forest_Build(const RLT_REG_DATA& REG_DATA,
       // set xoshiro random seed
       Rand rngl(seed_vec(nt));
       
-      // get inbag and oobag samples
-      uvec inbag_id, oobagObs;
+      // get inbag and oobag index
+      uvec inbag_index, oobag_index;
       
       //If ObsTrack isn't given, set ObsTrack
       if (!obs_track_pre)
         set_obstrack(ObsTrack, nt, size, replacement, rngl);
       
       // Find the samples from pre-defined ObsTrack
-      get_samples(inbag_id, oobagObs, obs_id, ObsTrack.unsafe_col(nt));
+      get_index(inbag_index, oobag_index, ObsTrack.unsafe_col(nt));
+      uvec inbag_id = obs_id(inbag_index);
+      uvec oobag_id = obs_id(oobag_index);
       
       // initialize a tree (combination split)      
       

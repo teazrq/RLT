@@ -33,14 +33,14 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   Embed_Param.nmin = Param.embed_nmin;  
   Embed_Param.split_gen = Param.embed_split_gen;
   Embed_Param.nsplit = Param.embed_nsplit;
-  Embed_Param.replacement = 0; // no further bootstrap in embedded model
-  Embed_Param.resample_prob = Param.embed_resample_prob;  
+  Embed_Param.replacement = Param.embed_replacement;
+  Embed_Param.resample_prob = Param.embed_resample_prob;
   Embed_Param.useobsweight = Param.useobsweight;
   Embed_Param.usevarweight = Param.usevarweight;  
-  Embed_Param.importance = 1;  
+  Embed_Param.importance = 2; // use random variable importance
   
-  Embed_Param.ncores = 1;  
-  Embed_Param.verbose = 0;  
+  Embed_Param.ncores = 1;
+  Embed_Param.verbose = 0;
   Embed_Param.seed = rngl.rand_sizet(0, INT_MAX);
     
   // start fitting embedded model 
@@ -74,7 +74,6 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   vec VarImp(P, fill::zeros);
   
   // Run model fitting
-  
   Reg_Uni_Forest_Build(REG_DATA,
                        REG_FOREST,
                        (const PARAM_GLOBAL&) Embed_Param,

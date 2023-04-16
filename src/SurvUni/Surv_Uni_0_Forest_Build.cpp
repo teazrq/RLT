@@ -74,15 +74,17 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       // set xoshiro random seed
       Rand rngl(seed_vec(nt));
       
-      // get inbag and oobag samples
-      uvec inbag_id, oobagObs;
-
+      // get inbag and oobag index
+      uvec inbag_index, oobag_index;
+      
       //If ObsTrack isn't given, set ObsTrack
       if (!obs_track_pre)
         set_obstrack(ObsTrack, nt, size, replacement, rngl);
       
       // Find the samples from pre-defined ObsTrack
-      get_samples(inbag_id, oobagObs, obs_id, ObsTrack.unsafe_col(nt));
+      get_index(inbag_index, oobag_index, ObsTrack.unsafe_col(nt));
+      uvec inbag_id = obs_id(inbag_index);
+      uvec oobag_id = obs_id(oobag_index);
 
       // sort inbagObs based on Y values
       const uvec& Y = SURV_DATA.Y;
@@ -123,7 +125,7 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       OneTree.trim(TreeLength);
 
       // for predictions
-      size_t NTest = oobagObs.n_elem;
+      size_t NTest = oobag_index.n_elem;
       uvec proxy_id;
       uvec TermNode;
       
@@ -136,27 +138,27 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
       
         // find terminal codes
         Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, 
-                           proxy_id, oobagObs, TermNode);
+                           proxy_id, oobag_id, TermNode);
       
         for (size_t i = 0; i < NTest; i++)
-          Prediction.row(oobagObs(i)) += OneTree.NodeHaz(TermNode(i)).t();
+          Prediction.row(oobag_index(i)) += OneTree.NodeHaz(TermNode(i)).t();
       
-        oob_count(oobagObs) += 1;
+        oob_count(oobag_index) += 1;
       }
       
       // calculate importance
       if (importance == 1 and NTest > 1)
       {
         // oob samples
-        uvec oobY = SURV_DATA.Y(oobagObs);
-        uvec oobCensor = SURV_DATA.Censor(oobagObs);
+        uvec oobY = SURV_DATA.Y(oobag_id);
+        uvec oobCensor = SURV_DATA.Censor(oobag_id);
         vec oobpred(NTest);
         
         if (TermNode.n_elem == 0){// TermNode not already calculated
           proxy_id = linspace<uvec>(0, NTest-1, NTest);
           TermNode.zeros(NTest);
           Find_Terminal_Node(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, 
-                             proxy_id, oobagObs, TermNode);
+                             proxy_id, oobag_id, TermNode);
         }
         
         // oob sum of cumulative hazard as prediction
@@ -177,18 +179,19 @@ void Surv_Uni_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
           
           // create shuffled variable xj
           vec tildex = SURV_DATA.X.col(shuffle_var_j);
-          tildex = tildex.elem( rngl.shuffle(oobagObs) );
+          tildex = tildex.elem( rngl.shuffle(oobag_id) );
           
           // find terminal node of shuffled obs
           Find_Terminal_Node_ShuffleJ(0, OneTree, SURV_DATA.X, SURV_DATA.Ncat, 
-                                      proxy_id, oobagObs, TermNode, tildex, shuffle_var_j);
+                                      proxy_id, oobag_id, TermNode, tildex, shuffle_var_j);
           
           // predicted CCH for permuted data
           for (size_t i = 0; i < NTest; i++)
             oobpred(i) = accu( cumsum( OneTree.NodeHaz(TermNode(i)) ) ); // sum of cumulative hazard as prediction
           
           // c-index decreasing for permuted data
-          AllImp(nt, shuffle_var_j) = baseImp - cindex_i( oobY, oobCensor, oobpred );
+          size_t locate_j = find_j(var_id, shuffle_var_j);
+          AllImp(nt, locate_j) = baseImp - cindex_i( oobY, oobCensor, oobpred );
         }
       }
     }

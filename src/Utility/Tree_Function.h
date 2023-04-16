@@ -70,17 +70,20 @@ void unpack(const double pack, const size_t nBits, uvec& bits);
 bool unpack_goright(double pack, const size_t cat);
 void goright_roll_one(arma::uvec& goright_cat);
 
-// sample both inbag and oobag samples
+// find variable j
+size_t find_j(const arma::uvec& var_id,
+              size_t varj);
+
+// sample both inbag and oobag index
 void set_obstrack(arma::imat& ObsTrack,
                   const size_t nt,
                   const size_t size,
                   const bool replacement,
                   Rand& rngl);
 
-void get_samples(arma::uvec& inbagObs,
-                 arma::uvec& oobagObs,
-                 const arma::uvec& subj_id,
-                 const arma::ivec& ObsTrack_nt);
+void get_index(arma::uvec& inbag_index,
+               arma::uvec& oobag_index,
+               const arma::ivec& ObsTrack_nt);
 
 // splitting an interval node
 void split_id(const vec& x, double value, uvec& left_id, uvec& obs_id);

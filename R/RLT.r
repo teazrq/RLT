@@ -90,12 +90,17 @@
 #'                        They are not necessarily optimized.
 #'                        \itemize{
 #'                        \item \code{embed.ntrees}: number of trees in the embedded model
-#'                        \item \code{embed.resample.prob}: proportion of samples 
-#'                              (of the internal node) in the embedded model 
 #'                        \item \code{embed.mtry}: number or proportion of variables
-#'                        \item \code{embed.split.gen} random cutting point search 
-#'                              method (`"random"`, `"rank"` or `"best"`) 
-#'                        \item \code{embed.nsplit} number of random cutting points.
+#'                        \item \code{embed.nmin}: terminal node size
+#'                        \item \code{embed.split.gen} random cutting point search
+#'                              method (`"random"`, `"rank"` or `"best"`)
+#'                        \item \code{embed.nsplit} number of random cutting points
+#'                        \item \code{embed.resample.replace} whether to sample 
+#'                              with replacement
+#'                        \item \code{embed.resample.prob}: proportion of samples
+#'                              (of the internal node) in the embedded model
+#'                        \item \code{embed.mute} muting rate
+#'                        \item \code{embed.protect} number of protected variables
 #'                        }
 #'                        
 #'                        \code{linear.comb} is a separate feature that can be 

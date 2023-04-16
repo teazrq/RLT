@@ -48,9 +48,14 @@ TERMINATENODE:
     // if did not find a good split, terminate
     if (OneSplit.score <= 0)
       goto TERMINATENODE;
-      
-    // record internal node mean 
-    OneTree.NodeAve(Node) = arma::mean(REG_DATA.Y(obs_id));
+    
+    // record internal node weight 
+    if (useobsweight)
+    {
+      OneTree.NodeWeight(Node) = arma::sum(REG_DATA.obsweight(obs_id));
+    }else{
+      OneTree.NodeWeight(Node) = obs_id.n_elem;
+    }
       
     // construct indices for left and right nodes
     uvec left_id(obs_id.n_elem);

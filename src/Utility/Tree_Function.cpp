@@ -56,6 +56,20 @@ void goright_roll_one(arma::uvec& goright_cat)
     RLTcout << "goright_cat reaches max" << std::endl;
 }
 
+// find where is j in a uvec
+size_t find_j(const arma::uvec& var_id,
+              size_t varj)
+{
+  for (size_t j = 0; j < var_id.n_elem; j ++)
+  {
+    if (var_id(j) == varj)
+      return j;
+  }
+  
+  RLTcout << " find_j cannot find a match " << std::endl;
+  return 0;
+}
+  
 // for resampling set ObsTrack
 void set_obstrack(arma::imat& ObsTrack,
                   const size_t nt,
@@ -76,26 +90,25 @@ void set_obstrack(arma::imat& ObsTrack,
 
 // get inbag and oobag samples from ObsTrack
 // Adjusted for new ObsTrack format
-void get_samples(arma::uvec& inbagObs,
-                 arma::uvec& oobagObs,
-                 const arma::uvec& subj_id,
-                 const arma::ivec& ObsTrack_nt)
+// + is in sample, 0 is oob sample, - is not used
+void get_index(arma::uvec& inbag_index,
+               arma::uvec& oobag_index,
+               const arma::ivec& ObsTrack_nt)
 {
   //oob samples
-	oobagObs = subj_id.elem( find(ObsTrack_nt == 0) );
+  oobag_index = find(ObsTrack_nt == 0);
   
   //inbag samples
   arma::uvec use_row = find(ObsTrack_nt > 0);
 	size_t N = sum( ObsTrack_nt.elem( use_row ) );
-	inbagObs.set_size(N);
+	inbag_index.set_size(N);
 	
-	// record those to inbagObs
+	// record those to inbag_index
 	size_t mover = 0;
 	for (auto i : use_row)
 		for (int k = 0; k < ObsTrack_nt(i); k++)
-			inbagObs(mover++) = subj_id(i);
+		  inbag_index(mover++) = i;
 }
-
 
 // splitting an interval node
 // construct id vectors for left and right nodes
