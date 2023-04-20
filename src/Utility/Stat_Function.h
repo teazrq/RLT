@@ -28,9 +28,9 @@ arma::mat save(arma::mat& newX,
                size_t nslice);
 
 // first eigenvector of pca
-arma::mat first_pc(arma::mat& newX,
-                   arma::vec& newW,
-                   bool useobsweight);
+arma::mat xpc(arma::mat& newX,
+              arma::vec& newW,
+              bool useobsweight);
 
 // c-index 
 

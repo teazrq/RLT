@@ -28,6 +28,6 @@ print.RLT<- function(x, ...)
   if(class(x)[2] == "band")
     cat("An RLT survival confidence band object \n")
   
-  if(class(x)[2] == "Var")
-    cat(paste("An RLT", model, "variance estimation object.\n"))
+  if(class(x)[2] == "kernel")
+    cat(paste("An RLT", class(x)[3], "kernel object.\n"))
 }

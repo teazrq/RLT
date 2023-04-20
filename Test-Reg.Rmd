@@ -184,16 +184,17 @@ We first plot the variable importance from the permutation version. This usually
   barplot(as.vector(rangerfit$variable.importance), main = "ranger")
 ```
 
-We also calculate the variable importance from the random child node assignment approach. In this case, a subject is randomly send down to one of the two child nodes with probability proportional to the child node sizes. For example, we use sample without replacement with just one out-of-bag sample. 
+We also calculate the variable importance from the distributed child node assignment approach. In this case, we calculate all possible terminal nodes and their probabilities for a subject that ever land in that terminal node. 
+This is to send it down to both two child nodes with weights proportional to the child node sizes. In this case, we can calculate the variable importance for sampling without replacement with just one out-of-bag sample. 
 
-```{r class.source = NULL, out.width="90%", fig.width=10, fig.height=3.5}
+```{r class.source = NULL, out.width="90%", fig.width=21.5, fig.height=3.5}
   # using RLT package 
   RLTfit <- RLT(trainX, trainY, model = "regression", 
                 ntrees = ntrees, mtry = mtry, nmin = nmin, 
                 split.gen = rule, nsplit = nsplit, 
                 resample.prob = (trainn - 1)/trainn, 
                 resample.replace = FALSE, 
-                importance = "random", 
+                importance = "distribute", 
                 ncores = ncores, 
                 verbose = TRUE, 
                 param.control = list("resample.track" = TRUE))

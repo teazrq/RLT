@@ -179,7 +179,7 @@ public:
   void initiate(size_t TreeLength, size_t linear_comb)
   {
     if (TreeLength == 0) TreeLength = 1;
-    if (linear_comb <= 1) stop("Linear Combination is not needed, something wrong...");
+    if (linear_comb <= 1) RLTcout << "Linear Combination <= 1, Report Error." << std::endl;
       
     SplitVar.zeros(TreeLength, linear_comb);
     SplitVar.col(0).fill(-2);

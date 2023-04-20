@@ -1,5 +1,5 @@
 ---
-title: "RLT Package Reinforcement Learning Test"
+title: "RLT Package Reinforcement Learning Trees and Linear Combinaation Split Test"
 author: "Ruoqing Zhu"
 date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
 output:
@@ -36,7 +36,7 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
 ## Single Variable Embedded Splitting
 
 ```{r}
- # set.seed(2)
+  set.seed(2)
   
   n = 1000
   p = 10
@@ -52,7 +52,7 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
                 ntrees = 100, ncores = 1, nmin = 10,
                 split.gen = "random", nsplit = 1,
                 resample.prob = 0.85, resample.replace = FALSE,
-                reinforcement = TRUE, importance = "random",
+                reinforcement = TRUE, importance = "distribute",
                 param.control = list("embed.ntrees" = 50,
                                      "embed.mtry" = 1/2,
                                      "embed.nmin" = 10,
@@ -83,28 +83,6 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
   get.one.tree(RLTfit, 1)
 ```
 
-```{r}
-
-
-  RLTfit <- RLT(X, y, model = "regression", 
-                ntrees = 1000, ncores = 10, nmin = 10,
-                split.gen = "random", nsplit = 1,
-                resample.prob = 0.85, resample.replace = FALSE,
-                importance = "random", verbose = TRUE)
-
-  barplot(as.vector(RLTfit$VarImp), main = "RLT")
-
-```
-
-
-
-
-
-
-
-
-
-
 Check seed match
 
 ```{r}
@@ -126,53 +104,94 @@ Check seed match
   all(RLTfit$VarImp == RLTfit2$VarImp)
 ```
 
-## Linear Combination Split
+## Linear Combination Split 
 
-```{r eval=FALSE}
-  detach_package <- function(pkg, character.only = FALSE)
-  {
-    if(!character.only)
-    {
-      pkg <- deparse(substitute(pkg))
-    }
-    search_item <- paste("package", pkg, sep = ":")
-    while(search_item %in% search())
-    {
-      detach(search_item, unload = TRUE, character.only = TRUE)
-    }
-  }
-  detach_package(RLT)
-  detach(RLT, unload = TRUE)
-  remove.packages("RLT")
-  unlink("C:\\rlibrary\\RLT", recursive=TRUE)
-  file.remove("C:\\rlibrary\\RLT\\libs\\x64\\RLT.dll")
-```
+This is a model without fitting embedded random forest to search for the linear combinations. The variables are ranked by marginal screening. 
 
 ```{r}
-  library(RLT)
-  library(MASS)
-
   # set.seed(1)
-  
-  n = 200
+  library(MASS)
+  ntrain = 300
+  ntest = 500
+  n = ntrain + ntest
   p = 5
-  S = matrix(0.6, p, p)
+  S = matrix(0.3, p, p)
   diag(S) = 1
+
   X1 = mvrnorm(n, mu = rep(0, p), Sigma = S)
-  X2 = as.factor(sample(c(-1,1), size = n, replace = TRUE))
-  X = data.frame(X1, X2)
-  y = 1 + X[, 1] + X[, 3] + X[, 5] + rnorm(n)
-  w = runif(n)
+  X2 <- matrix(as.integer(runif(n * p) * 5), n, p)
+
+  # Combine continuous and categorical variables into a data frame (X)
+  X <- data.frame(X1, X2)
+
+  # Convert the second half of the columns in X to factors
+  X[, (p + 1):(2*p)] <- lapply(X[, (p+1):(2*p)], as.factor)
   
+  xlink <- function(x) 1 + x[, 1] + x[, 3] 
+  
+  # outcome
+  y = xlink(X) + rnorm(n)
+  w = runif(ntrain)
+  
+  xtrain = X[1:ntrain, ]
+  ytrain = y[1:ntrain]
+  xtest = X[-(1:ntrain), ]
+  ytest = y[-(1:ntrain)]
+
   start_time <- Sys.time()
-  
-  RLTfit <- RLT(X, y, model = "regression", obs.w = w,
-                ntrees = 1, ncores = 1, nmin = 100, mtry = 6,
-                split.gen = "best", nsplit = 10, 
-                resample.prob = 1, resample.replace = FALSE, 
-                param.control = list("linear.comb" = 3, 
-                                     "split.rule" = "sir"), 
-                importance = TRUE, verbose = TRUE)
-  
+  RLTfit <- RLT(xtrain, ytrain, model = "regression", obs.w = w,
+                ntrees = 100, ncores = 1, nmin = 10, mtry = 10,
+                split.gen = "random", nsplit = 1,
+                resample.prob = 0.9, resample.replace = FALSE, 
+                param.control = list("embed.ntrees" = 50,
+                                     "linear.comb" = 3,
+                                     "embed.nmin" = 5,
+                                     "split.rule" = "sir"),
+                importance = TRUE, 
+                verbose = TRUE)
   difftime(Sys.time(), start_time, units = "secs")
+  
+  # oob prediction and error
+  plot(RLTfit$Prediction, ytrain)
+  mean( (RLTfit$Prediction - ytrain)^2 , na.rm = TRUE)
+  
+  # testing data error
+  mean((predict(RLTfit, xtest)$Prediction - ytest)^2)
 ```
+Linear combination kernel
+
+```{r class.source = NULL, out.width="90%", fig.width=12, fig.height=12}
+  # generate data
+  n = 1000; p = 5
+  X = matrix(runif(n*p), n, p)
+  y = X[, 1] + X[, 3] + rnorm(n)
+
+  # fit model
+  RLTfit <- RLT(X, y, model = "regression",
+                ntrees = 100, ncores = 1, nmin = 10, mtry = 5,
+                split.gen = "random", nsplit = 3,
+                resample.prob = 0.9, resample.replace = FALSE,
+                param.control = list("embed.ntrees" = 50,
+                                     "linear.comb" = 2,
+                                     "embed.nmin" = 5,
+                                     "split.rule" = "sir"),
+                importance = TRUE,
+                verbose = TRUE)
+
+  # target point
+  newX = matrix(c(0.5, 0.5, 0.5, 0.5, 0.5), 
+                1, 5)
+  
+  # get kernel weights defined by the kernel function
+  KernelW = forest.kernel(RLTfit, X1 = newX, X2 = X)$Kernel
+  
+  par(mar = c(2, 2, 2, 2))
+  plot(X[, 1], X[, 3], col = "deepskyblue", pch = 19, cex = 0.5)
+  points(X[, 1], X[, 3], col = "darkorange", 
+         cex = 10*sqrt(KernelW/sqrt(sum(KernelW^2))), lwd = 2)
+  points(newX[1], newX[3], col = "black", pch = 4, cex = 4, lwd = 5)
+  legend("topright", "Target Point", pch = 4, col = "black", 
+         lwd = 5, lty = NA, cex = 1.5)
+```
+
+

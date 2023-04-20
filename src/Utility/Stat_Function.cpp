@@ -10,9 +10,10 @@
 using namespace Rcpp;
 using namespace arma;
 
-arma::mat first_pc(arma::mat& newX,
-                   arma::vec& newW,
-                   bool useobsweight)
+// pca
+arma::mat xpc(arma::mat& newX,
+              arma::vec& newW,
+              bool useobsweight)
 {
   //size_t P = newX.n_cols;
   size_t N = newX.n_rows;
@@ -29,10 +30,8 @@ arma::mat first_pc(arma::mat& newX,
     X.each_row() -= wmeans;
     
     // Calculate the weighted standard deviations
-    // do a little trick here
-    X.each_col() %= sqrt(newW);
-    
-    rowvec wsds = sqrt(sum(X, 0)) / sqrt(sumw);
+    mat XW = X.each_col() % sqrt(newW);
+    rowvec wsds = sqrt( sum( square(XW), 0) );
     
     // Standardize the data
     X.each_row() /= wsds;
@@ -40,7 +39,7 @@ arma::mat first_pc(arma::mat& newX,
     // Calculate the weighted covariance matrix
     // X is already multiplied by sqrt(W) at each column before
     C = X.t() * X;
-    C = C / accu(newW);
+    C = C / sumw;
     
   }else{
     
@@ -63,67 +62,59 @@ arma::mat first_pc(arma::mat& newX,
   uvec indices = sort_index(eigenvalues, "descend");
   
   eigenvectors = eigenvectors.cols(indices);
-  //eigenvalues = eigenvalues(indices);
-  
-  //RLTcout << "pca eigenvalues \n" << eigenvalues << std::endl;
-  //RLTcout << "pca eigenvectors \n" << eigenvectors << std::endl;
-  
+
   return(eigenvectors);
 }
 
 
 // sliced inverse regression 
-
 arma::mat sir(arma::mat& newX, 
               arma::vec& newY, 
               arma::vec& newW,
               bool useobsweight,
               size_t nslice)
 {
-  uvec index = sort_index(newY);
-  
-  mat x = newX.rows(index);
-  vec y = newY(index);
-  
-  size_t N = newY.n_elem;
-  size_t P = newX.n_cols;  
-  
-  // initiate 
-  mat M(P, P, fill::zeros);
-  mat C;
+  // prepare objects
+  size_t N = newX.n_rows;
+  uvec index = sort_index(newY);    
+  mat X = newX.rows(index);
+  vec Y = newY(index);
+
+  // obs index
   size_t slice_size = (size_t) N/nslice;
-  size_t res = N - nslice*slice_size;  
+  size_t res = N - nslice*slice_size; 
+  
+  // start calculating M
+  mat M(newX.n_cols, newX.n_cols, fill::zeros);
+  mat Sigma;
+  size_t rownum = 0;
   
   if (useobsweight)
   {
-    // calculate the weighted covariance matrix
-    // apply weights
-    vec w = newW(index);
+    vec W = newW(index);
+    double sumw = sum(W);
     
-    // center data
-    double sumw = sum(w);
-    rowvec wmeans = sum(x.each_col() % w, 0) / sumw;
-    x.each_row() -= wmeans;
+    // apply weight to each row diag(W) * X
+    mat XW = X.each_col() % W;
+    rowvec XMean = sum(XW, 0) / sumw;
     
-    // Calculate the weighted covariance matrix
-    x.each_col() %= w;
-    mat C = x.t() * newX.rows(index) / accu(newW);
-
-    // obs index
-    size_t rownum = 0;
+    // center X
+    mat X_centered = X.each_row() - XMean;
+    mat X_C_W = X_centered.each_col() % W;
     
-    // start to calculate slice means and add to M
+    // cov
+    Sigma = X_centered.t() * X_C_W / sumw;    
+    
+    // calculate M
     for (size_t k = 0; k < nslice; k++)
     {
       // sample size in this slice
       // first res slices has one more obs
       size_t nh = (k < res) ? (slice_size + 1) : slice_size;
       
-      // slice weight
-      double wh = sum(w.subvec(rownum, rownum + nh - 1));
-      
-      // weighted slice mean (without dividing by wh)
-      rowvec xhbar = sum(x.rows(rownum, rownum + nh - 1), 0);
+      // slice mean and weight
+      rowvec xhbar = sum(X_C_W.rows(rownum, rownum + nh - 1), 0);
+      double wh = accu(W.subvec(rownum, rownum + nh - 1));
       
       // next slice
       rownum += nh;
@@ -131,28 +122,21 @@ arma::mat sir(arma::mat& newX,
       // add to estimation matrix (adjust for wh)
       M += xhbar.t() * xhbar / wh;
     }
-    
   }else{
-    // x mean
-    rowvec xbar = mean(x, 0);
+    // center data
+    mat X_centered = X.each_row() - mean(X, 0);
     
-    // center x
-    x.each_row() -= xbar;
-    
-    // covariance matrix 
-    mat C = x.t() * x / (N - 1);
-    
-    // obs index
-    size_t rownum = 0;
-    
-    for (size_t k =0; k < nslice; k++) 
+    // cov
+    Sigma = (1.0 / (N - 1)) * X_centered.t() * X_centered;
+
+    for (size_t k = 0; k < nslice; k++)
     {
       // sample size in this slice
       // first res slices has one more obs
       size_t nh = (k < res) ? (slice_size + 1) : slice_size;
       
-      // slice mean (without dividing by wh)
-      rowvec xhbar = mean(x.rows(rownum, rownum + nh - 1), 0);
+      // slice sum
+      rowvec xhbar = sum(X_centered.rows(rownum, rownum + nh - 1), 0);
       
       // next slice
       rownum += nh;
@@ -162,15 +146,28 @@ arma::mat sir(arma::mat& newX,
     }
   }
   
+  Sigma = (Sigma + Sigma.t()) / 2;
+  M = (M + M.t()) / 2 / N;
+  
+  // solve a general eigen problem with
+  // M b = lambda C b
+  
+  // Perform Cholesky decomposition on Sigma
+  // Invert the lower triangular matrix L
+  mat L_inv = inv(chol(Sigma, "lower"));
+  
+  // Transform the problem into a standard eigenvalue problem
+  arma::mat M_transformed = L_inv.t() * M * L_inv;
+  
   // we use the M b = lambda Sigma b approach
-  vec eigenvalues;
-  mat eigenvectors;
+  vec eigval;
+  mat eigvec;
   
-  eig_sym(eigenvalues, eigenvectors, inv(C, inv_opts::allow_approx) * M, "std");
+  eig_sym(eigval, eigvec, M_transformed);
   
-  uvec indices = sort_index(eigenvalues, "descend");
+  uvec indices = sort_index(eigval, "descend");
   
-  return eigenvectors.cols(indices);
+  return eigvec.cols(indices);
 }
 
 // save

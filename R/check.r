@@ -160,7 +160,7 @@ check_importance <- function(importance)
   if (  match(importance, c(TRUE), nomatch = 0) )
     importance = "permute"
   
-  importance.num = match(importance, c("permute", "random"), 
+  importance.num = match(importance, c("permute", "distribute"), 
                          nomatch = 0)
   
   storage.mode(importance.num) <- "integer"

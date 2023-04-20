@@ -17,7 +17,7 @@
 #'                  This is slightly different than supplying the training data to \code{X2}
 #'                  due to re-samplings of the training process. To use this feature, you must
 #'                  specify \code{resample.track = TRUE} in \code{param.control} when fitting 
-#'                  the forst. 
+#'                  the forest 
 #' 
 #' @param verbose   Whether fitting should be printed.
 #' 
@@ -52,7 +52,7 @@ forest.kernel <- function(object,
     
       varmatch = match(object$xnames, colnames(X1))
     
-      if (any(is.na(varmatch))) 
+      if (any(is.na(varmatch)))
         stop("X1 is missing some variables from the orignal training data ...")
       
       X1 = X1[, varmatch]
@@ -62,14 +62,28 @@ forest.kernel <- function(object,
     
     if (is.null(X2))
     {
-      K <- Kernel_Self(object$FittedForest$SplitVar,
-                       object$FittedForest$SplitValue,
-                       object$FittedForest$LeftNode,
-                       object$FittedForest$RightNode,
-                       object$FittedForest$NodeWeight,
-                       X1,
-                       object$ncat,
-                       verbose)
+      
+      if (object$parameters$linear.comb > 1)
+      {
+        K <- Kernel_Self_Comb(object$FittedForest$SplitVar,
+                              object$FittedForest$SplitLoad,
+                              object$FittedForest$SplitValue,
+                              object$FittedForest$LeftNode,
+                              object$FittedForest$RightNode,
+                              object$FittedForest$NodeWeight,
+                              X1,
+                              object$ncat,
+                              verbose)
+      }else{
+        K <- Kernel_Self(object$FittedForest$SplitVar,
+                         object$FittedForest$SplitValue,
+                         object$FittedForest$LeftNode,
+                         object$FittedForest$RightNode,
+                         object$FittedForest$NodeWeight,
+                         X1,
+                         object$ncat,
+                         verbose)
+      }
       
       class(K) <- c("RLT", "kernel", "self")
       
@@ -100,16 +114,30 @@ forest.kernel <- function(object,
       {
         # cross-kernel of X1 and X2
     
-        K <- Kernel_Cross(object$FittedForest$SplitVar,
-                          object$FittedForest$SplitValue,
-                          object$FittedForest$LeftNode,
-                          object$FittedForest$RightNode,
-                          object$FittedForest$NodeWeight,
-                          X1,
-                          X2,
-                          object$ncat,
-                          verbose)
-    
+        if (object$parameters$linear.comb > 1)
+        {
+          K <- Kernel_Cross_Comb(object$FittedForest$SplitVar,
+                                 object$FittedForest$SplitLoad,
+                                 object$FittedForest$SplitValue,
+                                 object$FittedForest$LeftNode,
+                                 object$FittedForest$RightNode,
+                                 object$FittedForest$NodeWeight,
+                                 X1,
+                                 X2,
+                                 object$ncat,
+                                 verbose)
+        }else{
+          K <- Kernel_Cross(object$FittedForest$SplitVar,
+                            object$FittedForest$SplitValue,
+                            object$FittedForest$LeftNode,
+                            object$FittedForest$RightNode,
+                            object$FittedForest$NodeWeight,
+                            X1,
+                            X2,
+                            object$ncat,
+                            verbose)
+        }
+        
         class(K) <- c("RLT", "kernel", "cross")
         
       }else{
@@ -124,22 +152,35 @@ forest.kernel <- function(object,
         if (nrow(ObsTrack) != nrow(X2))
           stop("X2 must be the original training data")
         
-        K <- Kernel_Train(object$FittedForest$SplitVar,
-                          object$FittedForest$SplitValue,
-                          object$FittedForest$LeftNode,
-                          object$FittedForest$RightNode,
-                          object$FittedForest$NodeWeight,
-                          X1,
-                          X2,
-                          object$ncat,
-                          ObsTrack,
-                          verbose)
+        if (object$parameters$linear.comb > 1)
+        {
+          K <- Kernel_Train_Comb(object$FittedForest$SplitVar,
+                                 object$FittedForest$SplitLoad,
+                                 object$FittedForest$SplitValue,
+                                 object$FittedForest$LeftNode,
+                                 object$FittedForest$RightNode,
+                                 object$FittedForest$NodeWeight,
+                                 X1,
+                                 X2,
+                                 object$ncat,
+                                 verbose)
+        }else{
+          K <- Kernel_Train(object$FittedForest$SplitVar,
+                            object$FittedForest$SplitValue,
+                            object$FittedForest$LeftNode,
+                            object$FittedForest$RightNode,
+                            object$FittedForest$NodeWeight,
+                            X1,
+                            X2,
+                            object$ncat,
+                            ObsTrack,
+                            verbose)
+        }
         
         class(K) <- c("RLT", "kernel", "train")
         
       }
     }
-    
-  
+
   return(K)
 }

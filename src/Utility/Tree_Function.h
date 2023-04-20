@@ -29,6 +29,14 @@ void Find_Terminal_Node(size_t Node,
               							const uvec& real_id,
               							uvec& TermNode);
 
+void Find_Terminal_Node_Comb(size_t Node, 
+                             const Comb_Tree_Class& OneTree,
+                             const mat& X,
+                             const uvec& Ncat,
+                             uvec& proxy_id,
+                             const uvec& real_id,
+                             uvec& TermNode);
+
 void Find_Terminal_Node_ShuffleJ(size_t Node, 
                                      const Tree_Class& OneTree,
                                      const mat& X,
@@ -88,7 +96,11 @@ void get_index(arma::uvec& inbag_index,
 // splitting an interval node
 void split_id(const vec& x, double value, uvec& left_id, uvec& obs_id);
 void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_t ncat);
-
+void split_id_comb(const mat& x, 
+                   const Comb_Split_Class& OneSplit, 
+                   uvec& left_id, 
+                   uvec& obs_id);
+  
 
 // check cutoff points in continuous or categorical variables
 void check_cont_index_sub(size_t& lowindex, size_t& highindex, const vec& x, const uvec& indices);

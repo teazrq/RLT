@@ -37,7 +37,7 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   Embed_Param.resample_prob = Param.embed_resample_prob;
   Embed_Param.useobsweight = Param.useobsweight;
   Embed_Param.usevarweight = Param.usevarweight;  
-  Embed_Param.importance = 2; // use random variable importance
+  Embed_Param.importance = 2; // use distributed variable importance for stability
   
   Embed_Param.ncores = 1;
   Embed_Param.verbose = 0;

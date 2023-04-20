@@ -151,6 +151,31 @@ void split_id_cat(const vec& x, double value, uvec& left_id, uvec& obs_id, size_
   obs_id.resize(RightN);
 }
 
+void split_id_comb(const mat& x, 
+                   const Comb_Split_Class& OneSplit, 
+                   uvec& left_id, 
+                   uvec& obs_id) // obs_id will be treated as the right node
+{
+  size_t n_comb = sum(OneSplit.load != 0);
+  
+  vec combscore = x(obs_id, OneSplit.var) * OneSplit.load;
+  
+  size_t LeftN = 0;
+  size_t RightN = 0;
+  
+  for (size_t i = 0; i < obs_id.n_elem; i++)
+  {
+    if ( combscore(i) <= OneSplit.value )
+      left_id(LeftN++) = obs_id(i);
+    else
+      obs_id(RightN++) = obs_id(i);
+  }
+  
+  left_id.resize(LeftN);
+  obs_id.resize(RightN);
+}
+
+
 // check cutoff points in continuous or categorical variables
 void check_cont_index_sub(size_t& lowindex, 
                           size_t& highindex, 
@@ -313,7 +338,7 @@ void Find_Terminal_Node(size_t Node,
   size_t size = proxy_id.n_elem;
   
   //If the current node is a terminal node
-  if (OneTree.SplitVar[Node] == -1)
+  if (OneTree.SplitVar(Node) == -1)
   {
     // For all the observations in the node,
     // Set its terminal node
@@ -378,6 +403,125 @@ void Find_Terminal_Node(size_t Node,
   
 }
 
+// Find the terminal node for X in one linear combination tree
+void Find_Terminal_Node_Comb(size_t Node, 
+                             const Comb_Tree_Class& OneTree,
+                             const mat& X,
+                             const uvec& Ncat,
+                             uvec& proxy_id,
+                             const uvec& real_id,
+                             uvec& TermNode)
+{
+  size_t N = proxy_id.n_elem;
+  
+  //If the current node is a terminal node
+  if (OneTree.SplitVar(Node, 0) == -1)
+  {
+    // For all the observations in the node,
+    // Set its terminal node
+    for ( size_t i=0; i < N; i++ )
+      TermNode(proxy_id(i)) = Node;
+  }else{
+    
+    size_t n_comb = sum(OneTree.SplitLoad.row(Node) != 0);
+    uvec id_goright(proxy_id.n_elem, fill::zeros);
+    
+    // single categorical variable
+    if (n_comb == 1 and Ncat(OneTree.SplitVar(Node, 0)) > 1)
+    {
+      size_t SplitVar = OneTree.SplitVar(Node, 0);
+      double SplitValue = OneTree.SplitValue(Node);
+      
+      // prepare vector of splitting rule
+      uvec goright(Ncat(SplitVar) + 1);
+      unpack(SplitValue, Ncat(SplitVar) + 1, goright);      
+      
+      // assign observations
+      for (size_t i = 0; i < N ; i++)
+      {
+        size_t xcat = (size_t) X( real_id( proxy_id(i) ), SplitVar);
+        
+        if ( goright( xcat ) == 1 )
+          id_goright(i) = 1;
+      }
+    }
+    
+    // single continuous variable
+    if (n_comb == 1 and Ncat(OneTree.SplitVar(Node, 0)) == 1)
+    {
+      
+      size_t SplitVar = OneTree.SplitVar(Node, 0);
+      double SplitValue = OneTree.SplitValue(Node);
+      
+      //For the obs in the current internal node
+      for (size_t i = 0; i < N ; i++)
+      {
+        //Determine the x values for this variable
+        double xtemp = X( real_id( proxy_id(i) ), SplitVar);
+        
+        //If they are greater than the value, go right
+        if (xtemp > SplitValue)
+          id_goright(i) = 1;
+      }
+    }
+    
+    // linear combination
+    if (n_comb > 1)
+    {
+      uvec usevar = conv_to< uvec >::from( OneTree.SplitVar.row(Node).subvec(0, n_comb-1) );
+      vec useload = conv_to< vec >::from( OneTree.SplitLoad.row(Node).subvec(0, n_comb-1) );
+      vec linearcomb = X( real_id( proxy_id ), usevar) * useload;
+      
+      double SplitValue = OneTree.SplitValue(Node);
+      id_goright( find( linearcomb > SplitValue ) ).ones();
+    }
+
+    //All others go left
+    uvec left_proxy = proxy_id(find(id_goright == 0));
+    proxy_id = proxy_id(find(id_goright == 1));
+    
+    // left node 
+    
+    if (left_proxy.n_elem > 0)
+    {
+      Find_Terminal_Node_Comb(OneTree.LeftNode[Node], 
+                              OneTree, 
+                              X, 
+                              Ncat, 
+                              left_proxy, 
+                              real_id, 
+                              TermNode);
+    }
+    
+    // right node
+    if (proxy_id.n_elem > 0)
+    {
+      Find_Terminal_Node_Comb(OneTree.RightNode[Node], 
+                              OneTree, 
+                              X, 
+                              Ncat, 
+                              proxy_id, 
+                              real_id, 
+                              TermNode);      
+    }
+  }
+  
+  return;  
+  
+  
+  
+}
+
+
+
+
+
+
+
+
+
+
+
 // Find the terminal node for X in one tree with variable j shuffled
 //Function for variable importance
 void Find_Terminal_Node_ShuffleJ(size_t Node, 
@@ -394,7 +538,7 @@ void Find_Terminal_Node_ShuffleJ(size_t Node,
   size_t size = proxy_id.n_elem;
   
   //If terminal node
-  if (OneTree.SplitVar[Node] == -1)
+  if (OneTree.SplitVar(Node) == -1)
   {
     for ( size_t i=0; i < size; i++ )
       TermNode(proxy_id(i)) = Node;

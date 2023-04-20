@@ -3,7 +3,6 @@
 S3method(predict,RLT)
 S3method(print,RLT)
 export(RLT)
-export(Surv_Cov_Forest)
 export(cindex)
 export(forest.kernel)
 export(get.one.tree)

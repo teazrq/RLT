@@ -17,64 +17,52 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
                                const uvec& var_id,
                                Rand& rngl)
 {
-  
-  RLTcout << "--Reg_Uni_Comb_Find_A_Split:" << std::endl;
-
   // parameters
-  size_t linear_comb = Param.linear_comb;
-  
   size_t mtry = Param.mtry;
-  //size_t nmin = Param.nmin;
   double alpha = Param.alpha;
   bool useobsweight = Param.useobsweight;
-  //bool usevarweight = Param.usevarweight;
   size_t nsplit = Param.nsplit;
   size_t split_gen = Param.split_gen;
-
-  // pre-screening all variables to get the best ones
+  size_t linear_comb = Param.linear_comb;  
+  
+  // pre-screening variables to get the best ones
   uvec split_var = rngl.sample(var_id, mtry);
-  vec split_score(split_var.n_elem, fill::zeros);
   
-  Reg_Uni_Comb_Pre_Screen(split_var,
-                          split_score,
-                          REG_DATA,
-                          Param,
-                          obs_id,
-                          rngl);
-  
+  //Embedded RF VI Screening Method
+  vec split_score = Reg_Uni_Embed_Pre_Screen(REG_DATA,
+                                             Param,
+                                             obs_id,
+                                             split_var,
+                                             rngl);
+
   // sort and get the best ones
   uvec indices = sort_index(split_score, "descend");
   split_var = split_var(indices);
-  split_score = split_score(indices);
-  //split_value = split_value(indices);
-  
-  RLTcout << "best vars \n" << split_var << std::endl;
-  RLTcout << "best scores \n" << split_score << std::endl;
-  
+
   // if the best variable is categorical
   // do single categorical split
   // I may need to change this later for combination cat split
   if (REG_DATA.Ncat(split_var(0)) > 1)
   {
-    size_t var_j = split_var(0);
+    size_t j = split_var(0);
     
-    RLTcout << "--Use single cat split" <<  var_j << std::endl;
+    // RLTcout << "--Use single cat split" <<  j << std::endl;
     
     //Initialize objects
     Split_Class TempSplit;
-    TempSplit.var = var_j;
+    TempSplit.var = j;
     TempSplit.value = 0;
     TempSplit.score = -1;
     
     Reg_Uni_Split_Cat(TempSplit, 
                       obs_id, 
-                      REG_DATA.X.unsafe_col(var_j), 
-                      REG_DATA.Ncat(var_j),
+                      REG_DATA.X.unsafe_col(j), 
+                      REG_DATA.Ncat(j),
                       REG_DATA.Y, 
                       REG_DATA.obsweight, 
                       0.0, // penalty
                       split_gen,
-                      1, // splitting rule var (not used in function)
+                      1, // univariate splitting rule (var)
                       nsplit,
                       alpha, 
                       useobsweight,
@@ -90,46 +78,42 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   }
   
   // find and restrict to continuous variables at the top
+  size_t use_comb = 0;
   
-  size_t cont_count = 0;
-  size_t var_used = (linear_comb < mtry)? linear_comb : mtry;
-  
-  for (size_t j = 0; j < var_used; j++)
-  {  
+  for (size_t j = 0; j < std::min(linear_comb, mtry); j++)
+  {
     if (REG_DATA.Ncat(split_var(j)) == 1)
-      cont_count ++;
+      use_comb ++;
     else
       break;
   }
   
-  split_var.resize(cont_count);
-  split_score.resize(cont_count);
-
-  RLTcout << "--After getting the best continuous variables" << std::endl;
-  RLTcout << "best vars \n" << split_var << std::endl;
-  RLTcout << "best scores \n" << split_score << std::endl;
+  //RLTcout << " use combination " << use_comb << std::endl;
+  
+  split_var.resize(use_comb);
+  split_score.resize(use_comb);
   
   // If there is only one continuous variable at the top
-  if (cont_count == 1)
+  if (use_comb == 1)
   {
-    size_t var_j = split_var(0);
+    size_t j = split_var(0);
     
-    RLTcout << "--Use single cont split" <<  var_j << std::endl;
+    //RLTcout << "--Use single cont split" <<  j << std::endl;
     
     //Initialize objects
     Split_Class TempSplit;
-    TempSplit.var = var_j;
+    TempSplit.var = j;
     TempSplit.value = 0;
     TempSplit.score = -1;
     
     Reg_Uni_Split_Cont(TempSplit,
                        obs_id,
-                       REG_DATA.X.unsafe_col(var_j), 
+                       REG_DATA.X.unsafe_col(j), 
                        REG_DATA.Y,
                        REG_DATA.obsweight,
                        0.0, // penalty
                        split_gen,
-                       1, // splitting rule: var (not used in function)
+                       1, // univariate splitting rule (var)
                        nsplit,
                        alpha,
                        useobsweight,
@@ -144,14 +128,12 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
     return;
   }
 
-  // find best linear combination split
-  Reg_Uni_Comb_Split_Cont(OneSplit,
-                          (const uvec&) split_var,
-                          (const vec&) split_score,
-                          REG_DATA,
-                          Param,
-                          obs_id,
-                          rngl);
+  // for more than one variable, find best linear combination split
+  Reg_Uni_Comb_Linear(OneSplit,
+                      (const uvec&) split_var,
+                      REG_DATA,
+                      Param,
+                      obs_id,
+                      rngl);
 
-  return;
 }

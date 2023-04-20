@@ -33,7 +33,7 @@ RegForest <- function(x, y,
     # existing splitting rule for regular regression
     all.split.rule = c("var")
 
-    param$"split.rule" <- match(param$"split.rule", all.split.rule)
+    param$"split.rule" <- match(param$"split.rule", all.split.rule, nomatch = 0)
     
     if (param$"split.rule" == 0)
       warning("split.rule is not compatiable with regression, switching to default")

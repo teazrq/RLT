@@ -75,18 +75,21 @@
 #'                        \code{param.control}.
 #'                        
 #' @param importance      Whether to calculate variable importance measures. When
-#'                        set to `"TRUE"`, the calculation follows Breiman's 
-#'                        original permutation strategy. If set to `"random"`, then 
-#'                        it randomly send the target point down to one of the child
-#'                        nodes with probabilities proportional to their sample sizes.
-#'                        This feature is only available in regression and classification
-#'                        models.  
+#'                        set to `"TRUE"` (or `"permute"`), the calculation follows 
+#'                        Breiman's original permutation strategy. If set to `"distribute"`, 
+#'                        then it sends the oob data to both child nodes with 
+#'                        weights proportional to their sample sizes. Hence
+#'                        the final prediction is a weighted average of all possible 
+#'                        terminal nodes that a perturbed observation could fall into.
+#'                        This feature is currently only available in regression 
+#'                        and classification models.  
 #'                        
 #' @param param.control   A list of additional parameters. This can be used to 
 #'                        specify other features in a random forest or set embedded 
 #'                        model parameters for reinforcement splitting rules. 
 #'                        Using \code{reinforcement = TRUE} will automatically
 #'                        generate some default tuning for the embedded model. 
+#'                        This mode is currently only available in regression. 
 #'                        They are not necessarily optimized.
 #'                        \itemize{
 #'                        \item \code{embed.ntrees}: number of trees in the embedded model
@@ -168,7 +171,7 @@
 #'                        on the quantiles of failure times, while must include the 
 #'                        minimum and the maximum. 
 #'                        
-#' @param ncores          Number of cpu logical cores. Default is 0 (using all 
+#' @param ncores          Number of CPU logical cores. Default is 0 (using all 
 #'                        available cores).
 #' 
 #' @param verbose         Whether info should be printed.

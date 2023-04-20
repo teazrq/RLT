@@ -89,7 +89,9 @@ predict.RLT<- function(object,
   if (var.est & !object$parameters$var.ready)
     stop("The original forest is not fitted with `var.ready` Please check the conditions and build another forest.")
   
-  if( class(object)[2] == "fit" &  class(object)[3] == "reg" )
+  ncomb = object$parameters$linear.comb
+  
+  if( class(object)[2] == "fit" &  class(object)[3] == "reg" & ncomb == 1)
   {
     pred <- RegUniForestPred(object$FittedForest$SplitVar,
                              object$FittedForest$SplitValue,
@@ -107,6 +109,28 @@ predict.RLT<- function(object,
     class(pred) <- c("RLT", "pred", "reg")
     return(pred)
   }
+  
+  
+  if( class(object)[2] == "fit" & class(object)[3] == "reg" & ncomb > 1)
+  {
+    pred <- RegUniCombForestPred(object$FittedForest$SplitVar,
+                                 object$FittedForest$SplitLoad,
+                                 object$FittedForest$SplitValue,
+                                 object$FittedForest$LeftNode,
+                                 object$FittedForest$RightNode,
+                                 object$FittedForest$NodeWeight,
+                                 object$FittedForest$NodeAve,
+                                 testx,
+                                 object$ncat,
+                                 var.est,
+                                 keep.all,
+                                 ncores,
+                                 verbose)
+    
+    class(pred) <- c("RLT", "pred", "reg")
+    return(pred)
+  }
+  
   
   if( class(object)[2] == "fit" &  class(object)[3] == "cla" )
   {

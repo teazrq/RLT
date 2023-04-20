@@ -178,21 +178,19 @@ void Reg_Uni_Forest_Pred(mat& Pred,
                          size_t usecores,
                          size_t verbose);
 
-
 // #############################
 // ## Combination Split Trees ##
 // #############################
 
 void Reg_Uni_Comb_Forest_Build(const RLT_REG_DATA& REG_DATA,
-                            Reg_Uni_Comb_Forest_Class& REG_FOREST,
-                            const PARAM_GLOBAL& Param,
-                            const uvec& obs_id,
-                            const uvec& var_id,
-                            imat& ObsTrack,
-                            bool do_prediction,
-                            vec& Prediction,
-                            vec& OOBPrediction,
-                            vec& VarImp);
+                               Reg_Uni_Comb_Forest_Class& REG_FOREST,
+                               const PARAM_GLOBAL& Param,
+                               const uvec& obs_id,
+                               const uvec& var_id,
+                               imat& ObsTrack,
+                               bool do_prediction,
+                               vec& Prediction,
+                               vec& VarImp);
 
 void Reg_Uni_Comb_Split_A_Node(size_t Node,
                             Reg_Uni_Comb_Tree_Class& OneTree,
@@ -209,15 +207,6 @@ void Reg_Uni_Comb_Terminate_Node(size_t Node,
                               const vec& obs_weight,
                               bool useobsweight);
 
-void Reg_Uni_Comb_Split_A_Node_Embed(size_t Node,
-                                  Reg_Uni_Comb_Tree_Class& OneTree,
-                                  const RLT_REG_DATA& REG_DATA,
-                                  const PARAM_GLOBAL& Param,
-                                  uvec& obs_id,
-                                  const uvec& var_id,
-                                  const uvec& var_protect,
-                                  Rand& rngl);
-
 void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
                             const RLT_REG_DATA& REG_DATA,
                             const PARAM_GLOBAL& Param,
@@ -225,57 +214,18 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
                             const uvec& var_id,
                             Rand& rngl);
 
-void Reg_Uni_Comb_Find_A_Split_Embed(Comb_Split_Class& OneSplit,
-                                  const RLT_REG_DATA& REG_DATA,
-                                  const PARAM_GLOBAL& Param,
-                                  const uvec& obs_id,
-                                  const uvec& var_id,
-                                  Rand& rngl);
-
-void Reg_Uni_Comb_Pre_Screen(uvec& var,
-                             vec& score,
-                             const RLT_REG_DATA& REG_DATA, 
+vec Reg_Uni_Embed_Pre_Screen(const RLT_REG_DATA& REG_DATA,
                              const PARAM_GLOBAL& Param,
                              const uvec& obs_id,
+                             const uvec& var_id,
                              Rand& rngl);
   
-void Reg_Uni_Comb_Split_Cont(Comb_Split_Class& OneSplit,
-                             const uvec& split_var,
-                             const vec& split_score,
-                             const RLT_REG_DATA& REG_DATA, 
-                             const PARAM_GLOBAL& Param,
-                             const uvec& obs_id,
-                             Rand& rngl);
+void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
+                         const uvec& split_var,
+                         const RLT_REG_DATA& REG_DATA,
+                         const PARAM_GLOBAL& Param,
+                         const uvec& obs_id,
+                         Rand& rngl);
 
-double reg_uni_cont_score_cut_full(const vec& xj, 
-                                   const vec& y, 
-                                   double temp_cut);
-
-double reg_uni_cont_score_cut_full_w(const vec& xj, 
-                                     const vec& y,
-                                     double temp_cut,
-                                     const vec& w);
-
-double reg_uni_cont_score_rank_full(const vec& y,
-                                    size_t a_random_ind);
-  
-double reg_uni_cont_score_rank_full_w(const vec& y,
-                                      size_t a_random_ind,
-                                      const vec& w);
-
-void reg_uni_cont_score_best_full(const vec& x,
-                                  const vec& y,
-                                  size_t lowindex, 
-                                  size_t highindex, 
-                                  double& temp_cut, 
-                                  double& temp_score);
-
-void reg_uni_cont_score_best_full_w(const vec& x,
-                                    const vec& y,
-                                    const vec& w,
-                                    size_t lowindex, 
-                                    size_t highindex, 
-                                    double& temp_cut, 
-                                    double& temp_score);
 
 #endif

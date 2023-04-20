@@ -90,12 +90,14 @@ other usage, see the details of \code{split.rule} in
 \code{param.control}.}
 
 \item{importance}{Whether to calculate variable importance measures. When
-set to \code{"TRUE"}, the calculation follows Breiman's
-original permutation strategy. If set to \code{"random"}, then
-it randomly send the target point down to one of the child
-nodes with probabilities proportional to their sample sizes.
-This feature is only available in regression and classification
-models.}
+set to \code{"TRUE"} (or \code{"permute"}), the calculation follows
+Breiman's original permutation strategy. If set to \code{"distribute"},
+then it sends the oob data to both child nodes with
+weights proportional to their sample sizes. Hence
+the final prediction is a weighted average of all possible
+terminal nodes that a perturbed observation could fall into.
+This feature is currently only available in regression
+and classification models.}
 
 \item{reinforcement}{Should reinforcement splitting rule be used. Default
 is \code{"FALSE"}, i.e., regular random forests with marginal
@@ -109,15 +111,21 @@ specify other features in a random forest or set embedded
 model parameters for reinforcement splitting rules.
 Using \code{reinforcement = TRUE} will automatically
 generate some default tuning for the embedded model.
+This mode is currently only available in regression.
 They are not necessarily optimized.
 \itemize{
 \item \code{embed.ntrees}: number of trees in the embedded model
-\item \code{embed.resample.prob}: proportion of samples
-(of the internal node) in the embedded model
 \item \code{embed.mtry}: number or proportion of variables
+\item \code{embed.nmin}: terminal node size
 \item \code{embed.split.gen} random cutting point search
 method (\code{"random"}, \code{"rank"} or \code{"best"})
-\item \code{embed.nsplit} number of random cutting points.
+\item \code{embed.nsplit} number of random cutting points
+\item \code{embed.resample.replace} whether to sample
+with replacement
+\item \code{embed.resample.prob}: proportion of samples
+(of the internal node) in the embedded model
+\item \code{embed.mute} muting rate
+\item \code{embed.protect} number of protected variables
 }
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{                   \code{linear.comb} is a separate feature that can be 
@@ -186,7 +194,7 @@ method (\code{"random"}, \code{"rank"} or \code{"best"})
                    minimum and the maximum.
 }\if{html}{\out{</div>}}}
 
-\item{ncores}{Number of cpu logical cores. Default is 0 (using all
+\item{ncores}{Number of CPU logical cores. Default is 0 (using all
 available cores).}
 
 \item{verbose}{Whether info should be printed.}

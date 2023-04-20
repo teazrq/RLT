@@ -25,81 +25,134 @@ get.one.tree <- function(x, tree = 1, ...)
   
   p = x$parameters$p
   
-  SplitVar = x$FittedForest$SplitVar[[tree]]
-  SplitValue = x$FittedForest$SplitValue[[tree]]
-  LeftNode = x$FittedForest$LeftNode[[tree]] + 1
-  RightNode = x$FittedForest$RightNode[[tree]] + 1
-  NodeWeight = x$FittedForest$NodeWeight[[tree]]
   
-  terminal = (SplitVar == -1)
+  if (x$parameters$linear.comb == 1)
+  {
+    SplitVar = x$FittedForest$SplitVar[[tree]]
+    SplitValue = x$FittedForest$SplitValue[[tree]]
+    LeftNode = x$FittedForest$LeftNode[[tree]] + 1
+    RightNode = x$FittedForest$RightNode[[tree]] + 1
+    NodeWeight = x$FittedForest$NodeWeight[[tree]]
+    
+    terminal = (SplitVar == -1)
+  
+    # correct other columns
+    SplitVar[terminal] = NA  
+    SplitValue[terminal] = NA
+    LeftNode[terminal] = NA
+    RightNode[terminal] = NA
+    
+    # old code when node size is not saved
+    # SplitVar[terminal] = p  
+    # # the node size is saved at LeftNode
+    # NodeSize = LeftNode - 1
+    # NodeSize[!terminal] = NA
+    # 
+    # # correct other columns
+    # SplitValue[terminal] = NA
+    # LeftNode[terminal] = NA
+    # RightNode[terminal] = NA
+    # 
+    # while (sum(is.na(NodeSize)) > 0)
+    # {
+    #   uppernodes = (LeftNode %in% which(!is.na(NodeSize))) & 
+    #                (RightNode %in% which(!is.na(NodeSize))) & 
+    #                is.na(NodeSize)
+    # 
+    #   NodeSize[uppernodes] = NodeSize[LeftNode[uppernodes]] + 
+    #                          NodeSize[RightNode[uppernodes]]
+    # }  
+    
+    if ( class(x)[3] == "reg" )
+    {
+      cat(paste("Tree #", tree, " in the fitted regression forest: \n\n", sep = ""))
+  
+      OneTree = data.frame("SplitVar" = newnames[SplitVar + 1],
+                           "SplitValue" = SplitValue,
+                           "LeftNode" = LeftNode,
+                           "RightNode" = RightNode,
+                           "NodeWeight" = NodeWeight,
+                           "NodeAve" = x$FittedForest$NodeAve[[tree]])
+    }
+    
+    
+    if ( class(x)[3] == "surv" )
+    {
+      cat(paste("Tree #", tree, " in the fitted survival forest: \n\n", sep = ""))
+      
+      OneTree = data.frame("SplitVar" = newnames[SplitVar + 1],
+                           "SplitValue" = SplitValue,
+                           "LeftNode" = LeftNode,
+                           "RightNode" = RightNode,
+                           "NodeWeight" = NodeWeight)
+      
+    }
+    
+    if ( class(x)[3] == "cla" )
+    {
+      cat(paste("Tree #", tree, " in the fitted classification forest: \n\n", sep = ""))
+      
+      probmat = x$FittedForest$NodeProb[[tree]]
+      colnames(probmat) = x$ylabels
+      
+      OneTree = data.frame("SplitVar" = newnames[SplitVar + 1],
+                           "SplitValue" = SplitValue,
+                           "LeftNode" = LeftNode,
+                           "RightNode" = RightNode,
+                           "NodeWeight" = NodeWeight,
+                           "Prob.of." = probmat)
+      
+    }  
 
-  # correct other columns
-  SplitVar[terminal] = NA  
-  SplitValue[terminal] = NA
-  LeftNode[terminal] = NA
-  RightNode[terminal] = NA
-  
-  # old code when node size is not saved
-  # SplitVar[terminal] = p  
-  # # the node size is saved at LeftNode
-  # NodeSize = LeftNode - 1
-  # NodeSize[!terminal] = NA
-  # 
-  # # correct other columns
-  # SplitValue[terminal] = NA
-  # LeftNode[terminal] = NA
-  # RightNode[terminal] = NA
-  # 
-  # while (sum(is.na(NodeSize)) > 0)
-  # {
-  #   uppernodes = (LeftNode %in% which(!is.na(NodeSize))) & 
-  #                (RightNode %in% which(!is.na(NodeSize))) & 
-  #                is.na(NodeSize)
-  # 
-  #   NodeSize[uppernodes] = NodeSize[LeftNode[uppernodes]] + 
-  #                          NodeSize[RightNode[uppernodes]]
-  # }  
-  
-  if ( class(x)[3] == "reg" )
-  {
-    cat(paste("Tree #", tree, " in the fitted regression forest: \n\n", sep = ""))
-
-    OneTree = data.frame("SplitVar" = newnames[SplitVar + 1],
-                         "SplitValue" = SplitValue,
-                         "LeftNode" = LeftNode,
-                         "RightNode" = RightNode,
-                         "NodeWeight" = NodeWeight,
-                         "NodeAve" = x$FittedForest$NodeAve[[tree]])
-  }
-  
-  
-  if ( class(x)[3] == "surv" )
-  {
-    cat(paste("Tree #", tree, " in the fitted survival forest: \n\n", sep = ""))
+  }else{
     
-    OneTree = data.frame("SplitVar" = newnames[SplitVar + 1],
-                         "SplitValue" = SplitValue,
-                         "LeftNode" = LeftNode,
-                         "RightNode" = RightNode,
-                         "NodeWeight" = NodeWeight)
+    
+    SplitVar = x$FittedForest$SplitVar[[tree]]
+    SplitLoad = x$FittedForest$SplitLoad[[tree]]
+    SplitValue = x$FittedForest$SplitValue[[tree]]
+    LeftNode = x$FittedForest$LeftNode[[tree]] + 1
+    RightNode = x$FittedForest$RightNode[[tree]] + 1
+    NodeWeight = x$FittedForest$NodeWeight[[tree]]
+    
+    terminal = (SplitVar[, 1] == -1)
+    
+    # correct other columns
+    SplitVar[terminal, ] = NA
+    SplitLoad[terminal, ] = NA
+    SplitValue[terminal] = NA
+    LeftNode[terminal] = NA
+    RightNode[terminal] = NA
+    
+    newsplitvar = SplitVar
+    for (j in 1:ncol(newsplitvar))
+    {
+      newsplitvar[, j] = newnames[SplitVar[,j] + 1]
+      newsplitvar[SplitLoad[,j] == 0, j] = ""
+      
+    }
+      
+    
+    if ( class(x)[3] == "reg" )
+    {
+      cat(paste("Tree #", tree, " in the fitted linear combination regression forest: \n\n", sep = ""))
+      
+      
+      OneTree = data.frame("SplitVar" = newsplitvar,
+                           "SplitLoad" = SplitLoad,
+                           "SplitValue" = SplitValue,
+                           "LeftNode" = LeftNode,
+                           "RightNode" = RightNode,
+                           "NodeWeight" = NodeWeight,
+                           "NodeAve" = x$FittedForest$NodeAve[[tree]])    
+    }
+    
+    
+    
+    
+    
+    
     
   }
-  
-  if ( class(x)[3] == "cla" )
-  {
-    cat(paste("Tree #", tree, " in the fitted classification forest: \n\n", sep = ""))
-    
-    probmat = x$FittedForest$NodeProb[[tree]]
-    colnames(probmat) = x$ylabels
-    
-    OneTree = data.frame("SplitVar" = newnames[SplitVar + 1],
-                         "SplitValue" = SplitValue,
-                         "LeftNode" = LeftNode,
-                         "RightNode" = RightNode,
-                         "NodeWeight" = NodeWeight,
-                         "Prob.of." = probmat)
-    
-  }  
   
   return(OneTree)
 }

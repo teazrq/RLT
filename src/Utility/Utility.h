@@ -200,7 +200,7 @@ public:
    if (linear_comb > 1)
      RLTcout << "  linear combination = " << linear_comb << std::endl;
    
-   RLTcout << "          importance = " << (importance == 2 ? "random" : (importance == 1 ? "permute" : "none")) << std::endl;
+   RLTcout << "          importance = " << (importance == 2 ? "distribute" : (importance == 1 ? "permute" : "none")) << std::endl;
    
    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
@@ -230,7 +230,7 @@ public:
    if (linear_comb > 1)
      RLTcout << "  linear combination = " << linear_comb << std::endl;
    
-   RLTcout << "          importance = " << (importance == 2 ? "random" : (importance == 1 ? "permute" : "none")) << std::endl;
+   RLTcout << "          importance = " << (importance == 2 ? "distribute" : (importance == 1 ? "permute" : "none")) << std::endl;
    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
    if (reinforcement) rlt_print();
@@ -249,10 +249,10 @@ public:
    RLTcout << " embed.nmin              = " << embed_nmin << std::endl;
    
    if (embed_split_gen == 3)
-     RLTcout << "         embed.split.gen = Best" << std::endl;
+     RLTcout << " embed.split.gen         = Best" << std::endl;
    
    if (embed_split_gen < 3)
-     RLTcout << "         embed.split.gen = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+     RLTcout << " embed.split.gen         = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
    
    RLTcout << " embed.nsplit            = " << embed_nsplit << std::endl; 
    RLTcout << " embed.resample.replace  = " << (embed_replacement ? "TRUE" : "FALSE") << std::endl;

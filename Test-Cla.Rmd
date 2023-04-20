@@ -187,7 +187,7 @@ For permutation variable importance
   barplot(as.vector(rangerfit$variable.importance), main = "ranger")
 ```
 
-For random assignment variable importance. Leave one observation as the oob data. 
+For distributed assignment variable importance. Leave one observation as the oob data. 
 
 ```{r class.source = NULL, out.width="90%", fig.width=10, fig.height=3.5}
   # using RLT package 
@@ -196,7 +196,7 @@ For random assignment variable importance. Leave one observation as the oob data
                 split.gen = rule, nsplit = nsplit,
                 resample.prob = (trainn - 1)/trainn, 
                 resample.replace = FALSE, 
-                importance = "random", 
+                importance = "distribute", 
                 ncores = ncores, 
                 verbose = TRUE)
   

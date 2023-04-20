@@ -35,16 +35,32 @@ Kernel_Self <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X
     .Call('_RLT_Kernel_Self', PACKAGE = 'RLT', SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, verbose)
 }
 
+Kernel_Self_Comb <- function(SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, verbose) {
+    .Call('_RLT_Kernel_Self_Comb', PACKAGE = 'RLT', SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, verbose)
+}
+
 Kernel_Cross <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X1, X2, Ncat, verbose) {
     .Call('_RLT_Kernel_Cross', PACKAGE = 'RLT', SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X1, X2, Ncat, verbose)
+}
+
+Kernel_Cross_Comb <- function(SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X1, X2, Ncat, verbose) {
+    .Call('_RLT_Kernel_Cross_Comb', PACKAGE = 'RLT', SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X1, X2, Ncat, verbose)
 }
 
 Kernel_Train <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X1, X2, Ncat, ObsTrack, verbose) {
     .Call('_RLT_Kernel_Train', PACKAGE = 'RLT', SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X1, X2, Ncat, ObsTrack, verbose)
 }
 
-RegUniCombForestFit <- function(X, Y, Ncat, obsweight, varweight, ObsTrack, param) {
-    .Call('_RLT_RegUniCombForestFit', PACKAGE = 'RLT', X, Y, Ncat, obsweight, varweight, ObsTrack, param)
+Kernel_Train_Comb <- function(SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X1, X2, Ncat, ObsTrack, verbose) {
+    .Call('_RLT_Kernel_Train_Comb', PACKAGE = 'RLT', SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X1, X2, Ncat, ObsTrack, verbose)
+}
+
+RegUniCombForestFit <- function(X, Y, Ncat, obsweight, varweight, ObsTrack, param_r) {
+    .Call('_RLT_RegUniCombForestFit', PACKAGE = 'RLT', X, Y, Ncat, obsweight, varweight, ObsTrack, param_r)
+}
+
+RegUniCombForestPred <- function(SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, NodeAve, X, Ncat, VarEst, keep_all, usecores, verbose) {
+    .Call('_RLT_RegUniCombForestPred', PACKAGE = 'RLT', SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, NodeAve, X, Ncat, VarEst, keep_all, usecores, verbose)
 }
 
 RegUniForestFit <- function(X, Y, Ncat, obsweight, varweight, ObsTrack, param_r) {
