@@ -14,40 +14,56 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
                                const RLT_REG_DATA& REG_DATA,
                                const PARAM_GLOBAL& Param,
                                const uvec& obs_id,
-                               const uvec& var_id,
+                               uvec& var_id,
+                               uvec& var_protect,
                                Rand& rngl)
 {
   // parameters
-  size_t mtry = Param.mtry;
+  // size_t mtry = Param.mtry;
   double alpha = Param.alpha;
   bool useobsweight = Param.useobsweight;
   size_t nsplit = Param.nsplit;
   size_t split_gen = Param.split_gen;
-  size_t linear_comb = Param.linear_comb;  
-  
-  // pre-screening variables to get the best ones
-  uvec split_var = rngl.sample(var_id, mtry);
+  size_t P = var_id.n_elem;
+  size_t comb_size = std::min(P, Param.linear_comb);
+  double comb_threshold = Param.embed_threshold;
   
   //Embedded RF VI Screening Method
-  vec split_score = Reg_Uni_Embed_Pre_Screen(REG_DATA,
-                                             Param,
-                                             obs_id,
-                                             split_var,
-                                             rngl);
+  vec vi_embed = Reg_Uni_Embed_Pre_Screen(REG_DATA,
+                                          Param,
+                                          obs_id,
+                                          var_id,
+                                          rngl);
 
-  // sort and get the best ones
-  uvec indices = sort_index(split_score, "descend");
-  split_var = split_var(indices);
+  // sort vi
+  uvec vi_rank = sort_index(vi_embed, "descend");
+  var_id = var_id(vi_rank);
+  vi_embed = vi_embed(vi_rank);
+  
+  // get best vi
+  double best_vi = vi_embed(0);
+  if (best_vi <= 0)  return;
+    
+  // how many variables will pass the threshold
+  size_t comb_valid = 0;
+  for (size_t j = 0; j < comb_size; j++)
+    comb_valid += (vi_embed(j) >= comb_threshold * best_vi);
 
-  // if the best variable is categorical
-  // do single categorical split
-  // I may need to change this later for combination cat split
-  if (REG_DATA.Ncat(split_var(0)) > 1)
+  // how many continuous variables in the linear combination
+  size_t top_linear = 0;
+  for (size_t j = 0; j < comb_valid; j++)
   {
-    size_t j = split_var(0);
-    
-    // RLTcout << "--Use single cat split" <<  j << std::endl;
-    
+    if (REG_DATA.Ncat(var_id(j)) == 1)
+      top_linear ++;
+    else
+      break;
+  }
+  
+  // calculate splitting
+  if (top_linear == 0) // categorical split
+  {
+    size_t j = var_id(0);
+
     //Initialize objects
     Split_Class TempSplit;
     TempSplit.var = j;
@@ -73,32 +89,11 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
     OneSplit.load(0) = 1;
     OneSplit.value = TempSplit.value;
     OneSplit.score = TempSplit.score;
-    
-    return;
   }
   
-  // find and restrict to continuous variables at the top
-  size_t use_comb = 0;
-  
-  for (size_t j = 0; j < std::min(linear_comb, mtry); j++)
+  if (top_linear == 1) // single continuous split
   {
-    if (REG_DATA.Ncat(split_var(j)) == 1)
-      use_comb ++;
-    else
-      break;
-  }
-  
-  //RLTcout << " use combination " << use_comb << std::endl;
-  
-  split_var.resize(use_comb);
-  split_score.resize(use_comb);
-  
-  // If there is only one continuous variable at the top
-  if (use_comb == 1)
-  {
-    size_t j = split_var(0);
-    
-    //RLTcout << "--Use single cont split" <<  j << std::endl;
+    size_t j = var_id(0);
     
     //Initialize objects
     Split_Class TempSplit;
@@ -124,16 +119,37 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
     OneSplit.load(0) = 1;
     OneSplit.value = TempSplit.value;
     OneSplit.score = TempSplit.score;
-    
-    return;
   }
+  
+  if (top_linear > 1) // single continuous split
+  {
+    uvec split_var = var_id.subvec(0, top_linear-1);
+    
+    // for more than one variable, find best linear combination split
+    Reg_Uni_Comb_Linear(OneSplit,
+                        (const uvec&) split_var,
+                        REG_DATA,
+                        Param,
+                        obs_id,
+                        rngl);
+  }
+  
+  // calculate muting and protection
 
-  // for more than one variable, find best linear combination split
-  Reg_Uni_Comb_Linear(OneSplit,
-                      (const uvec&) split_var,
-                      REG_DATA,
-                      Param,
-                      obs_id,
-                      rngl);
-
+  // for protecting the top variables
+  size_t n_protect = std::min(Param.embed_protect, comb_valid);
+  var_protect = unique(join_cols(var_protect, var_id.subvec(0, n_protect - 1)));
+  
+  // muting the low VIs
+  size_t p_new;
+  
+  if (Param.embed_mute > 1)
+    p_new = P - Param.embed_mute;
+  else
+    p_new = P * (1.0 - Param.embed_mute);
+  
+  p_new = std::max(p_new, comb_valid);
+  
+  var_id.resize(p_new);
+  var_id = unique(join_cols(var_id, var_protect));
 }

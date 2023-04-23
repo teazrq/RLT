@@ -156,8 +156,6 @@ void split_id_comb(const mat& x,
                    uvec& left_id, 
                    uvec& obs_id) // obs_id will be treated as the right node
 {
-  size_t n_comb = sum(OneSplit.load != 0);
-  
   vec combscore = x(obs_id, OneSplit.var) * OneSplit.load;
   
   size_t LeftN = 0;
@@ -388,13 +386,13 @@ void Find_Terminal_Node(size_t Node,
     
     if (left_proxy.n_elem > 0)
     {
-      Find_Terminal_Node(OneTree.LeftNode[Node], OneTree, X, Ncat, left_proxy, real_id, TermNode);
+      Find_Terminal_Node(OneTree.LeftNode(Node), OneTree, X, Ncat, left_proxy, real_id, TermNode);
     }
     
     // right node
     if (proxy_id.n_elem > 0)
     {
-      Find_Terminal_Node(OneTree.RightNode[Node], OneTree, X, Ncat, proxy_id, real_id, TermNode);      
+      Find_Terminal_Node(OneTree.RightNode(Node), OneTree, X, Ncat, proxy_id, real_id, TermNode);      
     }
     
   }
@@ -484,7 +482,7 @@ void Find_Terminal_Node_Comb(size_t Node,
     
     if (left_proxy.n_elem > 0)
     {
-      Find_Terminal_Node_Comb(OneTree.LeftNode[Node], 
+      Find_Terminal_Node_Comb(OneTree.LeftNode(Node), 
                               OneTree, 
                               X, 
                               Ncat, 
@@ -496,7 +494,7 @@ void Find_Terminal_Node_Comb(size_t Node,
     // right node
     if (proxy_id.n_elem > 0)
     {
-      Find_Terminal_Node_Comb(OneTree.RightNode[Node], 
+      Find_Terminal_Node_Comb(OneTree.RightNode(Node), 
                               OneTree, 
                               X, 
                               Ncat, 
@@ -506,21 +504,8 @@ void Find_Terminal_Node_Comb(size_t Node,
     }
   }
   
-  return;  
-  
-  
-  
+  return;
 }
-
-
-
-
-
-
-
-
-
-
 
 // Find the terminal node for X in one tree with variable j shuffled
 //Function for variable importance
@@ -596,19 +581,158 @@ void Find_Terminal_Node_ShuffleJ(size_t Node,
     
     if (left_proxy.n_elem > 0)
     {
-      Find_Terminal_Node_ShuffleJ(OneTree.LeftNode[Node], OneTree, X, Ncat, left_proxy, real_id, TermNode, tildex, j);
+      Find_Terminal_Node_ShuffleJ(OneTree.LeftNode(Node), OneTree, X, Ncat, left_proxy, real_id, TermNode, tildex, j);
     }
     
     // right node
     if (proxy_id.n_elem > 0)
     {
-      Find_Terminal_Node_ShuffleJ(OneTree.RightNode[Node], OneTree, X, Ncat, proxy_id, real_id, TermNode, tildex, j);      
+      Find_Terminal_Node_ShuffleJ(OneTree.RightNode(Node), OneTree, X, Ncat, proxy_id, real_id, TermNode, tildex, j);      
     }
     
   }
   
   return;
   
+}
+
+
+
+// Find the terminal node for X in one linear combination splitting tree 
+// with variable j shuffled. Function for variable importance
+void Find_Terminal_Node_Comb_ShuffleJ(size_t Node, 
+                                      const Comb_Tree_Class& OneTree,
+                                      const mat& X,
+                                      const uvec& Ncat,
+                                      uvec& proxy_id,
+                                      const uvec& real_id,
+                                      uvec& TermNode,
+                                      const vec& tildex,
+                                      const size_t j)
+{
+  size_t N = proxy_id.n_elem;
+  
+  //If the current node is a terminal node
+  if (OneTree.SplitVar(Node, 0) == -1)
+  {
+    // For all the observations in the node,
+    // Set its terminal node
+    for ( size_t i=0; i < N; i++ )
+      TermNode(proxy_id(i)) = Node;
+  }else{
+    
+    size_t n_comb = sum(OneTree.SplitLoad.row(Node) != 0);
+    uvec id_goright(proxy_id.n_elem, fill::zeros);
+    
+    // single categorical variable
+    if (n_comb == 1 and Ncat(OneTree.SplitVar(Node, 0)) > 1)
+    {
+      size_t SplitVar = OneTree.SplitVar(Node, 0);
+      double SplitValue = OneTree.SplitValue(Node);
+      
+      // prepare vector of splitting rule
+      uvec goright(Ncat(SplitVar) + 1);
+      unpack(SplitValue, Ncat(SplitVar) + 1, goright);      
+      
+      // assign observations
+      if (SplitVar == j)
+      {
+        for (size_t i = 0; i < N ; i++)
+        {
+          size_t xcat = (size_t) tildex( proxy_id(i) );
+          
+          if ( goright( xcat ) == 1 )
+            id_goright(i) = 1;
+        }
+      }else{
+        
+        for (size_t i = 0; i < N ; i++)
+        {
+          size_t xcat = (size_t) X( real_id( proxy_id(i) ), SplitVar);
+          
+          if ( goright( xcat ) == 1 )
+            id_goright(i) = 1;
+        }
+      }
+    }
+    
+    // single continuous variable
+    if (n_comb == 1 and Ncat(OneTree.SplitVar(Node, 0)) == 1)
+    {
+      
+      size_t SplitVar = OneTree.SplitVar(Node, 0);
+      double SplitValue = OneTree.SplitValue(Node);
+      
+      // if this is j
+      if (SplitVar == j)
+      {
+        id_goright += ( tildex( proxy_id ) > SplitValue );
+      }else{
+        
+        //For the obs in the current internal node
+        for (size_t i = 0; i < N ; i++)
+        {
+          //Determine the x values for this variable
+          double xtemp = X( real_id( proxy_id(i) ), SplitVar);
+          
+          //If they are greater than the value, go right
+          if (xtemp > SplitValue)
+            id_goright(i) = 1;
+        }
+      }
+    }
+    
+    // linear combination
+    if (n_comb > 1)
+    {
+      uvec usevar = conv_to< uvec >::from( OneTree.SplitVar.row(Node).subvec(0, n_comb-1) );
+      vec useload = conv_to< vec >::from( OneTree.SplitLoad.row(Node).subvec(0, n_comb-1) );
+      mat xtemp = X( real_id( proxy_id ), usevar);
+      
+      // find if var j is used, then replace
+      uvec isj = find(usevar == j);
+      
+      if (isj.n_elem > 0)
+        xtemp.col(isj(0)) = tildex(proxy_id);
+      
+      // new x matrix
+      vec linearcomb = xtemp * useload;
+      
+      double SplitValue = OneTree.SplitValue(Node);
+      id_goright( find( linearcomb > SplitValue ) ).ones();
+    }
+    
+    //All others go left
+    uvec left_proxy = proxy_id(find(id_goright == 0));
+    proxy_id = proxy_id(find(id_goright == 1));
+    
+    // left node 
+    
+    if (left_proxy.n_elem > 0)
+    {
+      Find_Terminal_Node_Comb(OneTree.LeftNode(Node), 
+                              OneTree, 
+                              X, 
+                              Ncat, 
+                              left_proxy, 
+                              real_id, 
+                              TermNode);
+    }
+    
+    // right node
+    if (proxy_id.n_elem > 0)
+    {
+      Find_Terminal_Node_Comb(OneTree.RightNode(Node), 
+                              OneTree, 
+                              X, 
+                              Ncat, 
+                              proxy_id, 
+                              real_id, 
+                              TermNode);      
+    }
+  }
+  
+  return;
 }
 
 // find terminal weight given the randomness of one variable 
@@ -622,7 +746,7 @@ void Assign_Terminal_Node_Prob_RandomJ(size_t Node,
                                        size_t j)
 {
   // If the current node is a terminal node
-  if ( OneTree.SplitVar[Node] == -1 )
+  if ( OneTree.SplitVar(Node) == -1 )
   {
     // Assign probability to this terminal node
     Prob(Node) = Multipler;
@@ -701,6 +825,114 @@ void Assign_Terminal_Node_Prob_RandomJ(size_t Node,
                                         Multipler,
                                         Prob,
                                         j);
+    }
+  }
+  
+  return;
+}
+
+
+// find terminal weight given the randomness of one variable 
+void Assign_Terminal_Node_Prob_Comb_RandomJ(size_t Node,
+                                            const Comb_Tree_Class& OneTree,
+                                            const mat& X,
+                                            const uvec& Ncat,
+                                            size_t id,
+                                            double Multipler,
+                                            vec& Prob,
+                                            size_t j)
+{
+  // If the current node is a terminal node
+  if ( OneTree.SplitVar(Node, 0) == -1 )
+  {
+    // Assign probability to this terminal node
+    Prob(Node) = Multipler;
+    return;
+  }
+  
+  size_t n_comb = sum(OneTree.SplitLoad.row(Node) != 0);
+  uvec usevar = conv_to< uvec >::from( OneTree.SplitVar.row(Node).subvec(0, n_comb-1) );
+  vec useload = conv_to< vec >::from( OneTree.SplitLoad.row(Node).subvec(0, n_comb-1) );
+  
+  // if the splitting rule involves var j
+  if (any(usevar == j))
+  {
+    double LeftWeight = OneTree.NodeWeight(OneTree.LeftNode(Node));
+    double RightWeight = OneTree.NodeWeight(OneTree.RightNode(Node));
+    
+    Assign_Terminal_Node_Prob_Comb_RandomJ(OneTree.LeftNode(Node),
+                                           OneTree,
+                                           X,
+                                           Ncat,
+                                           id,
+                                           Multipler * LeftWeight / (LeftWeight + RightWeight),
+                                           Prob,
+                                           j);
+    
+    
+    Assign_Terminal_Node_Prob_Comb_RandomJ(OneTree.RightNode(Node),
+                                           OneTree,
+                                           X,
+                                           Ncat,
+                                           id,
+                                           Multipler * RightWeight / (LeftWeight + RightWeight),
+                                           Prob,
+                                           j);
+  }else{
+    // splitting on other variables
+    // determine where to go
+    bool right = false;     
+    double SplitValue = OneTree.SplitValue(Node);
+    
+    if (n_comb == 1)
+    {
+      size_t SplitVar = usevar(0);
+      double xtemp = X( id, SplitVar );
+
+      if ( Ncat(SplitVar) > 1 ) // categorical var 
+      {
+        
+        uvec goright(Ncat(SplitVar) + 1);
+        unpack(SplitValue, Ncat(SplitVar) + 1, goright);
+        
+        if ( goright( (size_t) xtemp ) == 1 )
+          right = true;
+        
+      }else{ // continuous var 
+        
+        if (xtemp > SplitValue)
+          right = true;
+      }
+    }else{ // linear combination split
+      
+      rowvec xtemp = X.row(id).subvec(0, n_comb-1);
+      double linearcomb = dot(xtemp, useload);
+      
+      if (linearcomb > SplitValue)
+        right = true;
+    }
+    
+    // go further down 
+    
+    if (right)
+    {
+      Assign_Terminal_Node_Prob_Comb_RandomJ(OneTree.RightNode(Node),
+                                             OneTree,
+                                             X,
+                                             Ncat,
+                                             id,
+                                             Multipler,
+                                             Prob,
+                                             j);
+    }else{
+      Assign_Terminal_Node_Prob_Comb_RandomJ(OneTree.LeftNode(Node),
+                                             OneTree,
+                                             X,
+                                             Ncat,
+                                             id,
+                                             Multipler,
+                                             Prob,
+                                             j);
     }
   }
   

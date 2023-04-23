@@ -91,7 +91,8 @@ public:
  bool embed_replacement = 0;
  double embed_resample_prob = 0;
  double embed_mute = 0;
- size_t embed_protect = 0;  
+ size_t embed_protect = 0;
+ double embed_threshold = 0.25;
  
  // system related
  size_t ncores = 1;
@@ -131,6 +132,7 @@ public:
    embed_resample_prob    = param["embed.resample.prob"];
    embed_mute             = param["embed.mute"];
    embed_protect          = param["embed.protect"];
+   embed_threshold        = param["embed.threshold"];
    
    // system related
    ncores        = param["ncores"];
@@ -169,7 +171,8 @@ public:
    embed_replacement      = Input.embed_replacement;
    embed_resample_prob    = Input.embed_resample_prob;
    embed_mute             = Input.embed_mute;
-   embed_protect          = Input.embed_protect;  
+   embed_protect          = Input.embed_protect;
+   embed_threshold        = Input.embed_threshold;
    
    // system related
    ncores        = Input.ncores;
@@ -252,13 +255,13 @@ public:
      RLTcout << " embed.split.gen         = Best" << std::endl;
    
    if (embed_split_gen < 3)
-     RLTcout << " embed.split.gen         = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+     RLTcout << " embed.split.gen         = " << ((split_gen == 1) ? "Random, " : "Rank, ") << embed_nsplit << std::endl;
    
-   RLTcout << " embed.nsplit            = " << embed_nsplit << std::endl; 
    RLTcout << " embed.resample.replace  = " << (embed_replacement ? "TRUE" : "FALSE") << std::endl;
    RLTcout << " embed.resample.prob     = " << embed_resample_prob << std::endl;
    RLTcout << " embed.mute              = " << embed_mute << std::endl;
    RLTcout << " embed.protect           = " << embed_protect << std::endl;
+   RLTcout << " embed.threshold         = " << embed_threshold << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
    
  };
@@ -279,13 +282,13 @@ public:
      RLTcout << " embed.split.gen         = Best" << std::endl;
    
    if (embed_split_gen < 3)
-     RLTcout << " embed.split.gen         = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+     RLTcout << " embed.split.gen         = " << ((split_gen == 1) ? "Random, " : "Rank, ") << embed_nsplit << std::endl;
    
-   RLTcout << " embed.nsplit            = " << embed_nsplit << std::endl;
    RLTcout << " embed.resample.replace  = " << (embed_replacement ? "TRUE" : "FALSE") << std::endl;
    RLTcout << " embed.resample_prob     = " << embed_resample_prob << std::endl;
    RLTcout << " embed.mute              = " << embed_mute << std::endl;
    RLTcout << " embed.protect           = " << embed_protect << std::endl;
+   RLTcout << " embed.threshold         = " << embed_threshold << std::endl;
    RLTcout << "----------------------------------------" << std::endl;
    
  };

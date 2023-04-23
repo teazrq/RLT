@@ -35,6 +35,8 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
 
 ## Single Variable Embedded Splitting
 
+When `reinforcement` is enabled, an embedded random forest model and the corresponding variable importance measure will be used to search for the best splitting rule. There will be a default setting of parameters for the embedded model, however you can still tune them individually. 
+
 ```{r}
   set.seed(2)
   
@@ -55,13 +57,7 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
                 reinforcement = TRUE, importance = "distribute",
                 param.control = list("embed.ntrees" = 50,
                                      "embed.mtry" = 1/2,
-                                     "embed.nmin" = 10,
-                                     "embed.split.gen" = "random",
-                                     "embed.nsplit" = 1,
-                                     "embed.resample.replace" = TRUE,
-                                     "embed.resample.prob" = 0.9,
-                                     "embed.mute" = 0.5,
-                                     "embed.protect" = 5),
+                                     "embed.nmin" = 5),
                 verbose = TRUE)
   
   difftime(Sys.time(), start_time, units = "secs")
@@ -86,27 +82,25 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
 Check seed match
 
 ```{r}
-  RLTfit2 <- RLT(X, y, model = "regression", 
-                 ntrees = 20, ncores = 1, nmin = 10,
-                 split.gen = "random", nsplit = 1,
-                 resample.prob = 0.85, resample.replace = FALSE,
-                 reinforcement = TRUE, importance = TRUE,
-                 param.control = list("embed.ntrees" = 50,
-                                      "embed.mtry" = 1/3,
-                                      "embed.nmin" = 10,
-                                      "embed.split.gen" = "random",
-                                      "embed.nsplit" = 1,
-                                      "embed.resample.prob" = 0.75,
-                                      "embed.mute" = 0.5,
-                                      "embed.protect" = 5),
-                 verbose = TRUE, seed = RLTfit$parameters$seed)
+  RLTrep <- RLT(X, y, model = "regression", 
+                ntrees = 100, ncores = 1, nmin = 10,
+                split.gen = "random", nsplit = 1,
+                resample.prob = 0.85, resample.replace = FALSE,
+                reinforcement = TRUE, importance = "distribute",
+                param.control = list("embed.ntrees" = 50,
+                                     "embed.mtry" = 1/2,
+                                     "embed.nmin" = 5),
+                verbose = TRUE, seed = RLTfit$parameters$seed)
 
-  all(RLTfit$VarImp == RLTfit2$VarImp)
+  all(RLTfit$VarImp == RLTrep$VarImp)
 ```
 
 ## Linear Combination Split 
 
-This is a model without fitting embedded random forest to search for the linear combinations. The variables are ranked by marginal screening. 
+We can also use a linear combination of variables as the splitting rule, i.e., 
+
+$$ \mathbf{1}( \boldsymbol \beta^T \mathbf{x} > c ) $$
+The search of top variables is the same embedded random forest, however, $\boldsymbol \beta$ is determined using other criteria such as the sliced inverse regression (`"sir"`) and PCA (`"pca"`). When a categorical variable is encountered (random best at internal node), the algorithm switch to the default single variable split. 
 
 ```{r}
   # set.seed(1)
@@ -114,7 +108,7 @@ This is a model without fitting embedded random forest to search for the linear 
   ntrain = 300
   ntest = 500
   n = ntrain + ntest
-  p = 5
+  p = 10
   S = matrix(0.3, p, p)
   diag(S) = 1
 
@@ -127,7 +121,7 @@ This is a model without fitting embedded random forest to search for the linear 
   # Convert the second half of the columns in X to factors
   X[, (p + 1):(2*p)] <- lapply(X[, (p+1):(2*p)], as.factor)
   
-  xlink <- function(x) 1 + x[, 1] + x[, 3] 
+  xlink <- function(x) 1 + x[, 1] + x[, 3] + x[, ncol(x)] %in% c(0,2,4)
   
   # outcome
   y = xlink(X) + rnorm(n)
@@ -141,13 +135,21 @@ This is a model without fitting embedded random forest to search for the linear 
   start_time <- Sys.time()
   RLTfit <- RLT(xtrain, ytrain, model = "regression", obs.w = w,
                 ntrees = 100, ncores = 1, nmin = 10, mtry = 10,
-                split.gen = "random", nsplit = 1,
+                split.gen = "random", nsplit = 2,
                 resample.prob = 0.9, resample.replace = FALSE, 
-                param.control = list("embed.ntrees" = 50,
-                                     "linear.comb" = 3,
+                param.control = list("linear.comb" = 3,
+                                     "split.rule" = "sir",
+                                     "embed.ntrees" = 50,
+                                     "embed.mtry" = 0.5,
                                      "embed.nmin" = 5,
-                                     "split.rule" = "sir"),
-                importance = TRUE, 
+                                     "embed.split.gen" = "random",
+                                     "embed.nsplit" = 3,
+                                     "embed.resample.replace" = FALSE,
+                                     "embed.resample.prob" = 0.9,
+                                     "embed.mute" = 1/3,
+                                     "embed.protect" = 3,
+                                     "embed.threshold" = 0.25),
+                importance = "permute", 
                 verbose = TRUE)
   difftime(Sys.time(), start_time, units = "secs")
   
@@ -158,11 +160,50 @@ This is a model without fitting embedded random forest to search for the linear 
   # testing data error
   mean((predict(RLTfit, xtest)$Prediction - ytest)^2)
 ```
-Linear combination kernel
+
+```{r}
+  start_time <- Sys.time()
+  RLTvi2 <- RLT(xtrain, ytrain, model = "regression", obs.w = w,
+                ntrees = 100, ncores = 1, nmin = 10, mtry = 10,
+                split.gen = "random", nsplit = 2,
+                resample.prob = 0.9, resample.replace = FALSE, 
+                param.control = list("linear.comb" = 3,
+                                     "split.rule" = "sir",
+                                     "embed.ntrees" = 50,
+                                     "embed.mtry" = 0.5,
+                                     "embed.nmin" = 5,
+                                     "embed.split.gen" = "random",
+                                     "embed.nsplit" = 3,
+                                     "embed.resample.replace" = FALSE,
+                                     "embed.resample.prob" = 0.9,
+                                     "embed.mute" = 1/3,
+                                     "embed.protect" = 3,
+                                     "embed.threshold" = 0.25),
+                importance = "distribute", 
+                verbose = TRUE)
+  difftime(Sys.time(), start_time, units = "secs")
+```
+
+
+```{r class.source = NULL, out.width="90%", fig.width=15, fig.height=7}
+  par(mfrow=c(1,2))
+  par(mar = c(1, 2, 2, 2))
+  
+  # sparse variable importance
+  barplot(as.vector(RLTfit$VarImp), main = "RLT")
+  barplot(as.vector(RLTvi2$VarImp), main = "RLT")
+  
+  # check one tree
+  get.one.tree(RLTfit, 1)
+```
+
+## Linear combination kernel
+
+The linear combination split leads to non-rectangular kernels. 
 
 ```{r class.source = NULL, out.width="90%", fig.width=12, fig.height=12}
   # generate data
-  n = 1000; p = 5
+  n = 500; p = 5
   X = matrix(runif(n*p), n, p)
   y = X[, 1] + X[, 3] + rnorm(n)
 
@@ -173,7 +214,7 @@ Linear combination kernel
                 resample.prob = 0.9, resample.replace = FALSE,
                 param.control = list("embed.ntrees" = 50,
                                      "linear.comb" = 2,
-                                     "embed.nmin" = 5,
+                                     "embed.nmin" = 2,
                                      "split.rule" = "sir"),
                 importance = TRUE,
                 verbose = TRUE)

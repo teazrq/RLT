@@ -78,7 +78,7 @@ get.surv.band <- function(x,
     {
       # will add two points at the boundary to improve the behavior. 
       alltime = 0:(p+1)
-      alltime = alltime / sd(alltime) * 4
+      alltime = alltime / sd(alltime)
       nknots = ceiling( max(alltime)/orthoDr::silverman(1, p) ) + 2
       
       basis = orthoDr::kernel_weight(matrix(alltime), 
@@ -125,7 +125,7 @@ get.surv.band <- function(x,
       
       # generate grid points for kernel
       alltime = 1:p
-      alltime = alltime / sd(alltime) * 4
+      alltime = alltime / sd(alltime)
       nknots = ceiling( max(alltime)/orthoDr::silverman(1, p) ) + 2
       
       basis = orthoDr::kernel_weight(matrix(alltime), 

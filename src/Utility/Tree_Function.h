@@ -47,6 +47,16 @@ void Find_Terminal_Node_ShuffleJ(size_t Node,
                                      const vec& tildex,
                                      const size_t j);
 
+void Find_Terminal_Node_Comb_ShuffleJ(size_t Node, 
+                                      const Comb_Tree_Class& OneTree,
+                                      const mat& X,
+                                      const uvec& Ncat,
+                                      uvec& proxy_id,
+                                      const uvec& real_id,
+                                      uvec& TermNode,
+                                      const vec& tildex,
+                                      const size_t j);
+
 void Assign_Terminal_Node_Prob_RandomJ(size_t Node,
                                        const Tree_Class& OneTree,
                                        const mat& X,
@@ -56,17 +66,14 @@ void Assign_Terminal_Node_Prob_RandomJ(size_t Node,
                                        vec& Prob,
                                        size_t j);
 
-List ForestKernelUni(arma::field<arma::uvec>& NodeType,
-                     arma::field<arma::ivec>& SplitVar,
-                     arma::field<arma::vec>& SplitValue,
-                     arma::field<arma::uvec>& LeftNode,
-                     arma::field<arma::uvec>& RightNode,
-                     arma::field<arma::field<arma::uvec>>& NodeRegi,
-                     arma::mat& X,
-                     arma::uvec& Ncat,
-                     arma::vec& obsweight,
-                     int usecores,
-                     int verbose);
+void Assign_Terminal_Node_Prob_Comb_RandomJ(size_t Node,
+                                            const Comb_Tree_Class& OneTree,
+                                            const mat& X,
+                                            const uvec& Ncat,
+                                            size_t id,
+                                            double Multipler,
+                                            vec& Prob,
+                                            size_t j);
 
 // ************************//
 // miscellaneous functions //

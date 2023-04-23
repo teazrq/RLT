@@ -16,6 +16,7 @@ void Reg_Uni_Comb_Split_A_Node(size_t Node,
                                const PARAM_GLOBAL& Param,
                                uvec& obs_id,
                                const uvec& var_id,
+                               const uvec& var_protect,
                                Rand& rngl)
 {
   size_t N = obs_id.n_elem;
@@ -35,8 +36,13 @@ TERMINATENODE:
     vec load(linear_comb, fill::zeros);
     Comb_Split_Class OneSplit(var, load);
     
+    // update protected variables
+    uvec new_var_id(var_id);
+    uvec new_var_protect(var_protect);
+    
     //Figure out where to split the node
-    Reg_Uni_Comb_Find_A_Split(OneSplit, REG_DATA, Param, obs_id, var_id, rngl);
+    Reg_Uni_Comb_Find_A_Split(OneSplit, REG_DATA, Param, obs_id, 
+                              new_var_id, new_var_protect, rngl);
     
     // if did not find a good split, terminate
     if (OneSplit.score <= 0)
@@ -110,7 +116,8 @@ TERMINATENODE:
                               REG_DATA,
                               Param,
                               left_id,
-                              var_id,
+                              new_var_id,
+                              new_var_protect,
                               rngl);
     
     Reg_Uni_Comb_Split_A_Node(NextRight,
@@ -118,7 +125,8 @@ TERMINATENODE:
                               REG_DATA,
                               Param,
                               obs_id,
-                              var_id,
+                              new_var_id,
+                              new_var_protect,
                               rngl);    
 
   }

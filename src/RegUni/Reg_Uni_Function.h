@@ -198,6 +198,7 @@ void Reg_Uni_Comb_Split_A_Node(size_t Node,
                             const PARAM_GLOBAL& Param,
                             uvec& obs_id,
                             const uvec& var_id,
+                            const uvec& var_protect,
                             Rand& rngl);
 
 void Reg_Uni_Comb_Terminate_Node(size_t Node,
@@ -211,7 +212,8 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
                             const RLT_REG_DATA& REG_DATA,
                             const PARAM_GLOBAL& Param,
                             const uvec& obs_id,
-                            const uvec& var_id,
+                            uvec& var_id,
+                            uvec& var_protect,
                             Rand& rngl);
 
 vec Reg_Uni_Embed_Pre_Screen(const RLT_REG_DATA& REG_DATA,

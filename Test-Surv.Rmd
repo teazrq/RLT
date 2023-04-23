@@ -318,7 +318,7 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
 ```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
   alpha = 0.05
 
-  # original Monte Carlo approach
+  # original Monte Carlo approach without smoothing
   start_time <- Sys.time()
   SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "naive-mc")
   difftime(Sys.time(), start_time, units = "secs")
@@ -344,39 +344,10 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
   }
 ```
 
-### Smoothed Monte Carlo
+### Smoothed Rescaling MC Approach
 
 ```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
-  # naive Monte Carlo approach withtout smooth band
-  start_time <- Sys.time()
-  SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-mc", nsim = 1000)
-  difftime(Sys.time(), start_time, units = "secs")
-
-  par(mfrow = c(ceiling(ntest/3), 3))
-  logt = log(1 + timepoints)
-  
-  for (i in 1:ntest)
-  {
-    # truth
-    plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red", ylab = paste("Subject",  i))
-    
-    # estimated and 1.96
-    lines(logt, RLTPred$Survival[i,], lwd = 2, col = "black")
-    lines(logt, RLTPred$Survival[i, ] - qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
-          lty = 2, col = "black")
-    lines(logt, RLTPred$Survival[i, ] + qnorm(1-alpha/2)*sqrt(diag(RLTPred$Cov[,,i])), 
-          lty = 2, col = "black")
-    
-    # naive
-    lines(logt, SurvBand[[i]]$lower[,1], lty = 2, lwd = 2, col = "deepskyblue")
-    lines(logt, SurvBand[[i]]$upper[,1], lty = 2, lwd = 2, col = "deepskyblue")
-  }
-```
-
-### Smoothed Rescaling Approach
-
-```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
-  # original Monte Carlo approach
+  # Monte Carlo approach using smoothed rescaled cov matrix
   start_time <- Sys.time()
   SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-mc", nsim = 1000)
   difftime(Sys.time(), start_time, units = "secs")
@@ -405,7 +376,7 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
 ### Smoothed low-rank Monte Carlo
 
 ```{r class.source = NULL, fig.width=15, fig.height=25, out.width="90%"}
-  # original Monte Carlo approach
+  # a low rank smoothed approach with adaptive bonferoni critical value
   start_time <- Sys.time()
   SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-lr", r = 5)
   difftime(Sys.time(), start_time, units = "secs")
@@ -454,7 +425,7 @@ Here is a demonstration of the smoothed covariance approximation code used inter
   
   # generate grid points for kernel
   alltime = 1:p
-  alltime = alltime / sd(alltime) * 4
+  alltime = alltime / sd(alltime) * 2
   nknots = ceiling( max(alltime)/orthoDr::silverman(1, p) ) + 2
   
   basis = orthoDr::kernel_weight(matrix(alltime), 

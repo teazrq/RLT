@@ -163,6 +163,9 @@ check_importance <- function(importance)
   importance.num = match(importance, c("permute", "distribute"), 
                          nomatch = 0)
   
+  if (importance.num == 0)
+    stop("variable importance mode is not recognized")
+    
   storage.mode(importance.num) <- "integer"
   return(importance.num)
 }
@@ -294,6 +297,12 @@ check_control <- function(control, param)
   } else embed.protect = max(0, min(control$embed.protect, param$p))
   storage.mode(embed.protect) <- "integer"
 
+  # embed.threshold
+  if (is.null(control$embed.threshold)) {
+    embed.threshold <- 0.25
+  } else embed.threshold = max(0, min(control$embed.threshold, 1))
+  storage.mode(embed.threshold) <- "double"
+  
   # other parameters 
   
   # linear.comb
@@ -338,6 +347,7 @@ check_control <- function(control, param)
               "embed.resample.prob" = embed.resample.prob,              
               "embed.mute" = embed.mute,
               "embed.protect" = embed.protect,
+              "embed.threshold" = embed.threshold,
               # other parameters
               "linear.comb" = linear.comb,
               "split.rule" = control$split.rule,

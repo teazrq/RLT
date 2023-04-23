@@ -38,7 +38,7 @@ void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
   {
     split_rule = 4; // switch to lm if sample size is too small
     
-    RLTcout << "sample size too small, switch to lm" << std::endl;
+    //RLTcout << "sample size too small, switch to lm" << std::endl;
   }
   
   // find splitting rule loading vector 

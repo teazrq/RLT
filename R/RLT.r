@@ -104,6 +104,9 @@
 #'                              (of the internal node) in the embedded model
 #'                        \item \code{embed.mute} muting rate
 #'                        \item \code{embed.protect} number of protected variables
+#'                        \item \code{embed.threshold} threshold, as a fraction 
+#'                              of the best VI, for being included in the protected 
+#'                              set at an internal node. 
 #'                        }
 #'                        
 #'                        \code{linear.comb} is a separate feature that can be 

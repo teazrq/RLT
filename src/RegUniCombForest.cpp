@@ -23,7 +23,7 @@ List RegUniCombForestFit(arma::mat& X,
   Param.PARAM_READ_R(param_r);
   
   if (Param.verbose) Param.print();
-  
+
   // create data objects  
   RLT_REG_DATA REG_DATA(X, Y, Ncat, obsweight, varweight);
   
