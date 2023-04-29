@@ -27,6 +27,7 @@ void Cla_Uni_Split_A_Node(size_t Node,
   // in rf, it is N <= nmin
   if (N <= nmin or OneTree.NodeProb.row(Node).max() == 1 )
   {
+TERMINATENODE:
     OneTree.SplitVar(Node) = -1;
     return;
     
@@ -44,15 +45,7 @@ void Cla_Uni_Split_A_Node(size_t Node,
     
     // if did not find a good split, terminate
     if (OneSplit.score <= 0)
-      return;    
-    
-    // record internal node weight 
-    if (useobsweight)
-    {
-      OneTree.NodeWeight(Node) = arma::sum(CLA_DATA.obsweight(obs_id));
-    }else{
-      OneTree.NodeWeight(Node) = obs_id.n_elem;
-    }
+      goto TERMINATENODE;
     
     // construct indices for left and right nodes
     uvec left_id(obs_id.n_elem);
@@ -66,7 +59,7 @@ void Cla_Uni_Split_A_Node(size_t Node,
     
     // if this happens something about the splitting rule is wrong
     if (left_id.n_elem == N or obs_id.n_elem == N)
-      return;
+      goto TERMINATENODE;
     
     // record internal node to tree 
     OneTree.SplitVar(Node) = OneSplit.var;

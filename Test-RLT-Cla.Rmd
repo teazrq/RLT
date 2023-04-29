@@ -1,0 +1,138 @@
+---
+title: "RLT Package: Classification With Reinforcement Learning and Linear Combination Splits"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true 
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width = 9, fig.height = 7,
+                        out.width = "75%", fig.align = "center")
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse = TRUE)
+```
+
+## Install and Load Package
+
+Install and load the GitHub version of the RLT package. Do not use the CRAN version. 
+
+```{r}
+  # install.packages("devtools")
+  # devtools::install_github("teazrq/RLT")
+  library(RLT)
+```
+
+Load other packages used in this guide.
+
+```{r message=FALSE}
+  library(randomForest)
+  library(randomForestSRC)
+  library(ranger)
+  library(parallel)
+```
+
+## Single Variable Embedded Splitting
+
+When `reinforcement` is enabled, an embedded random forest model and the corresponding variable importance measure will be used to search for the best splitting rule. There will be a default setting of parameters for the embedded model, however you can still tune them individually. 
+
+```{r}
+  # Set seed for reproducibility
+  set.seed(1)
+
+  # Define data size
+  trainn <- 800
+  testn <- 1000
+  n <- trainn + testn
+  p <- 30
+
+  # Generate continuous variables (X1) and categorical variables (X2)
+  X1 <- matrix(rnorm(n * p / 2), n, p / 2)
+  #X2 <- matrix(rnorm(n * p / 2), n, p / 2)
+  X2 <- matrix(as.integer(runif(n * p / 2) * 10), n, p / 2)
+
+  # Combine continuous and categorical variables into a data frame (X)
+  X <- data.frame(X1, X2)
+
+  # Convert the second half of the columns in X to factors
+  X[, (p / 2 + 1):p] <- lapply(X[, (p / 2 + 1):p], as.factor)
+
+  # Generate outcomes (y)
+  logit <- function(x) exp(x) / (1 + exp(x))
+#  y <- as.factor(rbinom(n, 1, prob = logit(1 + rowSums(X[, 1:5]) + 2 * (X[, p / 2 + 1] %in% c(1, 3)) + rnorm(n))) + 2)
+  
+  y <- as.factor(rbinom(n, 1, prob = logit(1 + 1*X[, 2] + 1*X[, 5] + 3*(X[, p] %in% c(1, 3, 5, 7)))) + 2)
+  
+  # Set tuning parameters
+  ntrees <- 1000
+  ncores <- 10
+  nmin <- 20
+  mtry <- p/2
+  samplereplace <- TRUE
+  sampleprob <- 0.75
+  rule <- "best"
+  nsplit <- ifelse(rule == "best", 0, 3)
+  importance <- TRUE
+
+  # Split data into training and testing sets
+  trainX <- X[1:trainn, ]
+  trainY <- y[1:trainn]
+  testX <- X[(trainn + 1):(trainn + testn), ]
+  testY <- y[(trainn + 1):(trainn + testn)]
+```
+
+
+```{r class.source = NULL, fig.width= 8, fig.height=5, out.width='45%'}
+  start_time <- Sys.time()
+  
+  RLTfit <- RLT(trainX, trainY,
+                ntrees = 100, ncores = 10, nmin = 10,
+                split.gen = "random", nsplit = 1,
+                resample.prob = 0.8, resample.replace = FALSE,
+                reinforcement = TRUE, importance = "distribute",
+                param.control = list("embed.ntrees" = 50,
+                                     "embed.mtry" = 1/2,
+                                     "embed.nmin" = 5,
+                                     "alpha" = 0.2),
+                verbose = TRUE)
+  
+  difftime(Sys.time(), start_time, units = "secs")
+  
+  # prediction
+  RLTPred <- predict(RLTfit, testX, ncores = ncores)
+
+  # inbag and oobag errors
+  mean(RLTfit$Prediction != trainY)
+  mean(RLTPred$Prediction != testY)
+  
+  # VI
+  barplot(as.vector(RLTfit$VarImp), main = "RLT")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

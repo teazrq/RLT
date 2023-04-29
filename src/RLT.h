@@ -21,7 +21,7 @@
 
 
 //#define ARMA_USE_OPENMP
-#define ARMA_NO_DEBUG
+//#define ARMA_NO_DEBUG
 //#define RLT_DEBUG
 
 // header files

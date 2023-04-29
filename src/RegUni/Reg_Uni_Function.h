@@ -132,7 +132,6 @@ void reg_uni_cont_score_best_sub(uvec& indices,
                                  double& temp_cut, 
                                  double& temp_score);
 
-
 void reg_uni_cont_score_best_sub_w(uvec& indices,
                                    const vec& x,
                                    const vec& Y,
@@ -156,7 +155,6 @@ void reg_uni_cat_score_best(std::vector<Reg_Cat_Class>& cat_reduced,
                             double& best_score);
 
 // for categorical split arrangement 
-
 void move_cat_index(size_t& lowindex, 
                     size_t& highindex, 
                     std::vector<Reg_Cat_Class>& cat_reduced, 
@@ -168,15 +166,6 @@ double record_cat_split(std::vector<Reg_Cat_Class>& cat_reduced,
                         size_t best_cat, 
                         size_t true_cat,
                         size_t ncat);
-
-// for prediction 
-
-void Reg_Uni_Forest_Pred(mat& Pred,
-                         const Reg_Uni_Forest_Class& REG_FOREST,
-                         const mat& X,
-                         const uvec& Ncat,
-                         size_t usecores,
-                         size_t verbose);
 
 // #############################
 // ## Combination Split Trees ##
@@ -221,7 +210,7 @@ vec Reg_Uni_Embed_Pre_Screen(const RLT_REG_DATA& REG_DATA,
                              const uvec& obs_id,
                              const uvec& var_id,
                              Rand& rngl);
-  
+
 void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
                          const uvec& split_var,
                          const RLT_REG_DATA& REG_DATA,

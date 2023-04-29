@@ -12,6 +12,7 @@
 #' @param keep.all whether to keep the prediction from all trees. Warning: this can 
 #'                 occupy a large storage space, especially in survival model
 #' @param ncores   number of cores
+#' @param verbose  print additional information
 #' @param ... ...
 #'
 #' @return 

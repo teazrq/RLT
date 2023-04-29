@@ -60,9 +60,8 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
     
   if (importance)
     AllImp.zeros(ntrees, P);
-
-
-  #pragma omp parallel num_threads(usecores)
+  
+#pragma omp parallel num_threads(usecores)
   {
     #pragma omp for schedule(dynamic)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
@@ -92,11 +91,15 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
       
       size_t TreeLength = 100 + size/nmin*4;
       OneTree.initiate(TreeLength, nclass);
-
+      
       // build the tree
       if (reinforcement)
       {
-        RLTcout << " do reinforcement in classification" << std::endl;
+        uvec var_protect;
+        
+        Cla_Uni_Split_A_Node_Embed(0, OneTree, CLA_DATA, 
+                                   Param, inbag_id, var_id, var_protect, rngl);
+        
       }else{
         Cla_Uni_Split_A_Node(0, OneTree, CLA_DATA, 
                              Param, inbag_id, var_id, rngl);
@@ -129,7 +132,7 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
         Prediction += AllPred;
         oob_count(oobag_index) += 1;
       }
-      
+
       // calculate importance 
       if (importance and NTest > 1)
       {
@@ -175,7 +178,7 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
           AllImp(nt, locate_j) = (double) sum(oobY != oobpred) / NTest - baseImp;
         }
       }
-      
+
       // probability variable importance
       if (importance == 2)
       {
@@ -233,9 +236,8 @@ void Cla_Uni_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
         }
       }
       
-      
+
     }
-    
   }
   
   if (do_prediction)

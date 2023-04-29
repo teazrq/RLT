@@ -127,16 +127,34 @@ List RegUniForestPred(arma::field<arma::ivec>& SplitVar,
                                   NodeWeight, 
                                   NodeAve);
   
-  // Initialize prediction objects  
-  mat PredAll;
+  // Initialize prediction objects 
+  size_t N = X.n_rows;
+  size_t ntrees = REG_FOREST.SplitVarList.size();  
+  mat PredAll(N, ntrees, fill::zeros);
 
-  // Run prediction
-  Reg_Uni_Forest_Pred(PredAll,
-                      (const Reg_Uni_Forest_Class&) REG_FOREST,
-                      X,
-                      Ncat,
-                      usecores,
-                      verbose);
+  // do prediction
+#pragma omp parallel num_threads(usecores)
+  {
+    #pragma omp for schedule(static)
+    for (size_t nt = 0; nt < ntrees; nt++)
+    {
+      // initiate all observations
+      uvec proxy_id = linspace<uvec>(0, N-1, N);
+      uvec real_id = linspace<uvec>(0, N-1, N);
+      uvec TermNode(N, fill::zeros);
+      
+      Reg_Uni_Tree_Class OneTree(REG_FOREST.SplitVarList(nt),
+                                 REG_FOREST.SplitValueList(nt),
+                                 REG_FOREST.LeftNodeList(nt),
+                                 REG_FOREST.RightNodeList(nt),
+                                 REG_FOREST.NodeWeightList(nt),
+                                 REG_FOREST.NodeAveList(nt));
+      
+      Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
+      
+      PredAll.unsafe_col(nt).rows(real_id) = OneTree.NodeAve(TermNode);
+    }
+  }
   
   // Initialize return list
   List ReturnList;
@@ -151,17 +169,16 @@ List RegUniForestPred(arma::field<arma::ivec>& SplitVar,
     uvec secondhalf = linspace<uvec>(B, 2*B-1, B);
     
     // PredAll is n by ntrees
-    vec SVar = var(PredAll, 0, 1); // norm_type = 0 means using n-1 as constant
+    vec Vs = var(PredAll, 1, 1); // (2nd argument) norm_type = 1 means using N as constant
     
     mat TreeDiff = PredAll.cols(firsthalf) - PredAll.cols(secondhalf);
-    vec TreeVar = mean(square(TreeDiff), 1) / 2;
+    vec Vh = mean(square(TreeDiff), 1) / 2;
     
-    vec Var = TreeVar*(1 + 1/2/B) - SVar*(1 - 1/2/B);
+    vec Var = Vh - Vs;
 
     ReturnList["Variance"] = Var;
   }
-    
-  
+
   // If keeping predictions for every tree  
   if (keep_all)
     ReturnList["PredictionAll"] = PredAll;

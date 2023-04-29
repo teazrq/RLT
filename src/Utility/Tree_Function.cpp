@@ -69,7 +69,7 @@ size_t find_j(const arma::uvec& var_id,
   RLTcout << " find_j cannot find a match " << std::endl;
   return 0;
 }
-  
+
 // for resampling set ObsTrack
 void set_obstrack(arma::imat& ObsTrack,
                   const size_t nt,
@@ -332,7 +332,6 @@ void Find_Terminal_Node(size_t Node,
                             const uvec& real_id,
                             uvec& TermNode)
 {
-  
   size_t size = proxy_id.n_elem;
   
   //If the current node is a terminal node

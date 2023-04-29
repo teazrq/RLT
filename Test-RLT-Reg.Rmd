@@ -1,5 +1,5 @@
 ---
-title: "RLT Package Reinforcement Learning Trees and Linear Combinaation Split Test"
+title: "RLT Package: Regression With Reinforcement Learning and Linear Combination Splits"
 author: "Ruoqing Zhu"
 date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
 output:
@@ -190,8 +190,8 @@ The search of top variables is the same embedded random forest, however, $\bolds
   par(mar = c(1, 2, 2, 2))
   
   # sparse variable importance
-  barplot(as.vector(RLTfit$VarImp), main = "RLT")
-  barplot(as.vector(RLTvi2$VarImp), main = "RLT")
+  barplot(as.vector(RLTfit$VarImp), main = "RLT Permutation VI")
+  barplot(as.vector(RLTvi2$VarImp), main = "RLT Distributed VI")
   
   # check one tree
   get.one.tree(RLTfit, 1)
@@ -203,20 +203,21 @@ The linear combination split leads to non-rectangular kernels.
 
 ```{r class.source = NULL, out.width="90%", fig.width=12, fig.height=12}
   # generate data
+  set.seed(1)
   n = 500; p = 5
   X = matrix(runif(n*p), n, p)
-  y = X[, 1] + X[, 3] + rnorm(n)
+  y = X[, 1] + X[, 3] + 0.3*rnorm(n)
 
   # fit model
   RLTfit <- RLT(X, y, model = "regression",
-                ntrees = 100, ncores = 1, nmin = 10, mtry = 5,
+                ntrees = 300, ncores = 10, nmin = 15, mtry = 5,
                 split.gen = "random", nsplit = 3,
                 resample.prob = 0.9, resample.replace = FALSE,
                 param.control = list("embed.ntrees" = 50,
-                                     "linear.comb" = 2,
-                                     "embed.nmin" = 2,
-                                     "split.rule" = "sir"),
-                importance = TRUE,
+                                     "linear.comb" = 3,
+                                     "embed.nmin" = 10,
+                                     "split.rule" = "sir",
+                                     "alpha" = 0.25),
                 verbose = TRUE)
 
   # target point

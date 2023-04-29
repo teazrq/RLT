@@ -29,7 +29,7 @@ training data.}
 This is slightly different than supplying the training data to \code{X2}
 due to re-samplings of the training process. To use this feature, you must
 specify \code{resample.track = TRUE} in \code{param.control} when fitting
-the forst.}
+the forest}
 
 \item{verbose}{Whether fitting should be printed.}
 

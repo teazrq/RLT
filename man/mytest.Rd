@@ -8,6 +8,8 @@ mytest(n, ...)
 }
 \arguments{
 \item{n}{n}
+
+\item{...}{other arguments}
 }
 \value{
 output

@@ -31,6 +31,8 @@ occupy a large storage space, especially in survival model}
 
 \item{ncores}{number of cores}
 
+\item{verbose}{print additional information}
+
 \item{...}{...}
 }
 \value{

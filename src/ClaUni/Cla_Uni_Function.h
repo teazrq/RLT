@@ -44,6 +44,15 @@ void Cla_Uni_Split_A_Node(size_t Node,
                           const uvec& var_id,
                           Rand& rngl);
 
+void Cla_Uni_Split_A_Node_Embed(size_t Node,
+                                Cla_Uni_Tree_Class& OneTree,
+                                const RLT_CLA_DATA& CLA_DATA,
+                                const PARAM_GLOBAL& Param,
+                                uvec& obs_id,
+                                const uvec& var_id,
+                                const uvec& var_protect,
+                                Rand& rngl);
+
 void Cla_Uni_Record_Node(size_t Node,
                          Cla_Uni_Tree_Class& OneTree,
                          uvec& obs_id,
@@ -58,6 +67,14 @@ void Cla_Uni_Find_A_Split(Split_Class& OneSplit,
                           const uvec& obs_id,
                           const uvec& var_id,
                           Rand& rngl);
+
+void Cla_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
+                                const RLT_CLA_DATA& Cla_DATA,
+                                const PARAM_GLOBAL& Param,
+                                const uvec& obs_id,
+                                uvec& var_id,
+                                uvec& var_protect,
+                                Rand& rngl);
 
 void Cla_Uni_Split_Cat(Split_Class& TempSplit,
                        const uvec& obs_id,
@@ -167,13 +184,15 @@ double record_cat_split(std::vector<Cla_Cat_Class>& cat_reduced,
                         size_t true_cat,
                         size_t ncat);
 
-// for prediction 
 
-void Cla_Uni_Forest_Pred(cube& Pred,
-                         const Cla_Uni_Forest_Class& CLA_FOREST,
-                         const mat& X,
-                         const uvec& Ncat,
-                         size_t usecores,
-                         size_t verbose);
+// #############################
+// ## Combination Split Trees ##
+// #############################
+
+vec Cla_Uni_Embed_Pre_Screen(const RLT_CLA_DATA& Cla_DATA,
+                             const PARAM_GLOBAL& Param,
+                             const uvec& obs_id,
+                             const uvec& var_id,
+                             Rand& rngl);
 
 #endif

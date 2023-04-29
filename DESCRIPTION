@@ -1,7 +1,7 @@
 Package: RLT
 Type: Package
 Title: Reinforcement Learning Trees
-Version: 4.2.0
+Version: 4.2.5
 Authors@R: c(
     person("Ruoqing", "Zhu",
            email = "teazrq@gmail.com", 
@@ -30,7 +30,7 @@ Description: Random forest with a variety of additional features for regression,
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: TRUE
-Imports: Rcpp (>= 1.0.9), MASS, Matrix, orthoDr, glmnet
+Imports: Rcpp (>= 1.0.9), stats, utils, Matrix, orthoDr, glmnet
 LinkingTo: Rcpp, RcppArmadillo, dqrng, BH, sitmo
 URL: https://cran.r-project.org/package=RLT,
      https://teazrq.github.io/RLT/

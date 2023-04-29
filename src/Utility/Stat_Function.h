@@ -13,6 +13,12 @@ using namespace arma;
 #ifndef STAT_FUNCTIONS
 #define STAT_FUNCTIONS
 
+
+// first eigenvector of pca
+arma::mat xpc(arma::mat& newX,
+              arma::vec& newW,
+              bool useobsweight);
+
 // sliced inverse regression
 arma::mat sir(arma::mat& newX, 
               arma::vec& newY, 
@@ -27,14 +33,7 @@ arma::mat save(arma::mat& newX,
                bool useobsweight,
                size_t nslice);
 
-// first eigenvector of pca
-arma::mat xpc(arma::mat& newX,
-              arma::vec& newW,
-              bool useobsweight);
-
-// c-index 
-
-
+// c-index
 double cindex_d(arma::vec& Y,
                 arma::uvec& Censor,
                 arma::vec& pred);

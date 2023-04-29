@@ -10,14 +10,14 @@ using namespace Rcpp;
 using namespace arma;
 
 // [[Rcpp::export()]]
-List ClaUniForestFit(arma::mat& X,
-          					 arma::uvec& Y,
-          					 arma::uvec& Ncat,
-          					 size_t nclass,
-          					 arma::vec& obsweight,
-          					 arma::vec& varweight,
-          					 arma::imat& ObsTrack,
-          					 List& param_r)
+List ClaUniCombForestFit(arma::mat& X,
+              					 arma::uvec& Y,
+              					 arma::uvec& Ncat,
+              					 size_t nclass,
+              					 arma::vec& obsweight,
+              					 arma::vec& varweight,
+              					 arma::imat& ObsTrack,
+              					 List& param_r)
 {
   
   // reading parameters 
@@ -104,18 +104,18 @@ List ClaUniForestFit(arma::mat& X,
 }
 
 // [[Rcpp::export()]]
-List ClaUniForestPred(arma::field<arma::ivec>& SplitVar,
-                      arma::field<arma::vec>& SplitValue,
-                      arma::field<arma::uvec>& LeftNode,
-                      arma::field<arma::uvec>& RightNode,
-                      arma::field<arma::vec>& NodeWeight,
-                      arma::field<arma::mat>& NodeProb,
-                      arma::mat& X,
-                      arma::uvec& Ncat,
-                      bool VarEst,
-                      bool keep_all,
-                      size_t usecores,
-                      size_t verbose)
+List ClaUniCombForestPred(arma::field<arma::ivec>& SplitVar,
+                          arma::field<arma::vec>& SplitValue,
+                          arma::field<arma::uvec>& LeftNode,
+                          arma::field<arma::uvec>& RightNode,
+                          arma::field<arma::vec>& NodeWeight,
+                          arma::field<arma::mat>& NodeProb,
+                          arma::mat& X,
+                          arma::uvec& Ncat,
+                          bool VarEst,
+                          bool keep_all,
+                          size_t usecores,
+                          size_t verbose)
 {
   // check number of cores
   usecores = checkCores(usecores, verbose);

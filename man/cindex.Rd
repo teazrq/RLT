@@ -4,7 +4,7 @@
 \alias{cindex}
 \title{C-index}
 \usage{
-cindex(y, censor, pred, ...)
+cindex(y, censor, pred)
 }
 \arguments{
 \item{y}{survival time}

@@ -7,7 +7,7 @@
 #' @export
 #' @return c-index
 
-cindex <- function(y, censor, pred, ...)
+cindex <- function(y, censor, pred)
 {
     if (length(y) != length(censor) | length(y) != length(pred))
         stop("arguments length differ")

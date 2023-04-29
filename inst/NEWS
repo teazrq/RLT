@@ -1,5 +1,13 @@
 Package: RLT
 
+Version: 4.2.5
+
+---------------------------------------------------------------------------------
+Completed linear combination splits and reinforcement learning mode for 
+regression. Single variable reinforcement learning mode for classification is 
+also done. 
+---------------------------------------------------------------------------------
+
 Version: 4.1.3
 
 ---------------------------------------------------------------------------------

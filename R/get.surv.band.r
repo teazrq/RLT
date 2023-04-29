@@ -78,7 +78,7 @@ get.surv.band <- function(x,
     {
       # will add two points at the boundary to improve the behavior. 
       alltime = 0:(p+1)
-      alltime = alltime / sd(alltime)
+      alltime = alltime / stats::sd(alltime)
       nknots = ceiling( max(alltime)/orthoDr::silverman(1, p) ) + 2
       
       basis = orthoDr::kernel_weight(matrix(alltime), 
@@ -87,10 +87,10 @@ get.surv.band <- function(x,
       # raw marginal variance
       mar_var = diag(x$Cov[,,k])
       
-      fit <- glmnet::glmnet(basis, c(mar_var[1], mar_var, tail(mar_var, 1)),
+      fit <- glmnet::glmnet(basis, c(mar_var[1], mar_var, utils::tail(mar_var, 1)),
                             alpha = 0, intercept = FALSE,
                             lower.limits = 0, lambda = 1e-5)
-      smarvar = predict(fit, basis)
+      smarvar = stats::predict(fit, basis)
       smarvar = smarvar[2:(p+1)]
       
       newmat = x$Cov[,,k]
@@ -125,7 +125,7 @@ get.surv.band <- function(x,
       
       # generate grid points for kernel
       alltime = 1:p
-      alltime = alltime / sd(alltime)
+      alltime = alltime / stats::sd(alltime)
       nknots = ceiling( max(alltime)/orthoDr::silverman(1, p) ) + 2
       
       basis = orthoDr::kernel_weight(matrix(alltime), 
@@ -138,7 +138,7 @@ get.surv.band <- function(x,
         
         fit <- glmnet::glmnet(basis, uj, alpha = 0, intercept = FALSE,
                               lower.limits = 0, lambda = 1e-5)
-        suj = predict(fit, basis)
+        suj = stats::predict(fit, basis)
         suj = suj / sqrt(sum(suj^2))
         
         dj = sum(suj * uj) * coveigen$values[j]
@@ -153,7 +153,7 @@ get.surv.band <- function(x,
       
       w = sqrt(d)/sum(sqrt(d))
       
-      cv = qnorm(1 - w %*% t(alpha)/2)
+      cv = stats::qnorm(1 - w %*% t(alpha)/2)
       bandk = U %*% sweep(cv, 1, sqrt(d), FUN = "*")
 
       approxerror = sum( (sweep(U, 2, d, FUN = "*") %*% t(U) - ccov)^2 ) / sum(ccov^2)

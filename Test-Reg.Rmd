@@ -214,7 +214,7 @@ This is to send it down to both two child nodes with weights proportional to the
   par(mfrow=c(1,3))
   par(mar = c(1, 2, 2, 2))
   
-  barplot(as.vector(RLTfit$VarImp), main = "RLT")
+  barplot(as.vector(RLTfit$VarImp), main = "RLT distribute")
   barplot(as.vector(rsffit$importance), main = "rsf random")
   barplot(as.vector(rsffit2$importance), main = "rsf anti")
 ```
@@ -315,9 +315,11 @@ We generate a set of data with 20 variables, and the true model depends only on 
 
   ## Variance Estimation Example
   
-  RLTfit <- RLT(trainX, trainY, model = "regression", ntrees = 20000, 
-                mtry = p, nmin = 40, split.gen = "best", resample.prob = 0.5,
-                param.control = list("var.ready" = TRUE, "resample.track" = TRUE),
+  RLTfit <- RLT(trainX, trainY, model = "regression", 
+                ntrees = 20000, mtry = p, nmin = 40, 
+                split.gen = "best", resample.prob = 0.5,
+                param.control = list("var.ready" = TRUE, 
+                                     "resample.track" = TRUE),
                 verbose = TRUE)
   
   RLTPred <- predict(RLTfit, testX, var.est = TRUE, keep.all = TRUE)

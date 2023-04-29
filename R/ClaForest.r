@@ -20,7 +20,7 @@ ClaForest <- function(x, y,
   if (length(unique(y)) != nlevels(y)) warning("y contain empty classes")
   
   nclass = nlevels(y)
-  if (nclass < 2) step("y's are identical")
+  if (nclass < 2) stop("y's are identical")
   
   ylabels = levels(y)
   y.integer = as.numeric(y) - 1
@@ -32,7 +32,7 @@ ClaForest <- function(x, y,
   if (param$linear.comb == 1)
   {
     if (param$verbose > 0)
-      cat("in ClaForest ... \n")
+      cat("Classification Random Forest ... \n")
     
     # check splitting rules
     if (is.null(param$"split.rule"))

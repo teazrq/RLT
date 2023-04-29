@@ -135,7 +135,7 @@ check_obsw <- function(obs.w, n)
 #' @title check_varw
 #' @name check_varw
 #' @keywords internal
-check_varw <- function(var.w, n)
+check_varw <- function(var.w, p)
 {
   var.w = as.numeric(as.vector(var.w))
 
@@ -157,13 +157,18 @@ check_varw <- function(var.w, n)
 #' @keywords internal
 check_importance <- function(importance)
 {
-  if (  match(importance, c(TRUE), nomatch = 0) )
-    importance = "permute"
+  importance.num = -1
   
-  importance.num = match(importance, c("permute", "distribute"), 
-                         nomatch = 0)
+  if (  importance == 0 )
+    importance.num = 0
   
-  if (importance.num == 0)
+  if (  match(importance, c(TRUE, "permute"), nomatch = 0) )
+    importance.num = 1
+  
+  if (  match(importance, c("distribute"), nomatch = 0) )
+    importance.num = 2
+  
+  if (importance.num == -1)
     stop("variable importance mode is not recognized")
     
   storage.mode(importance.num) <- "integer"
@@ -222,7 +227,7 @@ check_seed <- function(seed)
 {
   if (is.null(seed) | !is.numeric(seed))
   {
-    seed = runif(1) * .Machine$integer.max
+    seed = stats::runif(1) * .Machine$integer.max
   }else{
     seed = as.integer(seed)
   }

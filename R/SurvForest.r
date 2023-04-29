@@ -16,7 +16,7 @@ SurvForest <- function(x, y, censor,
   # a smaller failcount
   if (failcount != 0 & failcount < length(timepoints))
   {
-    timeloc = floor(quantile(1:length(timepoints), 
+    timeloc = floor(stats::quantile(1:length(timepoints), 
                              probs = seq(0, 1, length.out = failcount)))
     
     # reduced set of timepoints

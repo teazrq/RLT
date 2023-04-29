@@ -60,6 +60,9 @@ public:
     
     RLTcout << "This tree has length " << get_tree_length() << std::endl;
     
+    RLTcout << " Print Tree: \n" << 
+            join_rows(linspace(0, SplitVar.n_elem-1, SplitVar.n_elem), conv_to<vec>::from(SplitVar), 
+                      conv_to<vec>::from(LeftNode), conv_to<vec>::from(RightNode)) << std::endl;
   }
   
 };
@@ -119,12 +122,14 @@ public:
 
 class Split_Class{ // univariate splits
 public:
-  size_t var = 0;  
+  size_t var = 0;
   double value = 0;
   double score = -1;
   
   void print(void) {
-      RLTcout << "Splitting variable is " << var << " value is " << value << " score is " << score << std::endl;
+      RLTcout << " var = " << var << 
+                 " value = " << value << 
+                 " score = " << score << std::endl;
   }
 };
 
@@ -141,7 +146,10 @@ public:
     load(load) {}
   
   void print(void) {
-    RLTcout << "Splitting variable is\n" << var << "load is\n" << load << "value is " << value << "; score is " << score << std::endl;
+    RLTcout << " var is \n " << var <<
+               " load is \n " << load <<
+               " value = " << value <<
+               " score = " << score << std::endl;
   }
 };
 
@@ -161,8 +169,11 @@ public:
   double score = 0; // for sorting
     
   void print() {
-      RLTcout << "Category " << cat << " N = " << count << 
-        " weight = " << weight << " score = " << score << std::endl;
+      RLTcout << " Category " << cat << 
+                 " N = " << count << 
+                 " weight = " << weight << 
+                 " score = " << score 
+              << std::endl;
   }
 };
 

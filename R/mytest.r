@@ -2,6 +2,7 @@
 #' @name mytest
 #' @description my function
 #' @param n n
+#' @param ... other arguments
 #' @export
 #' @return output
 

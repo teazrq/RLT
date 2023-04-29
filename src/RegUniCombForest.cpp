@@ -176,12 +176,12 @@ List RegUniCombForestPred(arma::field<arma::imat>& SplitVar,
     uvec secondhalf = linspace<uvec>(B, 2*B-1, B);
     
     // PredAll is n by ntrees
-    vec SVar = var(PredAll, 0, 1); // norm_type = 0 means using n-1 as constant
+    vec Vs = var(PredAll, 1, 1); // (2nd argument) norm_type = 1 means using N as constant
     
     mat TreeDiff = PredAll.cols(firsthalf) - PredAll.cols(secondhalf);
-    vec TreeVar = mean(square(TreeDiff), 1) / 2;
+    vec Vh = mean(square(TreeDiff), 1) / 2;
     
-    vec Var = TreeVar*(1 + 1/2/B) - SVar*(1 - 1/2/B);
+    vec Var = Vh - Vs;
 
     ReturnList["Variance"] = Var;
   }
@@ -192,14 +192,3 @@ List RegUniCombForestPred(arma::field<arma::imat>& SplitVar,
 
   return ReturnList;
 }
-
-
-
-
-
-
-
-
-
-
-

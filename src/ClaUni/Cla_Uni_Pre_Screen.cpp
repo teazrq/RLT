@@ -10,7 +10,7 @@ using namespace Rcpp;
 using namespace arma;
 
 //Embedded RF VI Screening Method
-vec Reg_Uni_Embed_Pre_Screen(const RLT_REG_DATA& REG_DATA,
+vec Cla_Uni_Embed_Pre_Screen(const RLT_CLA_DATA& Cla_DATA,
                              const PARAM_GLOBAL& Param,
                              const uvec& obs_id,
                              const uvec& var_id,
@@ -48,7 +48,7 @@ vec Reg_Uni_Embed_Pre_Screen(const RLT_REG_DATA& REG_DATA,
   size_t P = Embed_Param.P;
   size_t ntrees = Embed_Param.ntrees;  
   
-  imat ObsTrack;  
+  imat ObsTrack;
   
   // initiate uni forest objects
   arma::field<arma::ivec> SplitVar(ntrees);
@@ -56,25 +56,26 @@ vec Reg_Uni_Embed_Pre_Screen(const RLT_REG_DATA& REG_DATA,
   arma::field<arma::uvec> LeftNode(ntrees);
   arma::field<arma::uvec> RightNode(ntrees);
   arma::field<arma::vec> NodeWeight(ntrees);
-  arma::field<arma::vec> NodeAve(ntrees);
+  arma::field<arma::mat> NodeProb(ntrees);
+  
   
   //Initiate forest object
-  Reg_Uni_Forest_Class REG_FOREST(SplitVar,
+  Cla_Uni_Forest_Class CLA_FOREST(SplitVar,
                                   SplitValue,
                                   LeftNode,
                                   RightNode,
                                   NodeWeight,
-                                  NodeAve);
+                                  NodeProb);
   
   // Initiate prediction objects
-  vec Prediction;
+  mat Prediction;
   
   // VarImp
   vec VarImp(P, fill::zeros);
-  
+
   // Run model fitting
-  Reg_Uni_Forest_Build(REG_DATA,
-                       REG_FOREST,
+  Cla_Uni_Forest_Build(Cla_DATA,
+                       CLA_FOREST,
                        (const PARAM_GLOBAL&) Embed_Param,
                        obs_id,
                        var_id,
@@ -82,6 +83,6 @@ vec Reg_Uni_Embed_Pre_Screen(const RLT_REG_DATA& REG_DATA,
                        true, // do prediction for VI
                        Prediction,
                        VarImp);
-  
+
   return VarImp;
 }

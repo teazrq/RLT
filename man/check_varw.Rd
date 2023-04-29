@@ -4,7 +4,7 @@
 \alias{check_varw}
 \title{check_varw}
 \usage{
-check_varw(var.w, n)
+check_varw(var.w, p)
 }
 \description{
 check_varw
