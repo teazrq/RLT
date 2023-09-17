@@ -411,49 +411,36 @@ Here is a demonstration of the smoothed covariance approximation code used inter
   ccov = RLTPred$Cov[,,i]
   heatmap(ccov[rev(1:nrow(ccov)),], Rowv = NA, Colv = NA, symm = TRUE)
 
-  # to calculate the smoothed covariance matrix
-  # some matrix to store
-  
-  coveigen = eigen(ccov)
-  r = 4
-  r = min(r, sum(coveigen$values > coveigen$values[1]*1e-6))
-  
-  # some matrix to store
-  p = dim(ccov)[1]
-  U = matrix(NA, p, r)
-  d = rep(NA, r)
-  
   # generate grid points for kernel
-  alltime = 1:p
-  alltime = alltime / sd(alltime) * 2
+  p = dim(ccov)[1]  
+  alltime = 0:(p+1)
+  alltime = alltime / stats::sd(alltime)
   nknots = ceiling( max(alltime)/orthoDr::silverman(1, p) ) + 2
   
   basis = orthoDr::kernel_weight(matrix(alltime), 
                                  matrix(seq(0, max(alltime), length.out = nknots)))
   
-  for (j in 1:r)
-  {
-    uj = coveigen$vectors[, j]
-    uj = uj*sign(mean(uj))
-    
-    fit <- glmnet::glmnet(basis, uj, alpha = 0, intercept = FALSE,
-                          lower.limits = 0, lambda = 1e-5)
-    suj = predict(fit, basis)
-    suj = suj / sqrt(sum(suj^2))
-    
-    dj = sum(suj * uj) * coveigen$values[j]
-    
-    U[, j] = suj
-    d[j] = dj
-  }
+  # raw marginal variance
+  mar_var = diag(ccov)
   
-  used = (d > max(d)*1e-6)
-  d = d[used]
-  U = U[, used, drop = FALSE]
-
-  newcov = sweep(U, 2, d, FUN = "*") %*% t(U)
-  sum((newcov - ccov)^2) / sum(ccov^2)
-  heatmap(newcov[rev(1:nrow(newcov)),], Rowv = NA, Colv = NA, symm = TRUE)
+  fit <- glmnet::glmnet(basis, c(mar_var[1], mar_var, utils::tail(mar_var, 1)),
+                        alpha = 0, intercept = FALSE,
+                        lower.limits = 0, lambda = 1e-5)
+  smarvar = stats::predict(fit, basis)
+  smarvar = smarvar[2:(p+1)]
+  
+  newmat = ccov
+  diag(newmat) = smarvar
+  
+  # find positive definite projection
+  pdmat = suppressWarnings(Matrix::nearPD(newmat, 
+                           keepDiag = TRUE, # keep the diagonal
+                           base.matrix = TRUE, 
+                           conv.norm.type = "F",
+                           trace = FALSE, maxit = 200))
+      
+  sum((pdmat$mat - ccov)^2) / sum(ccov^2)
+  heatmap(pdmat$mat[rev(1:nrow(pdmat$mat)),], Rowv = NA, Colv = NA, symm = TRUE)
 ```
 
 ## Setting random seed

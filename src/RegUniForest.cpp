@@ -94,10 +94,12 @@ List RegUniForestFit(arma::mat& X,
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
   
-  ReturnList["Prediction"] = Prediction;
+  if (Prediction.n_elem > 0)
+  {
+    ReturnList["Prediction"] = Prediction;
+    ReturnList["Error"] = mean(square(Prediction - Y));
+  }
 
-  ReturnList["Error"] = mean(square(Prediction - Y));
-  
   return ReturnList;
 }
 
