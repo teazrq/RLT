@@ -143,9 +143,9 @@ forest.kernel <- function(object,
       }else{
         
         # kernel matrix as to the training process 
-        # ObsTrack must be provided 
+        # resample.track must be TRUE 
         if ( is.null(object$ObsTrack) )
-          stop("Must have ObsTrack to perform vs.train")
+          stop("Must set resample.track = TRUE in param.control to perform vs.train")
       
         ObsTrack = object$ObsTrack
       
