@@ -1,0 +1,152 @@
+---
+title: "RLT Package Reinforcement Learning Test"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width=9, fig.height=7, out.width = "75%", fig.align = 'center')
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse=TRUE)
+```
+
+## Install and Load Package
+
+Install and load the GitHub version of the RLT package. Do not use the CRAN version. 
+
+```{r}
+  # install.packages("devtools")
+  # devtools::install_github("teazrq/RLT")
+  library(RLT)
+```
+
+## Single Variable Embedded Splitting
+
+```{r}
+ # set.seed(2)
+  
+  n = 1000
+  p = 10
+  X = matrix(rnorm(n*p), n, p)
+  y = 1 + X[, 1] + X[, 3] + X[, 9] + rnorm(n)
+  
+  testX = matrix(rnorm(n*p), n, p)
+  testy = 1 + testX[, 1] + testX[, 3] + testX[, 9] + rnorm(n)
+  
+  start_time <- Sys.time()
+  
+  RLTfit <- RLT(X, y, model = "regression", 
+                ntrees = 100, ncores = 1, nmin = 10,
+                split.gen = "random", nsplit = 1,
+                resample.prob = 0.85, resample.replace = FALSE,
+                reinforcement = TRUE, importance = "distribute",
+                param.control = list("embed.ntrees" = 50,
+                                     "embed.mtry" = 1/2,
+                                     "embed.nmin" = 10,
+                                     "embed.split.gen" = "random",
+                                     "embed.nsplit" = 1,
+                                     "embed.resample.replace" = TRUE,
+                                     "embed.resample.prob" = 0.9,
+                                     "embed.mute" = 0.5,
+                                     "embed.protect" = 5),
+                verbose = TRUE)
+  
+  difftime(Sys.time(), start_time, units = "secs")
+  
+    # oob error
+  mean((RLTfit$Prediction - y)^2, na.rm = TRUE)
+  
+  # prediction error
+  pred = predict(RLTfit, testX)
+  mean((pred$Prediction - testy)^2)
+  
+```
+
+```{r fig.width= 8, fig.height=5}
+  # sparse variable importance
+  barplot(as.vector(RLTfit$VarImp), main = "RLT")
+  
+  # check one tree
+  get.one.tree(RLTfit, 1)
+```
+
+Check seed match
+
+```{r}
+  RLTfit2 <- RLT(X, y, model = "regression", 
+                 ntrees = 20, ncores = 1, nmin = 10,
+                 split.gen = "random", nsplit = 1,
+                 resample.prob = 0.85, resample.replace = FALSE,
+                 reinforcement = TRUE, importance = TRUE,
+                 param.control = list("embed.ntrees" = 50,
+                                      "embed.mtry" = 1/3,
+                                      "embed.nmin" = 10,
+                                      "embed.split.gen" = "random",
+                                      "embed.nsplit" = 1,
+                                      "embed.resample.prob" = 0.75,
+                                      "embed.mute" = 0.5,
+                                      "embed.protect" = 5),
+                 verbose = TRUE, seed = RLTfit$parameters$seed)
+
+  all(RLTfit$VarImp == RLTfit2$VarImp)
+```
+
+## Linear Combination Split 
+
+This is a model without fitting embedded random forest to search for the linear combinations. The variables are ranked by marginal screening. 
+
+```{r}
+  # set.seed(1)
+  library(MASS)
+  n = 1000
+  p = 5
+  S = matrix(0.3, p, p)
+  diag(S) = 1
+  S[1, 5] = S[5, 1] = 0.9
+  S[1, 3] = S[3, 1] = S[5, 3] = S[3, 5] = -0.3
+  
+  X1 = mvrnorm(n, mu = rep(0, p), Sigma = S)
+  X2 = as.factor(sample(c(-1,1), size = n, replace = TRUE))
+  X = data.frame(X1, X2)
+  y = 1 + 2*(X[, 6] == 1) + X[, 1] + X[, 3] + rnorm(n)
+  w = runif(n)
+  
+  start_time <- Sys.time()
+  
+  RLTfit <- RLT(X, y, model = "regression", obs.w = w,
+                ntrees = 100, ncores = 1, nmin = 50, mtry = 3,
+                split.gen = "random", nsplit = 3, 
+                resample.prob = 0.8, resample.replace = FALSE, 
+                param.control = list("linear.comb" = 3, 
+                                     "split.rule" = "sir"), 
+                importance = TRUE, 
+                verbose = TRUE)
+  
+  difftime(Sys.time(), start_time, units = "secs")
+  
+  plot(RLTfit$Prediction, y)
+  mean( (RLTfit$Prediction - y)^2 , na.rm = TRUE)
+```
+
+
+
+
+
+
+
+
+
+
