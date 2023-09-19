@@ -58,29 +58,26 @@ List RegUniCombForestFit(arma::mat& X,
   
   // Initiate prediction objects
   vec Prediction;
-  
+  bool do_prediction = Param.replacement or (Param.resample_prob < 1);
+
   // VarImp
   vec VarImp;
   if (importance)
     VarImp.zeros(P);
   
-  bool do_prediction = Param.replacement or (Param.resample_prob < 1);
-  
   // Run model fitting
   Reg_Uni_Comb_Forest_Build((const RLT_REG_DATA&) REG_DATA,
               							REG_FOREST,
               							(const PARAM_GLOBAL&) Param,
-              							obs_id,
-              							var_id,
+              							(const uvec&) obs_id,
+              							(const uvec&) var_id,
               							ObsTrack,
               							do_prediction,
               							Prediction,
               							VarImp);
   
-  
   //initialize return objects
   List ReturnList;
-  
   List Forest_R;
   
   //Save forest objects as part of return list  
@@ -98,9 +95,11 @@ List RegUniCombForestFit(arma::mat& X,
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
   
-  ReturnList["Prediction"] = Prediction;
-
-  ReturnList["Error"] = mean(square(Prediction - Y));
+  if (Prediction.n_elem > 0)
+  {
+    ReturnList["Prediction"] = Prediction;
+    ReturnList["Error"] = mean(square(Prediction - Y));
+  }
   
   return ReturnList;
 }
@@ -125,7 +124,6 @@ List RegUniCombForestPred(arma::field<arma::imat>& SplitVar,
   size_t N = X.n_rows;  
   
   // convert R object to forest
-  
   Reg_Uni_Comb_Forest_Class REG_FOREST(SplitVar, 
                                        SplitLoad,
                                        SplitValue, 

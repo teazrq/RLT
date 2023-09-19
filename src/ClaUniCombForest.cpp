@@ -37,7 +37,8 @@ List ClaUniCombForestFit(arma::mat& X,
   int importance = Param.importance;
 
   // initiate forest argument objects
-  arma::field<arma::ivec> SplitVar(ntrees);
+  arma::field<arma::imat> SplitVar(ntrees);
+  arma::field<arma::mat> SplitLoad(ntrees);
   arma::field<arma::vec> SplitValue(ntrees);
   arma::field<arma::uvec> LeftNode(ntrees);
   arma::field<arma::uvec> RightNode(ntrees);
@@ -45,12 +46,13 @@ List ClaUniCombForestFit(arma::mat& X,
   arma::field<arma::mat> NodeProb(ntrees);
   
   //Initiate forest object
-  Cla_Uni_Forest_Class CLA_FOREST(SplitVar, 
-                                  SplitValue, 
-                                  LeftNode, 
-                                  RightNode,
-                                  NodeWeight,
-                                  NodeProb);
+  Cla_Uni_Comb_Forest_Class CLA_FOREST(SplitVar,
+                                       SplitLoad,
+                                       SplitValue,
+                                       LeftNode,
+                                       RightNode,
+                                       NodeWeight,
+                                       NodeProb);
   
   
   // initiate obs id and var id
@@ -59,32 +61,31 @@ List ClaUniCombForestFit(arma::mat& X,
   
   // Initiate prediction objects
   mat Prediction;
-  
   bool do_prediction = Param.replacement or (Param.resample_prob < 1);
   
   // VarImp
   vec VarImp;
   if (importance)
     VarImp.zeros(P);
-  
+
   // Run model fitting
-  Cla_Uni_Forest_Build((const RLT_CLA_DATA&) CLA_DATA,
-                       CLA_FOREST,
-                       (const PARAM_GLOBAL&) Param,
-                       (const uvec&) obs_id,
-                       (const uvec&) var_id,
-                       ObsTrack,
-                       do_prediction,
-                       Prediction,
-                       VarImp);
+  Cla_Uni_Comb_Forest_Build((const RLT_CLA_DATA&) CLA_DATA,
+                            CLA_FOREST,
+                            (const PARAM_GLOBAL&) Param,
+                            (const uvec&) obs_id,
+                            (const uvec&) var_id,
+                            ObsTrack,
+                            do_prediction,
+                            Prediction,
+                            VarImp);
 
   //initialize return objects
   List ReturnList;
-  
   List Forest_R;
 
-  //Save forest objects as part of return list  
+  //Save forest objects as part of return list
   Forest_R["SplitVar"] = SplitVar;
+  Forest_R["SplitLoad"] = SplitLoad;
   Forest_R["SplitValue"] = SplitValue;
   Forest_R["LeftNode"] = LeftNode;
   Forest_R["RightNode"] = RightNode;
@@ -97,8 +98,13 @@ List ClaUniCombForestFit(arma::mat& X,
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
   
-  ReturnList["Prediction"] = index_max(Prediction, 1);
-  ReturnList["Prob"] = Prediction;
+  if (Prediction.n_elem > 0)
+  {
+    ReturnList["Prediction"] = index_max(Prediction, 1);
+    ReturnList["Prob"] = Prediction;
+  }
+  
+  ReturnList["Error"] = (double) sum(Y != Prediction) / N;
   
   return ReturnList;
 }
@@ -186,8 +192,7 @@ List ClaUniCombForestPred(arma::field<arma::ivec>& SplitVar,
 #pragma omp for schedule(static)
     for (size_t i = 0; i < N; i++)
     {
-      
-      // using norm_type = 1 performs normalisation using N      
+      // using norm_type = 1 performs normalisation using N
       // calculate var of each column (0) 
       rowvec Vs = var(PredAll.slice(i), 1, 0);
       

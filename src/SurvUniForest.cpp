@@ -101,18 +101,22 @@ List SurvUniForestFit(arma::mat& X,
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
   
-  ReturnList["Prediction"] = Prediction;
+  if (Prediction.n_elem > 0)
+  {
+    ReturnList["Prediction"] = Prediction;
   
-  // c-index for oob prediction
-  // uvec nonNAs = find_finite(OOBPrediction.col(0)); if there are nan in prediction
+    // c-index for oob prediction
+    // uvec nonNAs = find_finite(OOBPrediction.col(0)); if there are nan in prediction
+    
+    // oob sum of cumulative hazard as prediction
+    vec oobcch(N, fill::zeros);
   
-  // oob sum of cumulative hazard as prediction
-  vec oobcch(N, fill::zeros);
+    for (size_t i = 0; i < N; i++)
+      oobcch(i) = accu( cumsum( Prediction.row(i) ) );
+    
+    ReturnList["Error"] = 1 - cindex_i(Y, Censor, oobcch);
+  }
   
-  for (size_t i = 0; i < N; i++)
-    oobcch(i) = accu( cumsum( Prediction.row(i) ) );
-  
-  ReturnList["Error"] = 1 - cindex_i(Y, Censor, oobcch);
   ReturnList["NFail"] = NFail;
   
   return ReturnList;

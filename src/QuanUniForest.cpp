@@ -96,8 +96,11 @@ List QuanUniForestFit(arma::mat& X,
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
   
-  ReturnList["Prediction"] = Prediction;
-  ReturnList["OOBPrediction"] = OOBPrediction;
+  if (Prediction.n_elem > 0)
+  {
+    ReturnList["Prediction"] = Prediction;
+    ReturnList["OOBPrediction"] = OOBPrediction;
+  }
   
   return ReturnList;
 }

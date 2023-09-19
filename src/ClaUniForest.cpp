@@ -97,8 +97,11 @@ List ClaUniForestFit(arma::mat& X,
   if (obs_track) ReturnList["ObsTrack"] = ObsTrack;
   if (importance) ReturnList["VarImp"] = VarImp;
   
-  ReturnList["Prediction"] = index_max(Prediction, 1);
-  ReturnList["Prob"] = Prediction;
+  if (Prediction.n_elem > 0)
+  {
+    ReturnList["Prediction"] = index_max(Prediction, 1);
+    ReturnList["Prob"] = Prediction;
+  }
   
   return ReturnList;
 }
