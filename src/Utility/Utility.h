@@ -188,10 +188,10 @@ public:
    RLTcout << "        (mtry, nmin) = (" << mtry << ", " << nmin << ")" << std::endl;
    
    if (split_gen == 3)
-     RLTcout << "      splitting rule = Best" << std::endl;
+     RLTcout << "      split generate = Best" << std::endl;
    
    if (split_gen < 3)
-     RLTcout << "      splitting rule = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+     RLTcout << "      split generate = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
    
    RLTcout << "            sampling = " << resample_prob << (replacement ? " w/ replace" : " w/o replace") << std::endl;
    
@@ -201,8 +201,22 @@ public:
      RLTcout << "               alpha = " << alpha << std::endl;
    
    if (linear_comb > 1)
+   {
      RLTcout << "  linear combination = " << linear_comb << std::endl;
-   
+     
+     if (split_rule == 1)
+       RLTcout << "          split rule = " << "naive" << std::endl;
+     
+     if (split_rule == 2)
+       RLTcout << "          split rule = " << "pca" << std::endl;
+     
+     if (split_rule == 3)
+       RLTcout << "          split rule = " << "lm" << std::endl;
+     
+     if (split_rule == 4)
+       RLTcout << "          split rule = " << "sir" << std::endl;
+   }
+
    RLTcout << "          importance = " << (importance == 2 ? "distribute" : (importance == 1 ? "permute" : "none")) << std::endl;
    
    RLTcout << "       reinforcement = " << (reinforcement ? "Yes" : "No") << std::endl;
@@ -218,10 +232,10 @@ public:
    RLTcout << "        (mtry, nmin) = (" << mtry << ", " << nmin << ")" << std::endl;
    
    if (split_gen == 3)
-     RLTcout << "      splitting rule = Best" << std::endl;
+     RLTcout << "      split generate = Best" << std::endl;
    
    if (split_gen < 3)
-     RLTcout << "      splitting rule = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
+     RLTcout << "      split generate = " << ((split_gen == 1) ? "Random, " : "Rank, ") << nsplit << std::endl;
    
    RLTcout << "            sampling = " << resample_prob << (replacement ? " w/ replace" : " w/o replace") << std::endl;
    
