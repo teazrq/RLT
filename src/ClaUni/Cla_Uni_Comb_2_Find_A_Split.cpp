@@ -1,6 +1,6 @@
 //  **********************************
 //  Reinforcement Learning Trees (RLT)
-//  Regression
+//  Classification
 //  **********************************
 
 // my header file
@@ -10,8 +10,8 @@ using namespace Rcpp;
 using namespace arma;
 
 //Figuring out where to split a node, called from Split_A_Node
-void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
-                               const RLT_REG_DATA& REG_DATA,
+void Cla_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
+                               const RLT_CLA_DATA& Cla_DATA,
                                const PARAM_GLOBAL& Param,
                                const uvec& obs_id,
                                uvec& var_id,
@@ -26,59 +26,62 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   size_t split_gen = Param.split_gen;
   size_t P = var_id.n_elem;
   size_t comb_size = std::min(P, Param.linear_comb);
-  double comb_threshold = Param.embed_threshold;
+  double threshold = Param.embed_threshold;
+  size_t protect_size = std::min(Param.embed_protect, P);
+  size_t nclass = Cla_DATA.nclass;
   
   //Embedded RF VI Screening Method
-  vec vi_embed = Reg_Uni_Embed_Pre_Screen(REG_DATA,
+  vec vi_embed = Cla_Uni_Embed_Pre_Screen(Cla_DATA,
                                           Param,
                                           obs_id,
                                           var_id,
                                           rngl);
 
-  // sort vi
   uvec vi_rank = sort_index(vi_embed, "descend");
   var_id = var_id(vi_rank);
   vi_embed = vi_embed(vi_rank);
-  
+
   // get best vi
   double best_vi = vi_embed(0);
   if (best_vi <= 0)  return;
-    
+  
   // how many variables will pass the threshold
+  // these variables will be protected
   size_t comb_valid = 0;
   for (size_t j = 0; j < comb_size; j++)
-    comb_valid += (vi_embed(j) >= comb_threshold * best_vi);
-
+    comb_valid += (vi_embed(j) >= threshold * best_vi);
+  
   // how many continuous variables in the linear combination
   size_t top_linear = 0;
   for (size_t j = 0; j < comb_valid; j++)
   {
-    if (REG_DATA.Ncat(var_id(j)) == 1)
+    if (Cla_DATA.Ncat(var_id(j)) == 1)
       top_linear ++;
     else
       break;
   }
-  
+
   // calculate splitting
-  if (top_linear == 0) // categorical split
+  if (top_linear == 0) // categorical variable 
   {
     size_t j = var_id(0);
-
+    
     //Initialize objects
     Split_Class TempSplit;
     TempSplit.var = j;
     TempSplit.value = 0;
     TempSplit.score = -1;
     
-    Reg_Uni_Split_Cat(TempSplit, 
+    Cla_Uni_Split_Cat(TempSplit, 
                       obs_id, 
-                      REG_DATA.X.unsafe_col(j), 
-                      REG_DATA.Ncat(j),
-                      REG_DATA.Y, 
-                      REG_DATA.obsweight, 
+                      Cla_DATA.X.unsafe_col(j), 
+                      Cla_DATA.Ncat(j),
+                      Cla_DATA.Y,
+                      Cla_DATA.obsweight,
+                      nclass,
                       0.0, // penalty
-                      split_gen,
-                      1, // univariate splitting rule (var)
+                      split_gen, 
+                      1, // gini index
                       nsplit,
                       alpha, 
                       useobsweight,
@@ -93,22 +96,23 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   
   if (top_linear == 1) // single continuous split
   {
-    size_t j = var_id(0);
-    
+    size_t j = var_id(0);  
+  
     //Initialize objects
     Split_Class TempSplit;
     TempSplit.var = j;
     TempSplit.value = 0;
-    TempSplit.score = -1;
-    
-    Reg_Uni_Split_Cont(TempSplit,
+    TempSplit.score = -1;  
+
+    Cla_Uni_Split_Cont(TempSplit,
                        obs_id,
-                       REG_DATA.X.unsafe_col(j), 
-                       REG_DATA.Y,
-                       REG_DATA.obsweight,
+                       Cla_DATA.X.unsafe_col(j), 
+                       Cla_DATA.Y,
+                       Cla_DATA.obsweight,
+                       nclass,
                        0.0, // penalty
                        split_gen,
-                       1, // univariate splitting rule (var)
+                       1,
                        nsplit,
                        alpha,
                        useobsweight,
@@ -120,27 +124,26 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
     OneSplit.value = TempSplit.value;
     OneSplit.score = TempSplit.score;
   }
-  
+
   if (top_linear > 1) // single continuous split
   {
     uvec split_var = var_id.subvec(0, top_linear-1);
-    vec split_vi = vi_embed.subvec(0, top_linear-1);
+    vec split_vi = vi_embed.subvec(0, top_linear-1);  
+  
     
-    // for more than one variable, find best linear combination split
-    Reg_Uni_Comb_Linear(OneSplit,
-                        (const uvec&) split_var,
-                        (const vec&) split_vi,
-                        REG_DATA,
-                        Param,
-                        obs_id,
-                        rngl);
+  
   }
   
-  // calculate muting and protection
-
+  
+  
+  
+  // how many variables will pass the threshold
+  size_t protect_valid = 0;
+  for (size_t j = 0; j < protect_size; j++)
+    protect_valid += (vi_embed(j) >= threshold * best_vi);
+  
   // for protecting the top variables
-  size_t n_protect = std::min(Param.embed_protect, comb_valid);
-  var_protect = unique(join_cols(var_protect, var_id.subvec(0, n_protect - 1)));
+  var_protect = unique(join_cols(var_protect, var_id.subvec(0, protect_valid - 1)));
   
   // muting the low VIs
   size_t p_new;
@@ -150,8 +153,9 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   else
     p_new = P * (1.0 - Param.embed_mute);
   
-  p_new = std::max(p_new, comb_valid);
-  
+  p_new = std::max(p_new, protect_valid);
+
+  // new variable list
   var_id.resize(p_new);
   var_id = unique(join_cols(var_id, var_protect));
 }

@@ -12,6 +12,7 @@ using namespace arma;
 //Find a split using linear combination
 void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
                          const uvec& split_var,
+                         const vec& split_vi,
                          const RLT_REG_DATA& REG_DATA,
                          const PARAM_GLOBAL& Param,
                          const uvec& obs_id,
@@ -25,7 +26,7 @@ void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
   if (useobsweight) newW = REG_DATA.obsweight(obs_id);
   
   // some parameters
-  // there are three split_rule types: sir (default), save, pca, lm
+  // there are three split_rule types: sir (default), naive, pca, lm
   size_t N = obs_id.n_elem;
   size_t P = split_var.n_elem;
   size_t split_rule = Param.split_rule;
@@ -33,28 +34,20 @@ void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
   size_t nsplit = Param.nsplit;
   double alpha = Param.alpha;
   
-  // check splitting rule 1 sir; 2 save; 3 pca; 4 lm
-  if ( (split_rule == 1 or split_rule == 2) and N < 10)
-  {
-    split_rule = 4; // switch to lm if sample size is too small
-    
-    //RLTcout << "sample size too small, switch to lm" << std::endl;
-  }
-  
-  // find splitting rule loading vector 
-  vec v;  
+  // check splitting rule 1 naive; 2 pca; 3 lm; 4 sir; 
+  if (split_rule > 2 and N < 10)
+    split_rule = 1;// switch to naive if sample size is too small
 
-  if (split_rule == 1) // default sir
-    v = sir(newX, newY, newW, useobsweight, sqrt(N)).col(0);
+  // find splitting rule loading vector 
+  vec v;
   
-  if (split_rule == 2) // save, not implemented yet
-    return;
+  if (split_rule == 1) // naive
+    v = sqrt(split_vi) % sign(cor(newX, newY));
+
+  if (split_rule == 2) // pca can be done regardless of sample size
+    v = xpc(newX, newW, useobsweight).col(0);  
   
-  // pca can be done regardless of sample size
-  if (split_rule == 3)
-    v = xpc(newX, newW, useobsweight).col(0);
-  
-  if (split_rule == 4) // lm
+  if (split_rule == 3) // lm
   {
     if (useobsweight)
     {
@@ -64,8 +57,13 @@ void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
     }else{
       v = solve(newX.t() * newX, newX.t() * newY, solve_opts::allow_ugly);
     }
-  }
+  }  
   
+  if (split_rule == 4) // sir
+    v = sir(newX, newY, newW, useobsweight, sqrt(N)).col(0);
+
+  // if (split_rule == 5) // save
+    
   // record splitting variable and loading
   OneSplit.var.subvec(0, P-1) = split_var;
   OneSplit.load.subvec(0, P-1) = v;

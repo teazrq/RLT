@@ -23,8 +23,9 @@ void Cla_Uni_Split_A_Node_Embed(size_t Node,
   size_t nmin = Param.nmin;
   bool useobsweight = Param.useobsweight;
   
-  Cla_Uni_Record_Node(Node, OneTree, obs_id, CLA_DATA.Y, CLA_DATA.nclass, 
-                      CLA_DATA.obsweight, useobsweight);
+  Cla_Uni_Record_Node(Node, OneTree.NodeWeight, OneTree.NodeProb, 
+                      obs_id, CLA_DATA.Y, CLA_DATA.nclass, CLA_DATA.obsweight, 
+                      useobsweight);
 
   // in rf, it is N <= nmin
   if ( N <= nmin or OneTree.NodeProb.row(Node).max() == 1 )

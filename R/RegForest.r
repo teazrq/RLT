@@ -56,18 +56,21 @@ RegForest <- function(x, y,
   }else{
     
     if (param$verbose > 0)
-      cat("Regression Forest with Linear Combination Splits ... \n") 
+      cat("Regression Forest with Linear Combination Splits ... \n")
     
     # check splitting rules
     if (is.null(param$"split.rule"))
       param$"split.rule" <- "sir"
     
-    all.split.rule = c("sir", "save", "pca", "lm")
+    all.split.rule = c("naive", "pca", "lm", "sir")
     param$"split.rule" <- match(param$"split.rule", all.split.rule)
 
     if (param$"split.rule" == 0)
-      warning("split.rule is not compatiable with linear combination regression; reset")    
-
+    {
+      warning("split.rule is not compatiable with linear combination regression. reset to sir")
+      param$"split.rule" = 1
+    }
+          
     # fit linear combination split model
     fit = RegUniCombForestFit(x, y, ncat,
               							  obs.w, var.w,

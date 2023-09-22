@@ -213,6 +213,7 @@ vec Reg_Uni_Embed_Pre_Screen(const RLT_REG_DATA& REG_DATA,
 
 void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
                          const uvec& split_var,
+                         const vec& split_vi,
                          const RLT_REG_DATA& REG_DATA,
                          const PARAM_GLOBAL& Param,
                          const uvec& obs_id,

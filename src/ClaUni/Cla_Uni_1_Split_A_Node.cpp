@@ -22,7 +22,10 @@ void Cla_Uni_Split_A_Node(size_t Node,
   size_t nmin = Param.nmin;
   bool useobsweight = Param.useobsweight;
   
-  Cla_Uni_Record_Node(Node, OneTree, obs_id, CLA_DATA.Y, CLA_DATA.nclass, CLA_DATA.obsweight, useobsweight);
+  Cla_Uni_Record_Node(Node, OneTree.NodeWeight, OneTree.NodeProb,
+                      obs_id, 
+                      CLA_DATA.Y, CLA_DATA.nclass, CLA_DATA.obsweight, 
+                      useobsweight);
 
   // in rf, it is N <= nmin
   if (N <= nmin or OneTree.NodeProb.row(Node).max() == 1 )
@@ -106,7 +109,8 @@ TERMINATENODE:
 // terminate and record a node
 
 void Cla_Uni_Record_Node(size_t Node,
-                         Cla_Uni_Tree_Class& OneTree,
+                         arma::vec& TreeNodeWeight,
+                         arma::mat& TreeNodeProb,
                          uvec& obs_id,
                          const uvec& Y,
                          const size_t nclass,
@@ -125,8 +129,8 @@ void Cla_Uni_Record_Node(size_t Node,
     nodecount(labels) += weights;
     
     // save node weight
-    OneTree.NodeWeight(Node) = allweight;
-    OneTree.NodeProb.row(Node) = nodecount / allweight;
+    TreeNodeWeight(Node) = allweight;
+    TreeNodeProb.row(Node) = nodecount / allweight;
   }else{
     
     rowvec nodecount(nclass, fill::zeros);
@@ -134,7 +138,7 @@ void Cla_Uni_Record_Node(size_t Node,
     nodecount(labels) += 1;
     
     // save node count
-    OneTree.NodeWeight(Node) = obs_id.n_elem;
-    OneTree.NodeProb.row(Node) = nodecount / obs_id.n_elem;
+    TreeNodeWeight(Node) = obs_id.n_elem;
+    TreeNodeProb.row(Node) = nodecount / obs_id.n_elem;
   }
 }

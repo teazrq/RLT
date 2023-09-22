@@ -64,7 +64,7 @@ void field_vec_resize(arma::field<arma::vec>& A, size_t size)
   {
     //Was false, true. Triggered an error with new version of RcppArmadillo
     //Less efficient than false, true but works
-    B[i] = vec(A[i].begin(), A[i].size(), true, false);
+    B(i) = vec(A(i).begin(), A(i).size(), true, false);
   }
   
   A.set_size(size);
@@ -72,7 +72,7 @@ void field_vec_resize(arma::field<arma::vec>& A, size_t size)
   {
     //Was false, true. Triggered an error with new version of RcppArmadillo
     //Less efficient than false, true but works
-    A[i] = vec(B[i].begin(), B[i].size(), true, false);
+    A(i) = vec(B(i).begin(), B(i).size(), true, false);
   }
 }
 
@@ -86,7 +86,7 @@ void field_vec_resize(arma::field<arma::uvec>& A, size_t size)
   {
     //Was false, true. Triggered an error with new version of RcppArmadillo
     //Less efficient than false, true but works
-    B[i] = uvec(A[i].begin(), A[i].size(), true, false);
+    B(i) = uvec(A(i).begin(), A(i).size(), true, false);
   }
   
   A.set_size(size);
@@ -94,7 +94,7 @@ void field_vec_resize(arma::field<arma::uvec>& A, size_t size)
   {
     //Was false, true. Triggered an error with new version of RcppArmadillo
     //Less efficient than false, true but works
-    A[i] = uvec(B[i].begin(), B[i].size(), true, false);
+    A(i) = uvec(B(i).begin(), B(i).size(), true, false);
   }
 }
 
