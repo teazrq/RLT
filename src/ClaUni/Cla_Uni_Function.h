@@ -54,7 +54,8 @@ void Cla_Uni_Split_A_Node_Embed(size_t Node,
                                 Rand& rngl);
 
 void Cla_Uni_Record_Node(size_t Node,
-                         Cla_Uni_Tree_Class& OneTree,
+                         arma::vec& TreeNodeWeight,
+                         arma::mat& TreeNodeProb,
                          uvec& obs_id,
                          const uvec& Y,
                          const size_t nclass,
@@ -194,5 +195,32 @@ vec Cla_Uni_Embed_Pre_Screen(const RLT_CLA_DATA& Cla_DATA,
                              const uvec& obs_id,
                              const uvec& var_id,
                              Rand& rngl);
+
+void Cla_Uni_Comb_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
+                               Cla_Uni_Comb_Forest_Class& CLA_FOREST,
+                               const PARAM_GLOBAL& Param,
+                               const uvec& obs_id,
+                               const uvec& var_id,
+                               imat& ObsTrack,
+                               bool do_prediction,
+                               mat& Prediction,
+                               vec& VarImp);
+
+void Cla_Uni_Comb_Split_A_Node(size_t Node,
+                               Cla_Uni_Comb_Tree_Class& OneTree,
+                               const RLT_CLA_DATA& CLA_DATA,
+                               const PARAM_GLOBAL& Param,
+                               uvec& obs_id,
+                               const uvec& var_id,
+                               const uvec& var_protect,
+                               Rand& rngl);
+
+void Cla_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
+                               const RLT_CLA_DATA& Cla_DATA,
+                               const PARAM_GLOBAL& Param,
+                               const uvec& obs_id,
+                               uvec& var_id,
+                               uvec& var_protect,
+                               Rand& rngl);
 
 #endif
