@@ -100,7 +100,7 @@ Check seed match
 We can also use a linear combination of variables as the splitting rule, i.e., 
 
 $$ \mathbf{1}( \boldsymbol \beta^T \mathbf{x} > c ) $$
-The search of top variables is the same embedded random forest, however, $\boldsymbol \beta$ is determined using other criteria such as the sliced inverse regression (`"sir"`) and PCA (`"pca"`). When a categorical variable is encountered (random best at internal node), the algorithm switch to the default single variable split. 
+The search of top variables is the same embedded random forest, however, $\boldsymbol \beta$ is determined using other criteria such as the `"naive"` appraoch proposed in the original paper (Zhu, et al. 2015), PCA (`"pca"`), linear regression (`"lm"`) and sliced inverse regression (`"sir"`). When a categorical variable is encountered (random best at internal node), the algorithm switch to the default single variable split. 
 
 ```{r}
   # set.seed(1)
@@ -138,7 +138,7 @@ The search of top variables is the same embedded random forest, however, $\bolds
                 split.gen = "random", nsplit = 2,
                 resample.prob = 0.9, resample.replace = FALSE, 
                 param.control = list("linear.comb" = 3,
-                                     "split.rule" = "sir",
+                                     "split.rule" = "naive",
                                      "embed.ntrees" = 50,
                                      "embed.mtry" = 0.5,
                                      "embed.nmin" = 5,
@@ -211,12 +211,12 @@ The linear combination split leads to non-rectangular kernels.
   # fit model
   RLTfit <- RLT(X, y, model = "regression",
                 ntrees = 300, ncores = 10, nmin = 15, mtry = 5,
-                split.gen = "random", nsplit = 3,
+                split.gen = "random", nsplit = 3, 
                 resample.prob = 0.9, resample.replace = FALSE,
                 param.control = list("embed.ntrees" = 50,
                                      "linear.comb" = 3,
                                      "embed.nmin" = 10,
-                                     "split.rule" = "sir",
+                                     "split.rule" = "naive",
                                      "alpha" = 0.25),
                 verbose = TRUE)
 

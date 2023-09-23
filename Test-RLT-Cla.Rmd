@@ -97,14 +97,14 @@ When `reinforcement` is enabled, an embedded random forest model and the corresp
   start_time <- Sys.time()
   
   RLTfit <- RLT(trainX, trainY,
-                ntrees = 100, ncores = 10, nmin = 10,
-                split.gen = "random", nsplit = 1,
+                ntrees = 500, ncores = 10, nmin = 10,
+                split.gen = "random", nsplit = 2,
                 resample.prob = 0.8, resample.replace = FALSE,
                 reinforcement = TRUE, importance = "distribute",
                 param.control = list("embed.ntrees" = 50,
-                                     "embed.mtry" = 1/2,
+                                     "embed.mtry" = 2/3,
                                      "embed.nmin" = 5,
-                                     "alpha" = 0.2),
+                                     "alpha" = 0.1),
                 verbose = TRUE)
   
   difftime(Sys.time(), start_time, units = "secs")

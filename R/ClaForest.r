@@ -41,7 +41,7 @@ ClaForest <- function(x, y,
     # existing splitting rule for regular regression
     all.split.rule = c("gini")
     
-    param$"split.rule" <- match(param$"split.rule", all.split.rule)
+    param$"split.rule" <- match(param$"split.rule", all.split.rule, nomatch = 0)
     
     if (param$"split.rule" == 0)
       warning("split.rule is not compatiable with classification, switching to default")
@@ -63,11 +63,8 @@ ClaForest <- function(x, y,
     fit[["nclass"]] = nclass
 
     # the returned prediction starts with 0
-    fit$Prediction = as.factor( c(1:nclass, fit$Prediction+1) )[-(1:fit$parameters$n)]
+    fit$Prediction = as.factor( c(1:nclass, fit$Prediction+1) )[-(1:nclass)]
     levels(fit$Prediction) = ylabels
-    
-    fit$OOBPrediction = as.factor( c(1:nclass, fit$OOBPrediction+1) )[-(1:fit$parameters$n)]
-    levels(fit$OOBPrediction) = ylabels
 
     class(fit) <- c("RLT", "fit", "cla", "uni")
   }else{
