@@ -121,7 +121,7 @@ void Cla_Uni_Record_Node(size_t Node,
   if (useobsweight)
   {
     double allweight = arma::sum(obs_weight(obs_id));
-    vec nodecount(nclass, fill::zeros);
+    rowvec nodecount(nclass, fill::zeros);
     
     // get node prob
     uvec labels = Y(obs_id);
