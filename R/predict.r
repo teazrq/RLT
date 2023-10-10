@@ -74,6 +74,8 @@ predict.RLT<- function(object,
   # check test data
   if (!is.matrix(testx) & !is.data.frame(testx)) stop("testx must be a matrix or a data.frame")
   
+  if (ncol(testx) < object$parameters$p) stop("test data dimension does not match training data") 
+    
   if (is.null(colnames(testx)))
   {
     if (ncol(testx) != object$parameters$p) stop("test data dimension does not match training data, variable names are not supplied...")
@@ -85,7 +87,7 @@ predict.RLT<- function(object,
     testx = testx[, varmatch]
   }
 
-  testx <- data.matrix(testx)  
+  testx <- data.matrix(testx)
 
   if (var.est & !object$parameters$var.ready)
     stop("The original forest is not fitted with `var.ready` Please check the conditions and build another forest.")
