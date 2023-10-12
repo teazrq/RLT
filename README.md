@@ -18,11 +18,7 @@ You can install this version using
     devtools::install_github("teazrq/RLT")
 ```
 
-If you want to use the embedded model feature, you need to install the released version (currently ver. 3.2.5) of `RLT` from [CRAN](https://CRAN.R-project.org/package=RLT) with:
-
-``` r
-install.packages("RLT")
-```
+If you use MacOS, then you need to install a few libraries to be able to compile the package. Please follow [this guild](https://teazrq.github.io/random-forests-tutorial/rlab/basics/packages.html).
 
 ## New features highlight
 
