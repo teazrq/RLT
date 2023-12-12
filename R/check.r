@@ -370,19 +370,23 @@ check_resamplepreset <- function(resample.preset, param, param.control)
   # for variance estimation
   if (param.control$var.ready)
   {
-    # construct the matrix with matched sampling
-    resample.preset = matrix(0, param$n, param$ntrees)
     k = as.integer(param$resample.prob*param$n)
+    resample.preset = gen_ms_obs_track_mat_cpp(param$n, k, param$ntrees)
 
-    for (i in 1:as.integer(param$ntrees/2) )
-    {
-      ab = sample(1:param$n, 2*k)
-      a = ab[1:k]
-      b = ab[-(1:k)]
-      
-      resample.preset[a, i] = 1
-      resample.preset[b, i+ (param$ntrees/2)] = 1
-    }
+    # construct the matrix with matched sampling
+    # resample.preset = matrix(0, param$n, param$ntrees)
+    # k = as.integer(param$resample.prob*param$n)
+    # 
+    # for (i in 1:as.integer(param$ntrees/2) )
+    # {
+    #   ab = sample(1:param$n, 2*k)
+    #   a = ab[1:k]
+    #   b = ab[-(1:k)]
+    #   
+    #   resample.preset[a, i] = 1
+    #   resample.preset[b, i+ (param$ntrees/2)] = 1
+    # }
+    
   }else{
     
     # check resample.preset
