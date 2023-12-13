@@ -37,6 +37,12 @@ testcpp <- function(n) {
     invisible(.Call('_RLT_testcpp', PACKAGE = 'RLT', n))
 }
 
+#' @useDynLib RLT
+#' @importFrom Rcpp sourceCpp
+gen_ms_obs_track_mat_cpp <- function(ntrain, k, ntrees, seed) {
+    .Call('_RLT_gen_ms_obs_track_mat_cpp', PACKAGE = 'RLT', ntrain, k, ntrees, seed)
+}
+
 Kernel_Self <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, verbose) {
     .Call('_RLT_Kernel_Self', PACKAGE = 'RLT', SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, verbose)
 }

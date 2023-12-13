@@ -371,7 +371,7 @@ check_resamplepreset <- function(resample.preset, param, param.control)
   if (param.control$var.ready)
   {
     k = as.integer(param$resample.prob*param$n)
-    resample.preset = gen_ms_obs_track_mat_cpp(param$n, k, param$ntrees)
+    resample.preset = gen_ms_obs_track_mat_cpp(param$n, k, param$ntrees, param$seed + 1)
 
     # construct the matrix with matched sampling
     # resample.preset = matrix(0, param$n, param$ntrees)

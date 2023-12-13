@@ -73,16 +73,27 @@ void testcpp(size_t n)
 //' @useDynLib RLT
 //' @importFrom Rcpp sourceCpp
 // [[Rcpp::export]]
-arma::umat gen_ms_obs_track_mat_cpp(int ntrain, int sample_per_forest, int ntrees) {
+arma::imat gen_ms_obs_track_mat_cpp(size_t ntrain, size_t k, size_t ntrees, size_t seed) {
+  // matched sampling for 2 forests
+  // each forest has int(nreees/2) trees each tree has k = sample_per_forest samples
+  // output: a matrix of size ntrain x ntrees 
+  // (the left half is ObsTrack for forest 1, the right half is ObsTrack for forest 2)
+  //         each matrix is an observational track matrix, ()i,j value implies 
+  //         the number of times i-th sample is used in j-th tree.
   
-  int ntrees_half = ntrees / 2;
-  int k = sample_per_forest;
-  arma::umat index_mat(ntrain, ntrees, arma::fill::zeros);
+  size_t ntrees_half = ntrees / 2;
+  arma::imat index_mat(ntrain, ntrees, arma::fill::zeros);
+  Rand rng(seed);
   
-  for (int i = 0; i < ntrees_half; ++i) {
-    arma::uvec rand_idx = arma::randperm(ntrain, 2 * k); // Random permutation of indices
-    index_mat.submat(rand_idx.subvec(0, k - 1), arma::uvec(1, 1).fill(i)).fill(1);
-    index_mat.submat(rand_idx.subvec(k, 2 * k - 1), arma::uvec(1, 1).fill(i + ntrees_half)).fill(1);
+  for (size_t i = 0; i < ntrees_half; i++) {
+
+    arma::uvec rand_idx = rng.sample(0, ntrain-1, 2 * k, 0);
+    
+    uvec left = { (uword) i };
+    uvec right = { (uword) (i + ntrees_half) };
+    
+    index_mat.submat( rand_idx.head(k), left ).fill(1);
+    index_mat.submat( rand_idx.tail(k), right ).fill(1);
   }
   
   return index_mat;

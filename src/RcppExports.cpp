@@ -138,6 +138,20 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// gen_ms_obs_track_mat_cpp
+arma::imat gen_ms_obs_track_mat_cpp(size_t ntrain, size_t k, size_t ntrees, size_t seed);
+RcppExport SEXP _RLT_gen_ms_obs_track_mat_cpp(SEXP ntrainSEXP, SEXP kSEXP, SEXP ntreesSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< size_t >::type ntrain(ntrainSEXP);
+    Rcpp::traits::input_parameter< size_t >::type k(kSEXP);
+    Rcpp::traits::input_parameter< size_t >::type ntrees(ntreesSEXP);
+    Rcpp::traits::input_parameter< size_t >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(gen_ms_obs_track_mat_cpp(ntrain, k, ntrees, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
 // Kernel_Self
 List Kernel_Self(arma::field<arma::ivec>& SplitVar, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeWeight, arma::mat& X, arma::uvec& Ncat, size_t verbose);
 RcppExport SEXP _RLT_Kernel_Self(SEXP SplitVarSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeWeightSEXP, SEXP XSEXP, SEXP NcatSEXP, SEXP verboseSEXP) {
@@ -412,6 +426,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RLT_ARMA_EMPTY_UMAT", (DL_FUNC) &_RLT_ARMA_EMPTY_UMAT, 0},
     {"_RLT_ARMA_EMPTY_VEC", (DL_FUNC) &_RLT_ARMA_EMPTY_VEC, 0},
     {"_RLT_testcpp", (DL_FUNC) &_RLT_testcpp, 1},
+    {"_RLT_gen_ms_obs_track_mat_cpp", (DL_FUNC) &_RLT_gen_ms_obs_track_mat_cpp, 4},
     {"_RLT_Kernel_Self", (DL_FUNC) &_RLT_Kernel_Self, 8},
     {"_RLT_Kernel_Self_Comb", (DL_FUNC) &_RLT_Kernel_Self_Comb, 9},
     {"_RLT_Kernel_Cross", (DL_FUNC) &_RLT_Kernel_Cross, 9},
