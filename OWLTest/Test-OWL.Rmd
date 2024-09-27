@@ -1,0 +1,68 @@
+---
+title: "RLT Package Testing Weighted Classification"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true 
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width = 9, fig.height = 7,
+                        out.width = "75%", fig.align = "center")
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse = TRUE)
+```
+
+## Install and Load Package
+
+Install and load the GitHub version of the RLT package. Do not use the CRAN version. 
+
+```{r}
+  # install.packages("devtools")
+  # devtools::install_github("teazrq/RLT")
+  library(RLT)
+```
+
+```{r}
+  Sepsis <- read.csv("Sepsis.csv", row.names = 1)
+  head(Sepsis)
+  
+  # record the true best treatment
+  Best = Sepsis$BEST
+  
+  # remove the "Best" column since we shouldn't know
+  Sepsis = Sepsis[, -3]
+  
+  # treatment labels
+  table(Sepsis$THERAPY)
+```
+
+```{r}
+  # fit RLT
+  library(RLT)
+
+  
+  owl.fit = RLT(x = Sepsis[, -c(1, 2)], y = as.factor(Sepsis$THERAPY), model = "classification", 
+                nmin = 5, mtry = 10, ntrees = 100, obs.w = Sepsis$HEALTH - min(Sepsis$HEALTH) + 0.2)
+  
+  # out of bag prediction of best recommended treatment
+  best_trt = owl.fit$Prediction
+  
+  plot(Sepsis$AGE, Sepsis$PRAPACHE, col = ifelse(best_trt == 1, "red", "blue"), pch = 19)
+
+```
+
+
+
+

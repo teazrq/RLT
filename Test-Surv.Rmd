@@ -320,7 +320,7 @@ Red line is the truth, black-solid is estimated survival, black-dotted is +/- 1.
 
   # original Monte Carlo approach without smoothing
   start_time <- Sys.time()
-  SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "naive-mc")
+  SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "knnsmooth-mc")
   difftime(Sys.time(), start_time, units = "secs")
 
   par(mfrow = c(ceiling(ntest/3), 3))

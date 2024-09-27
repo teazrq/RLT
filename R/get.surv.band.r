@@ -37,7 +37,7 @@ get.surv.band <- function(x,
   if (is.null(x$Cov))
     stop("Not an RLT object fitted with var.ready")
   
-  all.approach = c("naive-mc", "smoothed-mc", "smoothed-lr")
+  all.approach = c("naive-mc", "knnsmooth-mc", "smoothed-mc", "smoothed-lr")
   
   if(match(approach, all.approach, nomatch = 0) == 0)
     stop("approach not avaliable")
@@ -71,6 +71,33 @@ get.surv.band <- function(x,
       marsd = sqrt(diag(x$Cov[,,k]))
       # marsd = marsd / sqrt(sum(marsd^2))
       bandk = mc_band(marsd, x$Cov[,,k], alpha, nsim)
+      approxerror = NULL
+    }
+
+    # knn smoothed approach 
+    if (approach == "knnsmooth-mc")
+    {
+      newmat = x$Cov[,,k]
+      nn = max(1, sqrt(nrow(newmat))/2)
+
+      smoothmat = matrix(NA, nrow(newmat), ncol(newmat))
+      
+      for (i in 1:nrow(newmat))
+      {
+        for (j in 1:ncol(newmat))
+        {
+          smoothmat[i, j] = mean(newmat[max(1, i - nn):min(nrow(newmat), i + nn), 
+                                        max(1, j - nn):min(ncol(newmat), j + nn)])
+        }
+      }
+      
+      # correct negative eigen values if any
+      eig <- eigen(smoothmat)
+      eig$values <- pmax(eig$values, 1e-6)
+      cov_pd <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
+
+      marsd = sqrt(diag(cov_pd))
+      bandk = mc_band(marsd, cov_pd, alpha, nsim)
       approxerror = NULL
     }
     

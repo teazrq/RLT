@@ -1,0 +1,44 @@
+---
+title: "RLT Package Debug and Issues"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true 
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width = 9, fig.height = 7,
+                        out.width = "75%", fig.align = "center")
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse = TRUE)
+```
+
+## One-dimensional errors
+
+```{r}
+  library(RLT)
+  # Generate synthetic data
+  set.seed(1)
+  x <- runif(40, 0, 2*pi)
+  y <- 2*sin(x) + rnorm(length(x))
+  testx <- seq(0, 2*pi, 0.01)
+  x0 = 2
+  
+  # fit single tree model
+  library(RLT)
+  tree.fit <- RLT(x = data.frame(x), y = y, model = "regression", 
+                  ntrees = 1, nmin = 5, mtry = 1, 
+                  resample.prob = 1, resample.replace = FALSE, # use all data
+                  split.gen = "best", verbose = TRUE)
+```

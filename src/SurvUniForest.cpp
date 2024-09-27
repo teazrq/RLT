@@ -244,9 +244,10 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
         mat eigvec;
         eig_sym(eigval, eigvec, Vh - Vs);
 
-        // correct negative eigen values
-        eigval = abs(eigval) % (eigval > 0);
-        
+        // correct negative eigen values to at least 1e-6
+        for (size_t j = 0; j < eigval.n_elem; j++)
+          eigval(j) = std::max(eigval(j), 1e-6);
+
         // reconstruct corrected covariance matrix
         Cov.slice(i) = (eigvec.each_row() % eigval.t()) * eigvec.t();
         Cov.slice(i) = (Cov.slice(i) + Cov.slice(i).t())/2;
