@@ -78,7 +78,7 @@ get.surv.band <- function(x,
     if (approach == "knnsmooth-mc")
     {
       newmat = x$Cov[,,k]
-      nn = max(1, sqrt(nrow(newmat))/2)
+      nn = max(1, sqrt(nrow(newmat)))
 
       smoothmat = matrix(NA, nrow(newmat), ncol(newmat))
       
@@ -93,7 +93,7 @@ get.surv.band <- function(x,
       
       # correct negative eigen values if any
       eig <- eigen(smoothmat)
-      eig$values <- pmax(eig$values, 1e-6)
+      eig$values <- pmax(eig$values, 1/nrow(newmat))
       cov_pd <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
 
       marsd = sqrt(diag(cov_pd))
