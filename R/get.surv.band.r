@@ -27,7 +27,7 @@ get.surv.band <- function(x,
                           i = 0, 
                           alpha = 0.05, 
                           approach = "naive-mc",
-                          nsim = 1000, 
+                          nsim = 5000, 
                           r = 3,
                           ...)
 {
@@ -37,15 +37,15 @@ get.surv.band <- function(x,
   if (is.null(x$Cov))
     stop("Not an RLT object fitted with var.ready")
   
-  all.approach = c("naive-mc", "knnsmooth-mc", "smoothed-mc", "smoothed-lr")
+  all.approach = c("naive-mc", "eigen-th-mc", "diag-smooth-mc", "matrix-smooth-mc", "smoothed-mc", "smoothed-lr")
   
   if(match(approach, all.approach, nomatch = 0) == 0)
     stop("approach not avaliable")
   
-  
   N = dim(x$Cov)[3]
   p = dim(x$Cov)[2]
-    
+  nt = nrow(x$Cov[,,1])
+  
   # what subject to estimate
   
   if (i == 0)
@@ -69,16 +69,49 @@ get.surv.band <- function(x,
     if (approach == "naive-mc")
     {
       marsd = sqrt(diag(x$Cov[,,k]))
-      # marsd = marsd / sqrt(sum(marsd^2))
       bandk = mc_band(marsd, x$Cov[,,k], alpha, nsim)
       approxerror = NULL
     }
 
-    # knn smoothed approach 
-    if (approach == "knnsmooth-mc")
+    # naive approach with minimum eigen fix
+    if (approach == "eigen-th-mc")
     {
+      # get the covariance matrix
       newmat = x$Cov[,,k]
-      nn = max(1, sqrt(nrow(newmat)))
+      
+      # correct negative eigen values if any
+      eig <- eigen(newmat)
+      eig$values <- pmax(eig$values, 1e-6)
+      cov_pd <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
+      
+      # get confidence band
+      marsd = sqrt(diag(cov_pd))
+      bandk = mc_band(marsd, cov_pd, alpha, nsim)
+      approxerror = NULL
+    }    
+    
+    # diag smoothed approach on diagonal
+    if (approach == "diag-smooth-mc")
+    {
+      # get the covariance matrix
+      newmat = x$Cov[,,k]
+
+      # get smoothed sd
+      marsd = sqrt(diag(newmat))
+      marsd.smooth <- ksmooth(1:nt, marsd, kernel = "normal",
+                              n.points = nt, bandwidth = nt^(1/2))
+
+      # get confidence band
+      bandk = mc_band(marsd.smooth$y, newmat, alpha, nsim)
+      approxerror = NULL
+    }
+    
+    # knn smoothed approach with
+    if (approach == "matrix-smooth-mc")
+    {
+      # get the covariance matrix
+      newmat = x$Cov[,,k]
+      nn = sqrt(nt)
 
       smoothmat = matrix(NA, nrow(newmat), ncol(newmat))
       
@@ -93,7 +126,7 @@ get.surv.band <- function(x,
       
       # correct negative eigen values if any
       eig <- eigen(smoothmat)
-      eig$values <- pmax(eig$values, 1/nrow(newmat))
+      eig$values <- pmax(eig$values, 1e-6)
       cov_pd <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
 
       marsd = sqrt(diag(cov_pd))
