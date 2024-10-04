@@ -292,7 +292,7 @@ arma::mat mc_band(const arma::vec& mar_sd,
   // all cut-offs
   arma::vec cutoffs = max(abs(X),0).t();
   
-  arma::vec q = quantile(cutoffs, 1 - alpha/2);
+  arma::vec q = quantile(cutoffs, 1 - alpha);
   
   // RLTcout<< " quantile estimated:" << q << std::endl;
   return(mar_sd * q.t());
