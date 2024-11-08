@@ -19,6 +19,8 @@
 #'                  }
 #' @param r         maximum number of ranks used in the \code{smoothed-lr} approximation. Usually 5 is 
 #'                  enough for approximating the covariance matrix due to smoothness. 
+#' @param bw        bandwidth in the \code{ksmooth()} function for the kernel smoothing of standard deviation. 
+#'                  Default is \eqn{n^{1/2}}, where \eqn{n} is the number of the time points.
 #' @param nsim      number of simulations for estimating the Monte Carlo critical value. 
 #'                  Set this to be a large number. Default is 1000.          
 #' @param ... ...
@@ -29,6 +31,7 @@ get.surv.band <- function(x,
                           approach = "naive-mc",
                           nsim = 5000, 
                           r = 3,
+                          bw = 1/2, 
                           ...)
 {
   if (any(class(x)[1:3] != c("RLT", "pred", "surv")))
@@ -99,7 +102,7 @@ get.surv.band <- function(x,
       # get smoothed sd
       marsd = sqrt(diag(newmat))
       marsd.smooth <- ksmooth(1:nt, marsd, kernel = "normal",
-                              n.points = nt, bandwidth = nt^(1/2))
+                              n.points = nt, bandwidth = nt^bw)
 
       # get confidence band
       bandk = mc_band(marsd.smooth$y, newmat, alpha, nsim)
