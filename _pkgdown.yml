@@ -1,4 +1,64 @@
-url: https://teazrq.github.io/RLT/
+# RLT package pkgdown site configuration file
+# Version 1.1 - Adapted for existing tutorial files
+
+# 1. Basic site information
+url: https://teazrq.github.io/RLT
+
+# 2. Website appearance theme (using bslib)
 template:
   bootstrap: 5
+  bslib:
+    preset: cosmo # A clean and professional theme
 
+# 3. Top navigation bar of the site
+navbar:
+  type: default
+  left:
+    - text: "Get Started"
+      href: articles/Test-RLT.html # Link to your main tutorial
+    - text: "Reference"
+      href: reference/index.html
+    - text: "Tutorials"
+      menu:
+        - text: "Classification Example"
+          href: articles/Test-Cla.html
+        - text: "Regression Example"
+          href: articles/Test-Reg.html
+        - text: "RL Classification Example"
+          href: articles/Test-RLT-Cla.html
+        - text: "RL Regression Example"
+          href: articles/Test-RLT-Reg.html
+        - text: "Survival Analysis Example"
+          href: articles/Test-Surv.html
+        - text: "Survival Band Example"
+          href: articles/Test-Surv-Band.html
+    - text: "Developing"
+      href: DEVELOPING.html
+    - text: "Changelog"
+      href: news/index.html
+  right:
+    - icon: fa-github fa-lg
+      href: https://github.com/teazrq/RLT
+      aria-label: GitHub # Fix for accessibility warning
+
+# 4. Function reference grouping and ordering
+reference:
+  - title: "Core Modeling Functions"
+    desc: "Main functions used for building, predicting, and presenting RLT models. These are the most commonly used in the workflow."
+    contents:
+      - RLT
+      - predict.RLT
+      - print.RLT
+
+  - title: "Model Analysis & Utilities"
+    desc: "Auxiliary functions for evaluating, interpreting, and analyzing fitted models."
+    contents:
+      - forest.kernel
+      - get.one.tree
+      - get.surv.band
+      - cindex
+
+  - title: "Other Functions"
+    desc: "Other auxiliary or testing functions."
+    contents:
+      - mytest
