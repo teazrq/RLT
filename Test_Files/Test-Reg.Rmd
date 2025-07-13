@@ -1,0 +1,372 @@
+---
+title: "RLT Package Testing Regression Functions and Features"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true 
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width = 9, fig.height = 7,
+                        out.width = "75%", fig.align = "center")
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse = TRUE)
+```
+
+## Install and Load Package
+
+Install and load the GitHub version of the RLT package. Do not use the CRAN version. 
+
+```{r}
+  # install.packages("devtools")
+  # devtools::install_github("teazrq/RLT")
+  library(RLT)
+```
+
+Load other packages used in this guide.
+
+```{r message=FALSE}
+  library(randomForest)
+  library(randomForestSRC)
+  library(ranger)
+```
+
+## Benchmark Against Existing Packages
+
+We generate a dataset with 1000 observations and 400 variables, with 200 continuous variables and 200 categorical ones with three categories.
+
+```{r}
+  library(parallel)
+  # Set seed for reproducibility
+  set.seed(1)
+
+  # Define data size
+  trainn <- 800
+  testn <- 1000
+  n <- trainn + testn
+  p <- 30
+
+  # Generate continuous variables (X1) and categorical variables (X2)
+  X1 <- matrix(rnorm(n * p / 2), n, p / 2)
+  X2 <- matrix(as.integer(runif(n * p / 2) * 3), n, p / 2)
+
+  # Combine continuous and categorical variables into a data frame (X)
+  X <- data.frame(X1, X2)
+
+  # Convert the second half of the columns in X to factors
+  X[, (p / 2 + 1):p] <- lapply(X[, (p / 2 + 1):p], as.factor)
+
+  # Generate outcomes (y)
+  y <- 1 + rowSums(X[, 2:6]) + 2 * (X[, p / 2 + 1] %in% c(1, 3)) + rnorm(n)
+
+  # Set tuning parameters
+  ntrees <- 1000
+  ncores <- detectCores() - 1
+  nmin <- 30
+  mtry <- p / 2
+  samplereplace <- TRUE
+  sampleprob <- 0.80
+  rule <- "best"
+  nsplit <- ifelse(rule == "best", 0, 3)
+  importance <- TRUE
+
+  # Split data into training and testing sets
+  trainX <- X[1:trainn, ]
+  trainY <- y[1:trainn]
+  testX <- X[(trainn + 1):(trainn + testn), ]
+  testY <- y[(trainn + 1):(trainn + testn)]
+```
+
+
+```{r class.source = NULL}
+  # recording results
+  metric = data.frame(matrix(NA, 4, 6))
+  rownames(metric) = c("RLT", "randomForestSRC", "randomForest", "ranger")
+  colnames(metric) = c("fit.time", "pred.time", "oob.error", "pred.error",
+                       "obj.size", "tree.size")
+  
+  # using RLT package 
+  start_time <- Sys.time()
+  RLTfit <- RLT(trainX, trainY, model = "regression", 
+                ntrees = ntrees, mtry = mtry, nmin = nmin, 
+                resample.prob = sampleprob, split.gen = rule, 
+                resample.replace = samplereplace, 
+                nsplit = nsplit, importance = importance, 
+                param.control = list("alpha" = 0),
+                ncores = ncores, verbose = TRUE)
+  metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  RLTPred <- predict(RLTfit, testX, ncores = ncores)
+  metric[1, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[1, 3] = mean((RLTfit$Prediction - trainY)^2)
+  metric[1, 4] = mean((RLTPred$Prediction - testY)^2)
+  metric[1, 5] = object.size(RLTfit)
+  metric[1, 6] = mean(unlist(lapply(RLTfit$FittedForest$SplitVar, length)))
+  
+  # use randomForestSRC
+  options(rf.cores = ncores)
+  start_time <- Sys.time()
+  rsffit <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 
+                  ntree = ntrees, nodesize = nmin/2, mtry = mtry, 
+                  samptype = ifelse(samplereplace == TRUE, "swor", "swr"),
+                  nsplit = nsplit, sampsize = trainn*sampleprob, 
+                  importance = ifelse(importance, "permute", "none"))
+  metric[2, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  rsfpred = predict(rsffit, data.frame(testX))
+  metric[2, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[2, 3] = mean((rsffit$predicted.oob - trainY)^2)
+  metric[2, 4] = mean((rsfpred$predicted - testY)^2)
+  metric[2, 5] = object.size(rsffit)
+  metric[2, 6] = rsffit$forest$totalNodeCount / rsffit$ntree
+  
+  # use randomForest
+  start_time <- Sys.time()
+  rf.fit <- randomForest(trainX, trainY, ntree = ntrees, 
+                         mtry = mtry, nodesize = nmin, 
+                         replace = samplereplace,
+                         sampsize = trainn*sampleprob, 
+                         importance = importance)
+  metric[3, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  rf.pred <- predict(rf.fit, testX)
+  metric[3, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[3, 3] = mean((rf.fit$predicted - trainY)^2)
+  metric[3, 4] = mean((rf.pred - testY)^2)
+  metric[3, 5] = object.size(rf.fit)
+  metric[3, 6] = mean(colSums(rf.fit$forest$nodestatus != 0))
+  
+  
+  # use ranger  
+  start_time <- Sys.time()
+  rangerfit <- ranger(trainY ~ ., data = data.frame(trainX), 
+                      num.trees = ntrees, min.node.size = nmin, 
+                      mtry = mtry, num.threads = ncores, 
+                      replace = samplereplace,
+                      sample.fraction = sampleprob, 
+                      importance = "permutation",
+                      respect.unordered.factors = "partition")
+  metric[4, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  rangerpred = predict(rangerfit, data.frame(testX))
+  metric[4, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[4, 3] = mean((rangerfit$predictions - trainY)^2)
+  metric[4, 4] = mean((rangerpred$predictions - testY)^2)
+  metric[4, 5] = object.size(rangerfit)
+  metric[4, 6] = mean(unlist(lapply(rangerfit$forest$split.varIDs, length)))
+  
+  # performance summary
+  metric
+```
+
+
+
+## Variable Importance
+
+We first plot the variable importance from the permutation version. This usually requires a significant number of out-of-bag samples. 
+
+```{r class.source = NULL, out.width="90%", fig.width=15, fig.height=7}
+  par(mfrow=c(2,2))
+  par(mar = c(1, 2, 2, 2))
+  
+  barplot(as.vector(RLTfit$VarImp), main = "RLT")
+  barplot(as.vector(rsffit$importance), main = "rsf")
+  barplot(rf.fit$importance[, 1], main = "rf")
+  barplot(as.vector(rangerfit$variable.importance), main = "ranger")
+```
+
+We also calculate the variable importance from the distributed child node assignment approach. In this case, we calculate all possible terminal nodes and their probabilities for a subject that ever land in that terminal node. 
+This is to send it down to both two child nodes with weights proportional to the child node sizes. In this case, we can calculate the variable importance for sampling without replacement with just one out-of-bag sample. 
+
+```{r class.source = NULL, out.width="90%", fig.width=21.5, fig.height=3.5}
+  # using RLT package 
+  RLTfit <- RLT(trainX, trainY, model = "regression", 
+                ntrees = ntrees, mtry = mtry, nmin = nmin, 
+                split.gen = rule, nsplit = nsplit, 
+                resample.prob = (trainn - 1)/trainn, 
+                resample.replace = FALSE, 
+                importance = "distribute", 
+                ncores = ncores, 
+                verbose = TRUE, 
+                param.control = list("resample.track" = TRUE))
+  
+  # use randomForestSRC
+  rsffit <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 
+                  ntree = ntrees, nodesize = nmin/2, mtry = mtry, 
+                  samptype = "swor", nsplit = nsplit, 
+                  sampsize = trainn - 1, 
+                  importance = "random")
+
+  rsffit2 <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 
+                  ntree = ntrees, nodesize = nmin/2, mtry = mtry, 
+                  samptype = "swor", nsplit = nsplit, 
+                  sampsize = trainn - 1, 
+                  importance = "anti")
+  par(mfrow=c(1,3))
+  par(mar = c(1, 2, 2, 2))
+  
+  barplot(as.vector(RLTfit$VarImp), main = "RLT distribute")
+  barplot(as.vector(rsffit$importance), main = "rsf random")
+  barplot(as.vector(rsffit2$importance), main = "rsf anti")
+```
+
+## Print a Single Tree
+
+You can use the `get.one.tree()` function to peek into a single tree.  
+
+```{r}
+  get.one.tree(RLTfit, 1)
+```
+
+## Random Forest Kernel
+
+Let's generate a new dataset with 5 continuous variables. The true model depends on just the first two variables. 
+
+```{r class.source = NULL, out.width="90%", fig.width=12, fig.height=12}
+  # generate data
+  n = 1000; p = 5
+  X = matrix(runif(n*p), n, p)
+  y = X[, 1] + X[, 2] + rnorm(n)
+
+  # fit model
+  RLTfit <- RLT(X, y, model = "regression", 
+                ntrees = 50, nmin = 4, mtry = 5,
+                split.gen = "best", resample.prob = 0.8,
+                resample.replace = FALSE,
+                importance = TRUE, param.control = list("resample.track" = TRUE))
+
+  par(mfrow=c(2, 2))
+
+  # target point
+  newX = matrix(c(0.5, 0.3, 0.5, 0.5, 0.5), 
+                1, 5)
+  
+  # get kernel weights defined by the kernel function
+  KernelW = forest.kernel(RLTfit, X1 = newX, X2 = X)$Kernel
+  
+  par(mar = c(2, 2, 2, 2))
+  plot(X[, 1], X[, 2], col = "deepskyblue", pch = 19, cex = 0.5)
+  points(X[, 1], X[, 2], col = "darkorange", cex = 10*sqrt(KernelW/sqrt(sum(KernelW^2))), lwd = 2)
+  points(newX[1], newX[2], col = "black", pch = 4, cex = 4, lwd = 5)
+  legend("bottomright", "Target Point", pch = 4, col = "black", 
+         lwd = 5, lty = NA, cex = 1.5)
+    
+  # check against X3
+  plot(X[, 1], X[, 3], col = "deepskyblue", pch = 19, cex = 0.5)
+  points(X[, 1], X[, 3], col = "darkorange", cex = 10*sqrt(KernelW/sqrt(sum(KernelW^2))), lwd = 2)
+  points(newX[1], newX[3], col = "black", pch = 4, cex = 4, lwd = 5)
+  legend("bottomright", "Target Point", pch = 4, col = "black", 
+         lwd = 5, lty = NA, cex = 1.5)  
+  
+  # get kernel weights in the original forest
+  # this is slightly different since the original samples may or may not appear in each tree
+  KernelW = forest.kernel(RLTfit, X1 = newX, X2 = X, vs.train = TRUE)$Kernel
+  
+  par(mar = c(2, 2, 2, 2))
+  plot(X[, 1], X[, 2], col = "deepskyblue", pch = 19, cex = 0.5)
+  points(X[, 1], X[, 2], col = "darkorange", cex = 10*sqrt(KernelW/sqrt(sum(KernelW^2))), lwd = 2)
+  points(newX[1], newX[2], col = "black", pch = 4, cex = 4, lwd = 5)
+  legend("bottomright", "Target Point", pch = 4, col = "black", 
+         lwd = 5, lty = NA, cex = 1.5)
+    
+  # check against X3
+  plot(X[, 1], X[, 3], col = "deepskyblue", pch = 19, cex = 0.5)
+  points(X[, 1], X[, 3], col = "darkorange", cex = 10*sqrt(KernelW/sqrt(sum(KernelW^2))), lwd = 2)
+  points(newX[1], newX[3], col = "black", pch = 4, cex = 4, lwd = 5)
+  legend("bottomright", "Target Point", pch = 4, col = "black", 
+         lwd = 5, lty = NA, cex = 1.5)
+
+```
+
+## Variance Estimation for Regression
+
+We generate a set of data with 20 variables, and the true model depends only on the first one. We further estimate the variance of the estimator and check if the confidence interval covers the truth. Note that since this model is very simple, the truth is almost the same as the expected value of a random forest prediction. However, in general case, a random forest could be biased and the coverage rate of truth may suffer. 
+
+```{r class.source = NULL, out.width="60%", fig.width=7, fig.height=7}
+  trainn = 1000
+  testn = 100
+  n = trainn + testn
+  p = 20
+  X1 = matrix(rnorm(n*p/2), n, p/2)
+  X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
+  
+  X = data.frame(X1, X2)
+  for (j in (p/2 + 1):p) X[,j] = as.factor(X[,j])
+  y = 1 + X[, 1] + rnorm(n)
+  
+  trainX = X[1:trainn, ]
+  trainY = y[1:trainn]
+  
+  testX = X[1:testn + trainn, ]
+  testY = y[1:testn + trainn]
+  
+  xorder = order(testX[, 1])
+  testX = testX[xorder, ]
+  testY = testY[xorder]
+
+  ## Variance Estimation Example
+  
+  RLTfit <- RLT(trainX, trainY, model = "regression", 
+                ntrees = 20000, mtry = p, nmin = 40, 
+                split.gen = "best", resample.prob = 0.5,
+                param.control = list("var.ready" = TRUE, 
+                                     "resample.track" = TRUE),
+                verbose = TRUE)
+  
+  RLTPred <- predict(RLTfit, testX, var.est = TRUE, keep.all = TRUE)
+
+  # coverage on the testing data
+  upper = RLTPred$Prediction + 1.96*sqrt(RLTPred$Variance)
+  lower = RLTPred$Prediction - 1.96*sqrt(RLTPred$Variance)
+  cover = (1 + testX$X1 > lower) & (1 + testX$X1 < upper)
+  
+  plot(1 + testX$X1, RLTPred$Prediction, pch = 19, 
+       col = ifelse(is.na(cover), "red", ifelse(cover, "green", "black")),
+       xlab = "Truth", ylab = "Predicted", 
+       xlim = c(min(y)+1, max(y)-1), ylim = c(min(y)+1, max(y)-1))
+  
+  abline(0, 1, col = "darkorange", lwd = 2)
+  
+  for (i in 1:testn)
+    segments(1+testX$X1[i], lower[i], 1+testX$X1[i], upper[i], 
+             col = ifelse(is.na(cover[i]), "red", ifelse(cover[i], "green", "black")))
+  
+  legend("topleft", c("covered", "not covered"), col = c("green", "black"), 
+         lty = 1, pch = 19, ce = 2)
+```
+
+
+## Setting random seed
+
+```{r}
+  ## Fitting a forest
+  RLTfit1 <- RLT(trainX, trainY, model = "regression", 
+                 ntrees = 100, importance = TRUE, nmin = 1)
+
+  RLTfit2 <- RLT(trainX, trainY, model = "regression", 
+                 ntrees = 100, importance = TRUE, nmin = 1,
+                 seed = RLTfit1$parameters$seed)
+  
+  # check if importance are identical
+  all(RLTfit1$VarImp == RLTfit2$VarImp)
+  
+  # prediction
+  RLTPred1 <- predict(RLTfit1, testX, keep.all = TRUE)
+  RLTPred2 <- predict(RLTfit2, testX, keep.all = TRUE)
+
+  # check predictions are identical
+  all(RLTPred1$Prediction == RLTPred2$Prediction)
+```
+
+

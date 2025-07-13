@@ -15,23 +15,29 @@ navbar:
   type: default
   left:
     - text: "Get Started"
-      href: articles/Test-RLT.html # Link to your main tutorial
+      href: articles/Test-RLT.html 
     - text: "Reference"
       href: reference/index.html
     - text: "Tutorials"
       menu:
-        - text: "Classification Example"
-          href: articles/Test-Cla.html
-        - text: "Regression Example"
+        - text: "Regression"
           href: articles/Test-Reg.html
-        - text: "RL Classification Example"
-          href: articles/Test-RLT-Cla.html
-        - text: "RL Regression Example"
-          href: articles/Test-RLT-Reg.html
-        - text: "Survival Analysis Example"
-          href: articles/Test-Surv.html
-        - text: "Survival Band Example"
-          href: articles/Test-Surv-Band.html
+        - text: "Classification"
+          href: articles/Test-Cla.html
+        - text: "Survival"
+          menu:
+            - text: "Survival Analysis Example"
+              href: articles/Test-Surv.html
+        - text: "Variable Importance"
+          href: articles/Variable-Importance.html
+        - text: "Confidence Interval Estimation"
+          href: articles/Confidence-Interval.html
+        - text: "Reinforcement Learning Splitting Rule"
+          menu:
+            - text: "RL Classification Example"
+              href: articles/Test-RLT-Cla.html
+            - text: "RL Regression Example"
+              href: articles/Test-RLT-Reg.html
     - text: "Developing"
       href: DEVELOPING.html
     - text: "Changelog"

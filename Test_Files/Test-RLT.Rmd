@@ -30,6 +30,7 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
 ```{r}
   # install.packages("devtools")
   # devtools::install_github("teazrq/RLT")
+  #devtools::load_all()
   library(RLT)
 ```
 
@@ -130,8 +131,8 @@ This is a model without fitting embedded random forest to search for the linear 
                 ntrees = 100, ncores = 1, nmin = 50, mtry = 3,
                 split.gen = "random", nsplit = 3, 
                 resample.prob = 0.8, resample.replace = FALSE, 
-                param.control = list("linear.comb" = 3, 
-                                     "split.rule" = "sir"), 
+                split.rule = "sir",
+                param.control = list("linear.comb" = 3), #ZRL
                 importance = TRUE, 
                 verbose = TRUE)
   

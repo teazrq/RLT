@@ -1,0 +1,294 @@
+---
+title: "RLT Package Testing Survival Functions and Features"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true 
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width=9, fig.height=7, out.width = "75%", fig.align = 'center')
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse=TRUE)
+```
+
+## Install and Load Package
+
+Install and load the GitHub version of the RLT package. Do not use the CRAN version. 
+
+```{r}
+  # install.packages("devtools")
+  # devtools::install_github("teazrq/RLT")
+  library(RLT)
+```
+
+Load other packages used in this guide.
+
+```{r message=FALSE}
+  library(RLT)
+  library(randomForest)
+  library(randomForestSRC)
+  library(ranger)
+  library(survival)
+```
+
+## Benchmark Against Existing Packages
+
+We generate a dataset with 300 observations and 200 variables, with 100 continuous variables and 100 categorical ones with three categories. The survival time and censoring time all follow an exponential distribution. 
+
+```{r generate-data}
+  # generate date
+  set.seed(1)
+  trainn = 500
+  testn = 1000
+  n = trainn + testn
+  p = 200
+  X1 = matrix(rnorm(n*p/2), n, p/2)
+  X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
+
+  X = data.frame(X1, X2)
+  xlink <- function(x) exp(x[, 7] + x[, 16] + x[, 25] + x[, p])
+  FT = rexp(n, rate = xlink(X))
+  CT = rexp(n, rate = 0.5)
+  
+  y = pmin(FT, CT)
+  Censor = as.numeric(FT <= CT)
+  mean(Censor)
+  
+  # parameters
+  ntrees = 500
+  ncores = 10
+  nmin = 25
+  mtry = p/3
+  sampleprob = 0.85
+  rule = "random"
+  nsplit = ifelse(rule == "best", 0, 3)
+  importance = TRUE
+  
+  trainX = X[1:trainn, ]
+  trainY = y[1:trainn]
+  trainCensor = Censor[1:trainn]
+  
+  testX = X[1:testn + trainn, ]
+  testY = y[1:testn + trainn]
+  testCensor = Censor[1:testn + trainn]
+  
+  # get true survival function 
+  timepoints = sort(unique(trainY[trainCensor==1]))
+  
+  SurvMat = matrix(NA, testn, length(timepoints))
+  expxlink = xlink(testX) 
+    
+  for (j in 1:length(timepoints))
+  {
+    SurvMat[, j] = 1 - pexp(timepoints[j], rate = expxlink )
+  }
+  
+  # Calculate timepoint indices for ranger (different from RLT)
+  yloc = rep(NA, length(timepoints))
+  for (i in 1:length(timepoints)) yloc[i] = sum( timepoints[i] >= trainY )
+  
+  for (j in (p/2 + 1):p) X[,j] = as.factor(X[,j])
+```
+
+
+```{r speed-comparison, class.source = NULL}
+  # recording results
+  metric = data.frame(matrix(NA, 6, 7))
+  rownames(metric) = c("rlt", "rltsup", "rltcox", "rltcoxpen", "rsf", "ranger")
+  colnames(metric) = c("fit.time", "pred.time", "oob.error", "pred.error", "L1", 
+                       "obj.size", "tree.size")
+  
+  # fit RLT with log-rank split
+  start_time <- Sys.time()
+  
+  RLTfit.logrank <- RLT(trainX, trainY, trainCensor, model = "survival", 
+                        ntrees = ntrees, ncores = ncores, 
+                        nmin = nmin, mtry = mtry, nsplit = nsplit,
+                        split.gen = rule, resample.prob = sampleprob,
+                        importance = importance, 
+                        param.control = list(split.rule = "logrank", "alpha" = 0.2), 
+                        verbose = TRUE, resample.replace=FALSE)
+  metric[1, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  RLTPred <- predict(RLTfit.logrank, testX, ncores = ncores)
+  metric[1, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[1, 3] = RLTfit.logrank$Error
+  metric[1, 4] = 1 - cindex(testY, testCensor, colSums(apply(RLTPred$Hazard, 1, cumsum)))
+  metric[1, 5] = mean(colMeans(abs(RLTPred$Survival - SurvMat)))
+  metric[1, 6] = format(object.size(RLTfit.logrank), units = "MB")
+  metric[1, 7] = mean(unlist(lapply(RLTfit.logrank$FittedForest$SplitVar, length)))
+  
+  # fit RLT with sup-log-rank split  
+  start_time <- Sys.time()
+  RLTfit.suplogrank <- RLT(trainX, trainY, trainCensor, model = "survival", 
+                           ntrees = ntrees, ncores = ncores, 
+                           nmin = nmin, mtry = mtry, nsplit = nsplit,
+                           split.gen = rule, resample.prob = sampleprob,
+                           importance = importance, 
+                           param.control = list(split.rule = "suplogrank", "alpha" = 0), 
+                           verbose = TRUE, resample.replace=FALSE)
+  metric[2, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  RLTPred <- predict(RLTfit.suplogrank, testX, ncores = ncores)
+  metric[2, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[2, 3] = RLTfit.suplogrank$Error
+  metric[2, 4] = 1- cindex(testY, testCensor, colSums(apply(RLTPred$Hazard, 1, cumsum)))
+  metric[2, 5] = mean(colMeans(abs(RLTPred$Survival - SurvMat)))
+  metric[2, 6] = format(object.size(RLTfit.suplogrank), units = "MB")
+  metric[2, 7] = mean(unlist(lapply(RLTfit.suplogrank$FittedForest$SplitVar, length)))
+  
+  # fit RLT with cox-grad split  
+  start_time <- Sys.time()
+  RLTfit.cg <- RLT(trainX, trainY, trainCensor, model = "survival", 
+                   ntrees = ntrees, ncores = ncores, 
+                   nmin = nmin, mtry = mtry, nsplit = nsplit,
+                   split.gen = rule, resample.prob = sampleprob,
+                   importance = importance,
+                   param.control = list(split.rule = "coxgrad", "alpha" = 0), 
+                   verbose = TRUE, resample.replace=FALSE)
+  metric[3, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  RLTPred <- predict(RLTfit.cg, testX, ncores = ncores)
+  metric[3, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[3, 3] = RLTfit.cg$Error
+  metric[3, 4] = 1 - cindex(testY, testCensor, colSums(apply(RLTPred$Hazard, 1, cumsum)))
+  metric[3, 5] = mean(colMeans(abs(RLTPred$Survival - SurvMat)))
+  metric[3, 6] = format(object.size(RLTfit.cg), units = "MB")
+  metric[3, 7] = mean(unlist(lapply(RLTfit.cg$FittedForest$SplitVar, length)))
+  
+  # fit RLT with penalized coxgrad split
+  start_time <- Sys.time()
+  RLTfit.pcg <- RLT(trainX, trainY, trainCensor, model = "survival", 
+                    ntrees = ntrees, nmin = nmin, mtry = mtry, nsplit = nsplit,
+                    split.gen = rule, resample.prob = sampleprob, importance = importance, 
+                    # var.w = ifelse(c(1:(p)) %in% c(7, 16, 25, p), 1, 0.5),
+                    var.w = pmax(max(0, mean(RLTfit.logrank$VarImp)), RLTfit.logrank$VarImp),
+                    param.control = list(split.rule = "coxgrad", "alpha" = 0), 
+                    verbose = TRUE, ncores = ncores, resample.replace=FALSE)
+  metric[4, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  RLTPredp <- predict(RLTfit.pcg, testX, ncores = ncores)
+  metric[4, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[4, 3] = RLTfit.pcg$Error
+  metric[4, 4] = 1 - cindex(testY, testCensor, colSums(apply(RLTPredp$Hazard, 1, cumsum)))
+  metric[4, 5] = mean(colMeans(abs(RLTPredp$Survival - SurvMat)))
+  metric[4, 6] = format(object.size(RLTfit.pcg), units = "MB")
+  metric[4, 7] = mean(unlist(lapply(RLTfit.pcg$FittedForest$SplitVar, length)))
+  
+  # fit rsf
+  options(rf.cores = ncores)
+  start_time <- Sys.time()
+  rsffit <- rfsrc(Surv(trainY, trainCensor) ~ ., data = data.frame(trainX, trainY, trainCensor),
+                  ntree = ntrees, nodesize = nmin, mtry = mtry,
+                  nsplit = nsplit, sampsize = trainn*sampleprob, 
+                  importance = ifelse(importance==TRUE,"random", "none"), samptype = "swor",
+                  block.size = 1, ntime = NULL)
+  metric[5, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  rsfpred = predict(rsffit, data.frame(testX))
+  metric[5, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[5, 3] = tail(rsffit$err.rate, 1)
+  metric[5, 4] = 1 - cindex(testY, testCensor, rowSums(rsfpred$chf))
+  metric[5, 5] = mean(colMeans(abs(rsfpred$survival - SurvMat)))
+  metric[5, 6] = format(object.size(rsffit), units = "MB")
+  metric[5, 7] = rsffit$forest$totalNodeCount / rsffit$forest$ntree
+  
+  # fit ranger
+  start_time <- Sys.time()
+  rangerfit <- ranger(Surv(trainY, trainCensor) ~ ., data = data.frame(trainX, trainY, trainCensor), 
+                      num.trees = ntrees, min.node.size = nmin, mtry = mtry, 
+                      splitrule = "logrank", num.threads = ncores, 
+                      sample.fraction = sampleprob, importance = "permutation")
+  metric[6, 1] = difftime(Sys.time(), start_time, units = "secs")
+  start_time <- Sys.time()
+  rangerpred = predict(rangerfit, data.frame(testX))
+  metric[6, 2] = difftime(Sys.time(), start_time, units = "secs")
+  metric[6, 3] = rangerfit$prediction.error
+  metric[6, 4] = 1 - cindex(testY, testCensor, rowSums(rangerpred$chf))
+  # For ranger, calculate L1 error using available timepoints
+  # Use the first min(ncol(rangerpred$survival), ncol(SurvMat)) columns
+  n_cols = min(ncol(rangerpred$survival), ncol(SurvMat))
+  metric[6, 5] = mean(colMeans(abs(rangerpred$survival[, 1:n_cols] - SurvMat[, 1:n_cols])))
+  metric[6, 6] = format(object.size(rangerfit), units = "MB")
+  metric[6, 7] = mean(unlist(lapply(rangerfit$forest$split.varIDs, length)))
+  
+  metric
+```
+
+## Variable Importance Check
+
+```{r var-imp, class.source = NULL, out.width="90%", fig.width=15, fig.height=7}
+  par(mfrow=c(3,2))
+  par(mar = c(1, 2, 2, 2))
+  
+  barplot(as.vector(RLTfit.logrank$VarImp), main = "RLT logrank")
+  barplot(as.vector(RLTfit.suplogrank$VarImp), main = "RLT suplogrank")
+  barplot(as.vector(RLTfit.cg$VarImp), main = "RLT coxgrad")
+  barplot(as.vector(RLTfit.pcg$VarImp), main = "RLT penalized coxgrad")
+  barplot(as.vector(rsffit$importance), main = "rsf")
+  barplot(as.vector(rangerfit$variable.importance), main = "ranger")
+```
+
+## Print a Single Tree
+
+You can use the `get.one.tree()` function to peek into a single tree.  
+
+```{r print-tree}
+  # print one tree
+  tree_num = 1
+  get.one.tree(RLTfit.logrank, tree_num)
+
+  # to get the estimated hazard function of a terminal node
+  terminal_nodes = RLTfit.logrank$FittedForest$SplitVar[[tree_num]] == -1
+  haz = RLTfit.logrank$FittedForest$NodeHaz[[tree_num]][[which(terminal_nodes)[1]]]
+  
+  # to get the estimated survival function of a terminal node
+  plot(c(0, RLTfit.logrank$timepoints),
+       exp(-cumsum(haz)),
+       xlab = "time", ylab = "survival", type = "l", 
+       main = paste("First terminal node of Tree", tree_num))
+```
+
+## Random Forest Kernel
+
+```{r kernel}
+  KernelW = forest.kernel(RLTfit.logrank, X1 = testX[1, ], X2 = trainX)$Kernel
+```
+
+## Setting random seed
+
+```{r}
+  ## Fitting a forest
+  RLTfit1 <- RLT(trainX, trainY, trainCensor, model = "survival", 
+                 ntrees = 100, importance = TRUE, nmin = 1)
+
+  RLTfit2 <- RLT(trainX, trainY, trainCensor, model = "survival", 
+                 ntrees = 100, importance = TRUE, nmin = 1,
+                 seed = RLTfit1$parameters$seed)
+  
+  # check if importance are identical
+  all(RLTfit1$VarImp == RLTfit2$VarImp)
+  
+  # prediction
+  RLTPred1 <- predict(RLTfit1, testX, keep.all = TRUE)
+  RLTPred2 <- predict(RLTfit2, testX, keep.all = TRUE)
+
+  # check predictions are identical
+  all(RLTPred1$Prediction == RLTPred2$Prediction)
+```
+
+## Categorical Variables 
+
+This section demonstrates how RLT handles categorical variables in survival analysis.

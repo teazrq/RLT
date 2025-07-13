@@ -170,54 +170,9 @@ We generate a dataset with 1000 observations and 400 variables, with 200 continu
   metric
 ```
 
-## Variable Importance
 
-We first plot the variable importance from the permutation version. This usually requires a significant number of out-of-bag samples. 
 
-```{r class.source = NULL, out.width="90%", fig.width=15, fig.height=7}
-  par(mfrow=c(2,2))
-  par(mar = c(1, 2, 2, 2))
-  
-  barplot(as.vector(RLTfit$VarImp), main = "RLT")
-  barplot(as.vector(rsffit$importance), main = "rsf")
-  barplot(rf.fit$importance[, 1], main = "rf")
-  barplot(as.vector(rangerfit$variable.importance), main = "ranger")
-```
 
-We also calculate the variable importance from the distributed child node assignment approach. In this case, we calculate all possible terminal nodes and their probabilities for a subject that ever land in that terminal node. 
-This is to send it down to both two child nodes with weights proportional to the child node sizes. In this case, we can calculate the variable importance for sampling without replacement with just one out-of-bag sample. 
-
-```{r class.source = NULL, out.width="90%", fig.width=21.5, fig.height=3.5}
-  # using RLT package 
-  RLTfit <- RLT(trainX, trainY, model = "regression", 
-                ntrees = ntrees, mtry = mtry, nmin = nmin, 
-                split.gen = rule, nsplit = nsplit, 
-                resample.prob = (trainn - 1)/trainn, 
-                resample.replace = FALSE, 
-                importance = "distribute", 
-                ncores = ncores, 
-                verbose = TRUE, 
-                param.control = list("resample.track" = TRUE))
-  
-  # use randomForestSRC
-  rsffit <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 
-                  ntree = ntrees, nodesize = nmin/2, mtry = mtry, 
-                  samptype = "swor", nsplit = nsplit, 
-                  sampsize = trainn - 1, 
-                  importance = "random")
-
-  rsffit2 <- rfsrc(y ~ ., data = data.frame(trainX, "y"= trainY), 
-                  ntree = ntrees, nodesize = nmin/2, mtry = mtry, 
-                  samptype = "swor", nsplit = nsplit, 
-                  sampsize = trainn - 1, 
-                  importance = "anti")
-  par(mfrow=c(1,3))
-  par(mar = c(1, 2, 2, 2))
-  
-  barplot(as.vector(RLTfit$VarImp), main = "RLT distribute")
-  barplot(as.vector(rsffit$importance), main = "rsf random")
-  barplot(as.vector(rsffit2$importance), main = "rsf anti")
-```
 
 ## Print a Single Tree
 
@@ -287,62 +242,7 @@ Let's generate a new dataset with 5 continuous variables. The true model depends
 
 ```
 
-## Variance Estimation for Regression
 
-We generate a set of data with 20 variables, and the true model depends only on the first one. We further estimate the variance of the estimator and check if the confidence interval covers the truth. Note that since this model is very simple, the truth is almost the same as the expected value of a random forest prediction. However, in general case, a random forest could be biased and the coverage rate of truth may suffer. 
-
-```{r class.source = NULL, out.width="60%", fig.width=7, fig.height=7}
-  trainn = 1000
-  testn = 100
-  n = trainn + testn
-  p = 20
-  X1 = matrix(rnorm(n*p/2), n, p/2)
-  X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
-  
-  X = data.frame(X1, X2)
-  for (j in (p/2 + 1):p) X[,j] = as.factor(X[,j])
-  y = 1 + X[, 1] + rnorm(n)
-  
-  trainX = X[1:trainn, ]
-  trainY = y[1:trainn]
-  
-  testX = X[1:testn + trainn, ]
-  testY = y[1:testn + trainn]
-  
-  xorder = order(testX[, 1])
-  testX = testX[xorder, ]
-  testY = testY[xorder]
-
-  ## Variance Estimation Example
-  
-  RLTfit <- RLT(trainX, trainY, model = "regression", 
-                ntrees = 20000, mtry = p, nmin = 40, 
-                split.gen = "best", resample.prob = 0.5,
-                param.control = list("var.ready" = TRUE, 
-                                     "resample.track" = TRUE),
-                verbose = TRUE)
-  
-  RLTPred <- predict(RLTfit, testX, var.est = TRUE, keep.all = TRUE)
-
-  # coverage on the testing data
-  upper = RLTPred$Prediction + 1.96*sqrt(RLTPred$Variance)
-  lower = RLTPred$Prediction - 1.96*sqrt(RLTPred$Variance)
-  cover = (1 + testX$X1 > lower) & (1 + testX$X1 < upper)
-  
-  plot(1 + testX$X1, RLTPred$Prediction, pch = 19, 
-       col = ifelse(is.na(cover), "red", ifelse(cover, "green", "black")),
-       xlab = "Truth", ylab = "Predicted", 
-       xlim = c(min(y)+1, max(y)-1), ylim = c(min(y)+1, max(y)-1))
-  
-  abline(0, 1, col = "darkorange", lwd = 2)
-  
-  for (i in 1:testn)
-    segments(1+testX$X1[i], lower[i], 1+testX$X1[i], upper[i], 
-             col = ifelse(is.na(cover[i]), "red", ifelse(cover[i], "green", "black")))
-  
-  legend("topleft", c("covered", "not covered"), col = c("green", "black"), 
-         lty = 1, pch = 19, ce = 2)
-```
 
 
 ## Setting random seed
