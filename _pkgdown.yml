@@ -25,9 +25,7 @@ navbar:
         - text: "Classification"
           href: articles/Test-Cla.html
         - text: "Survival"
-          menu:
-            - text: "Survival Analysis Example"
-              href: articles/Test-Surv.html
+          href: articles/Test-Surv.html
         - text: "Variable Importance"
           href: articles/Variable-Importance.html
         - text: "Confidence Interval Estimation"
