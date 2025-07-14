@@ -57,5 +57,11 @@ reference:
       - get.one.tree
       - get.surv.band
       - cindex
+  
+  - title: "Other Functions"
+    desc: "Other auxiliary or testing functions."
+    contents:
+      - mytest  
+
 
 
