@@ -33,11 +33,7 @@ navbar:
         - text: "Confidence Interval Estimation"
           href: articles/Confidence-Interval.html
         - text: "Reinforcement Learning Splitting Rule"
-          menu:
-            - text: "RL Classification Example"
-              href: articles/Test-RLT-Cla.html
-            - text: "RL Regression Example"
-              href: articles/Test-RLT-Reg.html
+          href: articles/tutorial_rl.html
     - text: "Developing"
       href: DEVELOPING.html
     - text: "Changelog"
@@ -64,7 +60,4 @@ reference:
       - get.surv.band
       - cindex
 
-  - title: "Other Functions"
-    desc: "Other auxiliary or testing functions."
-    contents:
-      - mytest
+
