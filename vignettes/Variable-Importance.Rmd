@@ -6,7 +6,7 @@ output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 3
-    toc_float: true
+    
 vignette: >
   %\VignetteIndexEntry{Variable Importance in RLT}
   %\VignetteEngine{knitr::rmarkdown}
@@ -73,7 +73,7 @@ RLTfit <- RLT(trainX, trainY, model = "regression",
               split.gen = rule, nsplit = nsplit, 
               resample.prob = 0.8, 
               resample.replace = FALSE, 
-              importance = "permutation", 
+              importance = "permute", 
               ncores = ncores, 
               verbose = TRUE)
 
@@ -135,7 +135,7 @@ RLTfit_cla <- RLT(trainX, trainY, model = "classification",
                   split.gen = rule, nsplit = nsplit, 
                   resample.prob = 0.8, 
                   resample.replace = FALSE, 
-                  importance = "permutation", 
+                  importance = "permute", 
                   ncores = ncores, 
                   verbose = TRUE)
 

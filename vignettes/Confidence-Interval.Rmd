@@ -1,17 +1,16 @@
 ---
-title: "Confidence Interval Estimation in RLT"
-author: "RLT Package"
-date: "`r Sys.Date()`"
-output: 
-  rmarkdown::html_vignette:
+title: "Confidence Interval Estimation"
+output:
+  rmarkdown::html_document:
     toc: true
-    toc_depth: 3
     toc_float: true
+    theme: default
 vignette: >
-  %\VignetteIndexEntry{Confidence Interval Estimation in RLT}
+  %\VignetteIndexEntry{Confidence Interval Estimation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
