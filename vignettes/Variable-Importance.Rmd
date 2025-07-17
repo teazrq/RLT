@@ -20,11 +20,11 @@ knitr::opts_chunk$set(
   fig.width = 7,
   fig.height = 5
 )
-```
-```{r setup, include=FALSE}
-  pkgs <- c("randomForest")
+pkgs <- c("randomForest")
   for (p in pkgs) if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
+
 ```
+
 ```{r message=FALSE}  
   library(randomForest)
 ```
@@ -235,10 +235,7 @@ barplot(as.vector(RLTfit_cg$VarImp), main = "RLT Cox-grad",
 
 ## Comparison with Other Packages
 
-```{r setup, include=FALSE}
-  pkgs <- c("randomForest")
-  for (p in pkgs) if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
-```
+
 ```{r comparison}
 # Load required packages for comparison
 if (requireNamespace("randomForest", quietly = TRUE)) {
