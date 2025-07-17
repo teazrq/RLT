@@ -21,7 +21,13 @@ knitr::opts_chunk$set(
   fig.height = 5
 )
 ```
-
+```{r setup, include=FALSE}
+  pkgs <- c("randomForest")
+  for (p in pkgs) if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
+```
+```{r message=FALSE}  
+  library(randomForest)
+```
 ## Introduction
 
 Variable importance is a crucial aspect of random forest analysis that helps identify which variables are most influential in making predictions. The RLT package provides multiple approaches for calculating variable importance, including permutation-based methods and distributed assignment approaches.
@@ -229,6 +235,10 @@ barplot(as.vector(RLTfit_cg$VarImp), main = "RLT Cox-grad",
 
 ## Comparison with Other Packages
 
+```{r setup, include=FALSE}
+  pkgs <- c("randomForest")
+  for (p in pkgs) if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
+```
 ```{r comparison}
 # Load required packages for comparison
 if (requireNamespace("randomForest", quietly = TRUE)) {

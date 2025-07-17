@@ -35,12 +35,15 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
 
 Load other packages used in this guide.
 
-```{r message=FALSE}
-  library(RLT)
+```{r setup, include=FALSE}
+  pkgs <- c("randomForest", "randomForestSRC", "ranger", "parallel")
+  for (p in pkgs) if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
+```
+```{r message=FALSE}  
   library(randomForest)
   library(randomForestSRC)
   library(ranger)
-  library(survival)
+  library(parallel)
 ```
 
 ## Benchmark Against Existing Packages

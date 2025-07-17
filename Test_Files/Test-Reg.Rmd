@@ -22,6 +22,8 @@ output:
                         out.width = "75%", fig.align = "center")
   knitr::opts_chunk$set(class.source = "fold-show")
   knitr::opts_chunk$set(collapse = TRUE)
+  pkgs <- c("randomForest", "randomForestSRC", "ranger")
+  for (p in pkgs) if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
 ```
 
 ## Install and Load Package
