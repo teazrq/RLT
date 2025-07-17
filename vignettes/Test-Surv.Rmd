@@ -23,6 +23,7 @@ output:
   knitr::opts_chunk$set(collapse=TRUE)
 ```
 
+
 ## Install and Load Package
 
 Install and load the GitHub version of the RLT package. Do not use the CRAN version. 
@@ -36,7 +37,7 @@ Install and load the GitHub version of the RLT package. Do not use the CRAN vers
 Load other packages used in this guide.
 
 ```{r setup, include=FALSE}
-  pkgs <- c("randomForest", "randomForestSRC", "ranger", "parallel")
+  pkgs <- c("randomForest", "randomForestSRC", "ranger", "parallel","survival")
   for (p in pkgs) if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
 ```
 ```{r message=FALSE}  
@@ -44,6 +45,7 @@ Load other packages used in this guide.
   library(randomForestSRC)
   library(ranger)
   library(parallel)
+  library(survival)
 ```
 
 ## Benchmark Against Existing Packages
