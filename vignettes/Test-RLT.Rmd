@@ -29,14 +29,14 @@ output:
 
 In Windows, RLT can be installed using `install_github`. The compilation of this package requires GCC. Hence, you may also need to install Rtools from [here](https://cran.r-project.org/bin/windows/Rtools/).
 
-```{r}
+```{r, eval=FALSE}
   # you may need to install the devtools package first
   # install.packages("devtools")
   library(devtools)
 
   # install the RLT package from GitHub
   # Rtools is required in Windows
-  # install_github("teazrq/RLT")
+   install_github("teazrq/RLT")
 ```
 
 ### For macOS Users
