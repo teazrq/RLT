@@ -31,7 +31,8 @@ get.surv.band <- function(x,
                           approach = "naive-mc",
                           nsim = 5000, 
                           r = 3,
-                          bw = 1/2, 
+                          bw = 1/2,
+                          thre_order = 1, 
                           ...)
 {
   if (any(class(x)[1:3] != c("RLT", "pred", "surv")))
@@ -40,7 +41,7 @@ get.surv.band <- function(x,
   if (is.null(x$Cov))
     stop("Not an RLT object fitted with var.ready")
   
-  all.approach = c("naive-mc", "eigen-th-mc", "diag-smooth-mc", "matrix-smooth-mc", "smoothed-mc", "smoothed-lr")
+  all.approach = c("naive-mc","naive-thre-mc", "eigen-th-mc", "diag-smooth-mc", "matrix-smooth-mc", "smoothed-mc", "smoothed-lr", "diag-thre1-smooth-mc")
   
   if(match(approach, all.approach, nomatch = 0) == 0)
     stop("approach not avaliable")
@@ -76,6 +77,19 @@ get.surv.band <- function(x,
       approxerror = NULL
     }
 
+     if (approach == "naive-thre-mc")
+    {
+      # Get the marginal standard deviation from the diagonal
+      marsd = sqrt(diag(x$Cov[,,k]))
+      
+      # Apply a minimum threshold
+      marsd.thresholded = pmax(marsd, 2/nt^{thre_order})
+      
+      # Get confidence band using the thresholded standard deviation
+      bandk = mc_band(marsd.thresholded, x$Cov[,,k], alpha, nsim)
+      approxerror = NULL
+    }
+
     # naive approach with minimum eigen fix
     if (approach == "eigen-th-mc")
     {
@@ -101,11 +115,28 @@ get.surv.band <- function(x,
 
       # get smoothed sd
       marsd = sqrt(diag(newmat))
+      #bw_silverman = 1.06 * sd(1:nt)* nt^{-1/5}/0.37
       marsd.smooth <- ksmooth(1:nt, marsd, kernel = "normal",
                               n.points = nt, bandwidth = nt^bw)
 
       # get confidence band
       bandk = mc_band(marsd.smooth$y, newmat, alpha, nsim)
+      approxerror = NULL
+    }
+    
+    if (approach == "diag-thre1-smooth-mc")
+    {
+      # get the covariance matrix
+      newmat = x$Cov[,,k]
+      
+      # get smoothed sd
+      marsd = sqrt(diag(newmat))
+      #bw_silverman = 1.06 * sd(1:nt)* nt^{-1/5}/0.37
+      marsd.smooth.list <- ksmooth(1:nt, marsd, kernel = "normal",
+                              n.points = nt, bandwidth = nt^bw)
+      marsd.smooth = pmax(marsd.smooth.list$y,2/nt^{thre_order})
+      # get confidence band
+      bandk = mc_band(marsd.smooth, newmat, alpha, nsim)
       approxerror = NULL
     }
     
@@ -232,13 +263,13 @@ get.surv.band <- function(x,
       # heatmap(newcov, Rowv = NA, Colv = NA, symm = TRUE)
     }
 
-    SurvBand[[k]] = list("lower" = x$Survival[k, ] - bandk,
+     SurvBand[[k]] = list("lower" = x$Survival[k, ] - bandk,
                          "upper" = x$Survival[k, ] + bandk,
                          "approx.error" = approxerror)
     
-    # SurvBand[[k]] = list("lower" = exp(-x$CHF[k, ] + bandk),
-    #                      "upper" = exp(-x$CHF[k, ] - bandk),
-    #                      "approx.error" = approxerror)
+     #SurvBand[[k]] = list("lower" = exp(-x$CHF[k, ] - bandk),
+      #                    "upper" = exp(-x$CHF[k, ] + bandk),
+       #                   "approx.error" = approxerror)
   }
   
   names(SurvBand) <- paste("Subject", allid, sep = "")

@@ -367,8 +367,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // SurvUniForestPred
-List SurvUniForestPred(arma::field<arma::ivec>& SplitVar, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeWeight, arma::field<arma::field<arma::vec>>& NodeHaz, arma::mat& X, arma::uvec& Ncat, size_t& NFail, bool VarEst, bool keep_all, size_t usecores, size_t verbose);
-RcppExport SEXP _RLT_SurvUniForestPred(SEXP SplitVarSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeWeightSEXP, SEXP NodeHazSEXP, SEXP XSEXP, SEXP NcatSEXP, SEXP NFailSEXP, SEXP VarEstSEXP, SEXP keep_allSEXP, SEXP usecoresSEXP, SEXP verboseSEXP) {
+List SurvUniForestPred(arma::field<arma::ivec>& SplitVar, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeWeight, arma::field<arma::field<arma::vec>>& NodeHaz, arma::mat& X, arma::uvec& Ncat, size_t& NFail, const arma::uvec& mapping_indices, bool VarEst, bool keep_all, size_t usecores, size_t verbose);
+RcppExport SEXP _RLT_SurvUniForestPred(SEXP SplitVarSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeWeightSEXP, SEXP NodeHazSEXP, SEXP XSEXP, SEXP NcatSEXP, SEXP NFailSEXP, SEXP mapping_indicesSEXP, SEXP VarEstSEXP, SEXP keep_allSEXP, SEXP usecoresSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -381,11 +381,12 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
     Rcpp::traits::input_parameter< arma::uvec& >::type Ncat(NcatSEXP);
     Rcpp::traits::input_parameter< size_t& >::type NFail(NFailSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type mapping_indices(mapping_indicesSEXP);
     Rcpp::traits::input_parameter< bool >::type VarEst(VarEstSEXP);
     Rcpp::traits::input_parameter< bool >::type keep_all(keep_allSEXP);
     Rcpp::traits::input_parameter< size_t >::type usecores(usecoresSEXP);
     Rcpp::traits::input_parameter< size_t >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(SurvUniForestPred(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, NodeHaz, X, Ncat, NFail, VarEst, keep_all, usecores, verbose));
+    rcpp_result_gen = Rcpp::wrap(SurvUniForestPred(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, NodeHaz, X, Ncat, NFail, mapping_indices, VarEst, keep_all, usecores, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -438,7 +439,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RLT_RegUniForestFit", (DL_FUNC) &_RLT_RegUniForestFit, 7},
     {"_RLT_RegUniForestPred", (DL_FUNC) &_RLT_RegUniForestPred, 12},
     {"_RLT_SurvUniForestFit", (DL_FUNC) &_RLT_SurvUniForestFit, 8},
-    {"_RLT_SurvUniForestPred", (DL_FUNC) &_RLT_SurvUniForestPred, 13},
+    {"_RLT_SurvUniForestPred", (DL_FUNC) &_RLT_SurvUniForestPred, 14},
     {"_RLT_mc_band", (DL_FUNC) &_RLT_mc_band, 4},
     {"_RLT_cindex_d", (DL_FUNC) &_RLT_cindex_d, 3},
     {NULL, NULL, 0}

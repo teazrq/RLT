@@ -23,15 +23,168 @@ output:
   knitr::opts_chunk$set(collapse=TRUE)
 ```
 
-## Install and Load Package
+## Install the RLT Package
 
-Install and load the GitHub version of the RLT package. Do not use the CRAN version. 
+### For Windows Users
+
+In Windows, RLT can be installed using `install_github`. The compilation of this package requires GCC. Hence, you may also need to install Rtools from [here](https://cran.r-project.org/bin/windows/Rtools/).
+
+```{r, eval=FALSE}
+  # you may need to install the devtools package first
+  # install.packages("devtools")
+  library(devtools)
+
+  # install the RLT package from GitHub
+  # Rtools is required in Windows
+   install_github("teazrq/RLT")
+```
+
+### For macOS Users
+
+When installing RLT on macOS, the process can be slightly trickier. It mainly consists of two steps:
+
+#### Step 1: Install Compilers
+
+- Follow [this guide](https://mac.r-project.org/tools/) to install the GNU Fortran compiler: [gfortran-12.2-universal.pkg](https://mac.r-project.org/tools/gfortran-12.2-universal.pkg)
+- If you do not already have Xcode (most systems come with Xcode installed already), you can use this line to install it:
+
+```sh
+sudo xcode-select --install
+```
+
+#### Step 2: Set Makevars to Point to the Compiler
+
+Create the Makevars file using:
+
+```sh
+mkdir ~/.R
+touch ~/.R/Makevars
+```
+
+Check your folder of gfortran. The compiler will be installed to `/opt/gfortran` folder as default.
+
+Add these lines to point to the correct folder of the compiler. You may use `open -a TextEdit ~/.R/Makevars` to open a text editor and type in these lines:
+
+```
+FC = /opt/gfortran/bin/gfortran
+F77 = /opt/gfortran/bin/gfortran
+FLIBS = -L/opt/gfortran/lib
+```
+
+After completing these steps, you should be able to directly install the RLT package using `install_github("teazrq/RLT")` in RStudio the same way as Windows machine. The compilation may require a few minutes.
+
+### OpenMP in macOS
+
+The previous steps would not activate OpenMP parallel computing. To enable OpenMP while compiling the RLT package, follow these steps:
+
+#### Step 1: Download and Install LLVM
+
+For example, to install the 14.0.6 version (check the ones that compatible with your Xcode version), use:
+
+```sh
+curl -O https://mac.r-project.org/openmp/openmp-14.0.6-darwin20-Release.tar.gz
+sudo tar fvxz openmp-14.0.6-darwin20-Release.tar.gz -C /
+```
+
+You should then see the following message:
+
+```
+usr/local/lib/libomp.dylib
+usr/local/include/ompt.h
+usr/local/include/omp.h
+usr/local/include/omp-tools.h
+```
+
+#### Step 2: Add Flags into Makevars
+
+The procedure is the same as we explained previously. You should add these two lines into your Makevars file:
+
+```
+CPPFLAGS += -Xclang -fopenmp
+LDFLAGS += -lomp
+```
+
+After these two steps, you can then use `install_github("teazrq/RLT", force = TRUE)` to re-install the RLT package.
+
+### Load the RLT Package
 
 ```{r}
-  # install.packages("devtools")
-  # devtools::install_github("teazrq/RLT")
-  #devtools::load_all()
   library(RLT)
+```
+
+## Benchmarking
+
+The following code tests the performance of the RLT package in a regression problem:
+
+```{r}
+  library(parallel)
+  # Set seed for reproducibility
+  set.seed(1)
+
+  # Define data size
+  trainn <- 800
+  testn <- 1000
+  n <- trainn + testn
+  p <- 30
+
+  # Generate continuous variables (X1) and categorical variables (X2)
+  X1 <- matrix(rnorm(n * p / 2), n, p / 2)
+  X2 <- matrix(as.integer(runif(n * p / 2) * 3), n, p / 2)
+
+  # Combine continuous and categorical variables into a data frame (X)
+  X <- data.frame(X1, X2)
+
+  # Convert the second half of the columns in X to factors
+  X[, (p / 2 + 1):p] <- lapply(X[, (p / 2 + 1):p], as.factor)
+
+  # Generate outcomes (y)
+  y <- 1 + rowSums(X[, 2:6]) + 2 * (X[, p / 2 + 1] %in% c(1, 3)) + rnorm(n)
+
+  # Set tuning parameters
+  ntrees <- 1000
+  ncores <- detectCores() - 1
+```
+
+```{r}
+  # Benchmark RLT
+  start_time <- Sys.time()
+  
+  RLTfit <- RLT(X[1:trainn, ], y[1:trainn], model = "regression",
+                ntrees = ntrees, ncores = ncores, nmin = 10,
+                split.gen = "random", nsplit = 1,
+                resample.prob = 0.85, resample.replace = FALSE,
+                reinforcement = TRUE, importance = TRUE,
+                param.control = list("embed.ntrees" = 50,
+                                     "embed.mtry" = 1/2,
+                                     "embed.nmin" = 10,
+                                     "embed.split.gen" = "random",
+                                     "embed.nsplit" = 1,
+                                     "embed.resample.replace" = TRUE,
+                                     "embed.resample.prob" = 0.9,
+                                     "embed.mute" = 0.5,
+                                     "embed.protect" = 5),
+                verbose = TRUE)
+  
+  RLT_time <- difftime(Sys.time(), start_time, units = "secs")
+  
+  # Make predictions
+  RLT_pred <- predict(RLTfit, X[(trainn + 1):n, ])
+  RLT_error <- mean((RLT_pred$Prediction - y[(trainn + 1):n])^2)
+  
+  cat("RLT Results:\n")
+  cat("Training time:", round(as.numeric(RLT_time), 2), "seconds\n")
+  cat("Test MSE:", round(RLT_error, 4), "\n")
+  cat("Variable importance (top 5):\n")
+  print(head(sort(RLTfit$VarImp, decreasing = TRUE), 5))
+```
+
+```{r fig.width=8, fig.height=6}
+  # Plot variable importance
+  par(mar = c(5, 8, 4, 2))
+  barplot(sort(RLTfit$VarImp, decreasing = TRUE)[1:10], 
+          horiz = TRUE, las = 1, 
+          main = "RLT Variable Importance (Top 10)",
+          xlab = "Importance Score")
 ```
 
 ## Single Variable Embedded Splitting
@@ -141,13 +294,3 @@ This is a model without fitting embedded random forest to search for the linear 
   plot(RLTfit$Prediction, y)
   mean( (RLTfit$Prediction - y)^2 , na.rm = TRUE)
 ```
-
-
-
-
-
-
-
-
-
-

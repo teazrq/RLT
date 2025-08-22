@@ -11,14 +11,14 @@
   keep.all = FALSE,
   ncores = 1,
   verbose = 0,
+  band.grid.size = 0,
   ...
 )
 }
 \arguments{
 \item{object}{A fitted RLT object}
 
-\item{testx}{The testing samples, must have the same structure as the
-training samples}
+\item{testx}{The testing samples, must have the same structure as the training samples}
 
 \item{var.est}{Whether to estimate the variance of each testing data.
 The original forest must be fitted with \code{var.ready = TRUE}.
@@ -32,6 +32,11 @@ occupy a large storage space, especially in survival model}
 \item{ncores}{number of cores}
 
 \item{verbose}{print additional information}
+
+\item{band.grid.size}{An integer specifying the number of time points for confidence band calculation.
+Default is 0, which uses all unique failure time points. If a positive integer
+is provided, a subset of time points will be selected using quantiles,
+skipping the earliest 5\% of time points to improve stability.}
 
 \item{...}{...}
 }

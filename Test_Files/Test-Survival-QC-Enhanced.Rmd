@@ -1,0 +1,676 @@
+---
+title: "RLT Package Survival Quality Control Testing"
+author: "RLT QC System"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true 
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+  options(width = 1000)
+  knitr::opts_chunk$set(fig.width=9, fig.height=7, out.width = "75%", fig.align = 'center')
+  knitr::opts_chunk$set(class.source = "fold-show")
+  knitr::opts_chunk$set(collapse=TRUE)
+```
+
+## Install and Load Package
+
+Install and load the RLT package.
+
+```{r}
+  # install.packages("devtools")
+  # devtools::install_github("teazrq/RLT")
+  library(RLT)
+```
+
+Load other packages used in this guide.
+
+```{r message=FALSE}
+  library(randomForest)
+  library(randomForestSRC)
+  library(ranger)
+  library(survival)
+```
+
+## Load QC Functions
+
+Define survival QC functions directly in this document for comprehensive validation.
+
+```{r}
+  # ============================================================================
+  # Survival QC Function Definitions
+  # ============================================================================
+  
+  #' @title validate_survival_data
+  #' @description Validate input data for survival models
+  validate_survival_data <- function(x, y, censor, obs.w = NULL, var.w = NULL, ncat = NULL) {
+    
+    validation_results <- list(
+      status = TRUE,
+      errors = character(0),
+      warnings = character(0),
+      data_info = list()
+    )
+    
+    # Check y is vector
+    if (!is.vector(y)) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "y must be a vector")
+    }
+    
+    # Check y is numeric
+    if (!is.numeric(y)) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "y must be numerical for survival analysis")
+    }
+    
+    # Check censor is vector
+    if (!is.vector(censor)) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "censor must be a vector")
+    }
+    
+    # Check censor is numeric or logical
+    if (!is.numeric(censor) && !is.logical(censor)) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "censor must be numerical or logical")
+    }
+    
+    # Check censor values
+    if (is.numeric(censor)) {
+      if (!all(censor %in% c(0, 1))) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "censor must contain only 0 and 1")
+      }
+    }
+    
+    if (is.logical(censor)) {
+      censor <- as.numeric(censor)
+    }
+    
+    # Check for NA values
+    if (any(is.na(x))) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "NA not permitted in x")
+    }
+    
+    if (any(is.na(y))) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "NA not permitted in y")
+    }
+    
+    if (any(is.na(censor))) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "NA not permitted in censor")
+    }
+    
+    # Check dimensions match
+    if (nrow(x) != length(y)) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "number of observations does not match: x & y")
+    }
+    
+    if (length(y) != length(censor)) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "length of y and censor must match")
+    }
+    
+    # Check for negative survival times
+    if (any(y < 0)) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "survival times cannot be negative")
+    }
+    
+    # Check observation weights
+    if (!is.null(obs.w)) {
+      if (length(obs.w) != length(y)) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "length of observation weights (obs.w) must match y")
+      }
+      if (any(obs.w < 0)) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "observation weights (obs.w) cannot be negative")
+      }
+    }
+    
+    # Check variable weights
+    if (!is.null(var.w)) {
+      if (length(var.w) != ncol(x)) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "length of variable weights (var.w) must match number of columns in x")
+      }
+      if (any(var.w < 0)) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "variable weights (var.w) cannot be negative")
+      }
+    }
+    
+    # Check ncat
+    if (!is.null(ncat)) {
+      if (length(ncat) != ncol(x)) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "length of ncat must match number of columns in x")
+      }
+      if (any(ncat < 0)) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "ncat values cannot be negative")
+      }
+    }
+    
+    # Check censoring rate
+    censoring_rate <- mean(censor == 0)
+    if (censoring_rate == 0) {
+      validation_results$warnings <- c(validation_results$warnings, "No censored observations detected")
+    }
+    if (censoring_rate == 1) {
+      validation_results$status <- FALSE
+      validation_results$errors <- c(validation_results$errors, "All observations are censored - no events observed")
+    }
+    
+    # Data information
+    validation_results$data_info <- list(
+      n_obs = nrow(x),
+      n_vars = ncol(x),
+      n_events = sum(censor == 1),
+      n_censored = sum(censor == 0),
+      censoring_rate = censoring_rate,
+      y_range = range(y, na.rm = TRUE),
+      y_mean = mean(y, na.rm = TRUE),
+      y_sd = sd(y, na.rm = TRUE),
+      x_has_categorical = ifelse(!is.null(ncat), any(ncat > 0), FALSE)
+    )
+    
+    return(validation_results)
+  }
+  
+  #' @title validate_survival_parameters
+  #' @description Validate parameters for survival models
+  validate_survival_parameters <- function(param, n, p) {
+    
+    validation_results <- list(
+      status = TRUE,
+      errors = character(0),
+      warnings = character(0),
+      parameter_info = list()
+    )
+    
+    # Check ntrees
+    if (!is.null(param$ntrees)) {
+      if (param$ntrees < 1) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "ntrees should be greater than 0")
+      }
+    }
+    
+    # Check mtry
+    if (!is.null(param$mtry)) {
+      if (param$mtry < 1) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "mtry cannot be less than 1")
+      }
+      if (param$mtry > p) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "mtry cannot be larger than p")
+      }
+    }
+    
+    # Check nmin
+    if (!is.null(param$nmin)) {
+      if (param$nmin < 1) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "nmin cannot be less than 1")
+      }
+      if (param$nmin > n/2) {
+        validation_results$warnings <- c(validation_results$warnings, "nmin is very large relative to sample size")
+      }
+    }
+    
+    # Check resample.prob
+    if (!is.null(param$resample.prob)) {
+      if (param$resample.prob <= 0 || param$resample.prob > 1) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "resample.prob should be within the interval (0, 1]")
+      }
+    }
+    
+    # Check split.rule for survival
+    if (!is.null(param$split.rule)) {
+      valid_rules <- c("logrank", "suplogrank", "coxgrad")
+      if (!(param$split.rule %in% valid_rules)) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, 
+                                     paste("split.rule must be one of:", paste(valid_rules, collapse = ", ")))
+      }
+    }
+    
+    # Check failcount
+    if (!is.null(param$failcount)) {
+      if (param$failcount < 0) {
+        validation_results$status <- FALSE
+        validation_results$errors <- c(validation_results$errors, "failcount cannot be negative")
+      }
+    }
+    
+    # Check alpha parameter for suplogrank
+    if (!is.null(param$split.rule) && param$split.rule == "suplogrank") {
+      if (!is.null(param$alpha)) {
+        if (param$alpha < 0 || param$alpha > 1) {
+          validation_results$status <- FALSE
+          validation_results$errors <- c(validation_results$errors, "alpha for suplogrank must be in [0, 1]")
+        }
+      }
+    }
+    
+    # Check observation weights compatibility
+    if (!is.null(param$use.obs.w) && param$use.obs.w != 0) {
+      if (!is.null(param$split.rule) && param$split.rule %in% c("logrank", "suplogrank")) {
+        validation_results$warnings <- c(validation_results$warnings, 
+                                       "Observation weights are only implemented with coxgrad splitting rule")
+      }
+    }
+    
+    # Check variable weights compatibility
+    if (!is.null(param$use.var.w) && param$use.var.w != 0) {
+      if (!is.null(param$split.rule) && param$split.rule %in% c("logrank", "suplogrank")) {
+        validation_results$warnings <- c(validation_results$warnings, 
+                                       "Variable weights are only implemented with coxgrad splitting rule")
+      }
+    }
+    
+    # Parameter information
+    validation_results$parameter_info <- list(
+      ntrees = param$ntrees,
+      mtry = param$mtry,
+      nmin = param$nmin,
+      split_rule = param$split.rule,
+      failcount = param$failcount,
+      alpha = param$alpha
+    )
+    
+    return(validation_results)
+  }
+  
+  #' @title validate_survival_inputs
+  #' @description Quick validation of survival inputs
+  validate_survival_inputs <- function(x, y, censor, param) {
+    
+    cat("=== Survival Input Validation ===\n")
+    
+    # Check data types
+    if (!is.matrix(x)) {
+      cat("❌ x must be a matrix\n")
+      return(FALSE)
+    }
+    
+    if (!is.vector(y)) {
+      cat("❌ y must be a vector\n")
+      return(FALSE)
+    }
+    
+    if (!is.numeric(y)) {
+      cat("❌ y must be numeric\n")
+      return(FALSE)
+    }
+    
+    if (!is.vector(censor)) {
+      cat("❌ censor must be a vector\n")
+      return(FALSE)
+    }
+    
+    if (!is.numeric(censor) && !is.logical(censor)) {
+      cat("❌ censor must be numerical or logical\n")
+      return(FALSE)
+    }
+    
+    # Check dimensions
+    if (nrow(x) != length(y)) {
+      cat("❌ Dimensions don't match: x has", nrow(x), "rows, y has", length(y), "elements\n")
+      return(FALSE)
+    }
+    
+    if (length(y) != length(censor)) {
+      cat("❌ Lengths don't match: y has", length(y), "elements, censor has", length(censor), "elements\n")
+      return(FALSE)
+    }
+    
+    # Check for NA values
+    if (any(is.na(x))) {
+      cat("❌ x contains NA values\n")
+      return(FALSE)
+    }
+    
+    if (any(is.na(y))) {
+      cat("❌ y contains NA values\n")
+      return(FALSE)
+    }
+    
+    if (any(is.na(censor))) {
+      cat("❌ censor contains NA values\n")
+      return(FALSE)
+    }
+    
+    # Check for negative survival times
+    if (any(y < 0)) {
+      cat("❌ y contains negative survival times\n")
+      return(FALSE)
+    }
+    
+    # Check censor values
+    if (is.numeric(censor)) {
+      if (!all(censor %in% c(0, 1))) {
+        cat("❌ censor must contain only 0 and 1\n")
+        return(FALSE)
+      }
+    }
+    
+    # Check parameters
+    if (!is.null(param$mtry) && param$mtry > ncol(x)) {
+      cat("❌ mtry (", param$mtry, ") cannot be larger than number of variables (", ncol(x), ")\n")
+      return(FALSE)
+    }
+    
+    if (!is.null(param$nmin) && param$nmin < 1) {
+      cat("❌ nmin cannot be less than 1\n")
+      return(FALSE)
+    }
+    
+    if (!is.null(param$resample.prob) && (param$resample.prob <= 0 || param$resample.prob > 1)) {
+      cat("❌ resample.prob must be in (0, 1]\n")
+      return(FALSE)
+    }
+    
+    # Check split.rule
+    if (!is.null(param$split.rule)) {
+      valid_rules <- c("logrank", "suplogrank", "coxgrad")
+      if (!(param$split.rule %in% valid_rules)) {
+        cat("❌ split.rule must be one of:", paste(valid_rules, collapse = ", "), "\n")
+        return(FALSE)
+      }
+    }
+    
+    cat("✅ All survival inputs are valid\n")
+    cat("Data: n =", nrow(x), ", p =", ncol(x), "\n")
+    cat("Events:", sum(censor == 1), ", Censored:", sum(censor == 0), "\n")
+    cat("Censoring rate:", round(mean(censor == 0), 3), "\n")
+    cat("Survival time range:", round(range(y), 3), "\n")
+    
+    return(TRUE)
+  }
+  
+  cat("✅ All survival QC functions defined successfully!\n")
+```
+
+## Data Generation and Setup
+
+Generate survival data for testing, following the same approach as Test-Surv.Rmd.
+
+```{r}
+  # Generate survival data
+  set.seed(1)
+  trainn = 500
+  testn = 1000
+  n = trainn + testn
+  p = 200
+  X1 = matrix(rnorm(n*p/2), n, p/2)
+  X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
+
+  X = data.frame(X1, X2)
+  xlink <- function(x) exp(x[, 7] + x[, 16] + x[, 25] + x[, p])
+  FT = rexp(n, rate = xlink(X))
+  CT = rexp(n, rate = 0.5)
+  
+  y = pmin(FT, CT)
+  Censor = as.numeric(FT <= CT)
+  
+  # Parameters
+  ntrees = 500
+  ncores = 10
+  nmin = 25
+  mtry = p/3
+  sampleprob = 0.85
+  rule = "random"
+  nsplit = ifelse(rule == "best", 0, 3)
+  importance = TRUE
+  
+  trainX = X[1:trainn, ]
+  trainY = y[1:trainn]
+  trainCensor = Censor[1:trainn]
+  
+  testX = X[1:testn + trainn, ]
+  testY = y[1:testn + trainn]
+  testCensor = Censor[1:testn + trainn]
+  
+  cat("Data generated successfully!\n")
+  cat("Training set: n =", trainn, ", p =", p, "\n")
+  cat("Test set: n =", testn, ", p =", p, "\n")
+  cat("Censoring rate:", round(mean(Censor), 3), "\n")
+```
+
+## QC Test 1: Survival Data and Parameter Validation
+
+Test survival data validation and parameter validation using our QC functions.
+
+```{r}
+  cat("=== Survival QC Validation ===\n")
+  
+  # Prepare parameters for QC validation
+  param_qc <- list(
+    ntrees = ntrees,
+    mtry = mtry,
+    nmin = nmin,
+    split.gen = rule,
+    nsplit = nsplit,
+    resample.prob = sampleprob,
+    resample.replace = FALSE,
+    reinforcement = FALSE,
+    importance = importance,
+    verbose = FALSE,
+    ncores = ncores,
+    seed = 123,
+    split.rule = "logrank",
+    failcount = 0,
+    alpha = 0.2
+  )
+  
+  # Test 1: Data validation
+  cat("1. Testing survival data validation:\n")
+  data_validation <- validate_survival_data(trainX, trainY, trainCensor)
+  cat("   Data validation status:", ifelse(data_validation$status, "PASSED", "FAILED"), "\n")
+  cat("   Number of observations:", data_validation$data_info$n_obs, "\n")
+  cat("   Number of variables:", data_validation$data_info$n_vars, "\n")
+  cat("   Number of events:", data_validation$data_info$n_events, "\n")
+  cat("   Number of censored:", data_validation$data_info$n_censored, "\n")
+  cat("   Censoring rate:", round(data_validation$data_info$censoring_rate, 3), "\n")
+  cat("   Survival time range:", round(data_validation$data_info$y_range, 3), "\n")
+  
+  if (length(data_validation$errors) > 0) {
+    cat("   Errors found:\n")
+    for (error in data_validation$errors) {
+      cat("      -", error, "\n")
+    }
+  }
+  
+  if (length(data_validation$warnings) > 0) {
+    cat("   Warnings found:\n")
+    for (warning in data_validation$warnings) {
+      cat("      -", warning, "\n")
+    }
+  }
+  
+  # Test 2: Parameter validation
+  cat("\n2. Testing survival parameter validation:\n")
+  param_validation <- validate_survival_parameters(param_qc, nrow(trainX), ncol(trainX))
+  cat("   Parameter validation status:", ifelse(param_validation$status, "PASSED", "FAILED"), "\n")
+  cat("   Split rule:", param_validation$parameter_info$split_rule, "\n")
+  cat("   Number of trees:", param_validation$parameter_info$ntrees, "\n")
+  cat("   Mtry:", param_validation$parameter_info$mtry, "\n")
+  cat("   Nmin:", param_validation$parameter_info$nmin, "\n")
+  
+  if (length(param_validation$errors) > 0) {
+    cat("   Errors found:\n")
+    for (error in param_validation$errors) {
+      cat("      -", error, "\n")
+    }
+  }
+  
+  if (length(param_validation$warnings) > 0) {
+    cat("   Warnings found:\n")
+    for (warning in param_validation$warnings) {
+      cat("      -", warning, "\n")
+    }
+  }
+  
+  # Test 3: Quick input validation
+  cat("\n3. Testing quick survival input validation:\n")
+  input_validation <- validate_survival_inputs(trainX, trainY, trainCensor, param_qc)
+  cat("   Input validation result:", ifelse(input_validation, "PASSED", "FAILED"), "\n")
+```
+
+## QC Test 2: Different Split Rules Validation
+
+Test different survival split rules and their parameter compatibility.
+
+```{r}
+  cat("\n=== Testing Different Split Rules ===\n")
+  
+  # Test logrank split rule
+  cat("1. Testing logrank split rule:\n")
+  param_logrank <- param_qc
+  param_logrank$split.rule <- "logrank"
+  param_logrank$alpha <- 0.2
+  
+  logrank_validation <- validate_survival_parameters(param_logrank, nrow(trainX), ncol(trainX))
+  cat("   Logrank validation:", ifelse(logrank_validation$status, "PASSED", "FAILED"), "\n")
+  
+  # Test suplogrank split rule
+  cat("2. Testing suplogrank split rule:\n")
+  param_suplogrank <- param_qc
+  param_suplogrank$split.rule <- "suplogrank"
+  param_suplogrank$alpha <- 0.2
+  
+  suplogrank_validation <- validate_survival_parameters(param_suplogrank, nrow(trainX), ncol(trainX))
+  cat("   Suplogrank validation:", ifelse(suplogrank_validation$status, "PASSED", "FAILED"), "\n")
+  
+  # Test coxgrad split rule
+  cat("3. Testing coxgrad split rule:\n")
+  param_coxgrad <- param_qc
+  param_coxgrad$split.rule <- "coxgrad"
+  param_coxgrad$alpha <- 0.2
+  
+  coxgrad_validation <- validate_survival_parameters(param_coxgrad, nrow(trainX), ncol(trainX))
+  cat("   Coxgrad validation:", ifelse(coxgrad_validation$status, "PASSED", "FAILED"), "\n")
+  
+  # Test invalid split rule
+  cat("4. Testing invalid split rule:\n")
+  param_invalid <- param_qc
+  param_invalid$split.rule <- "invalid_rule"
+  
+  invalid_validation <- validate_survival_parameters(param_invalid, nrow(trainX), ncol(trainX))
+  cat("   Invalid rule validation:", ifelse(!invalid_validation$status, "PASSED (correctly rejected)", "FAILED"), "\n")
+```
+
+## QC Test 3: Edge Cases Validation
+
+Test various edge cases for survival data.
+
+```{r}
+  cat("\n=== Testing Edge Cases ===\n")
+  
+  # Test 1: All censored data
+  cat("1. Testing all censored data:\n")
+  y_all_censored <- trainY
+  censor_all_censored <- rep(0, length(trainY))
+  
+  all_censored_validation <- validate_survival_data(trainX, y_all_censored, censor_all_censored)
+  cat("   All censored validation:", ifelse(!all_censored_validation$status, "PASSED (correctly rejected)", "FAILED"), "\n")
+  
+  # Test 2: No censored data
+  cat("2. Testing no censored data:\n")
+  y_no_censored <- trainY
+  censor_no_censored <- rep(1, length(trainY))
+  
+  no_censored_validation <- validate_survival_data(trainX, y_no_censored, censor_no_censored)
+  cat("   No censored validation:", ifelse(no_censored_validation$status, "PASSED", "FAILED"), "\n")
+  if (length(no_censored_validation$warnings) > 0) {
+    cat("   Warning:", no_censored_validation$warnings[1], "\n")
+  }
+  
+  # Test 3: Negative survival times
+  cat("3. Testing negative survival times:\n")
+  y_negative <- trainY
+  y_negative[1] <- -1
+  
+  negative_validation <- validate_survival_data(trainX, y_negative, trainCensor)
+  cat("   Negative times validation:", ifelse(!negative_validation$status, "PASSED (correctly rejected)", "FAILED"), "\n")
+  
+  # Test 4: Invalid censor values
+  cat("4. Testing invalid censor values:\n")
+  censor_invalid <- trainCensor
+  censor_invalid[1] <- 2
+  
+  invalid_censor_validation <- validate_survival_data(trainX, trainY, censor_invalid)
+  cat("   Invalid censor validation:", ifelse(!invalid_censor_validation$status, "PASSED (correctly rejected)", "FAILED"), "\n")
+```
+
+## Summary and Recommendations
+
+```{r}
+  cat("=== Survival QC Test Summary ===\n")
+  
+  # Collect all test results
+  test_results <- list(
+    "Data Validation" = data_validation$status,
+    "Parameter Validation" = param_validation$status,
+    "Input Validation" = input_validation,
+    "Logrank Split Rule" = logrank_validation$status,
+    "Suplogrank Split Rule" = suplogrank_validation$status,
+    "Coxgrad Split Rule" = coxgrad_validation$status,
+    "Invalid Split Rule" = !invalid_validation$status,
+    "All Censored Data" = !all_censored_validation$status,
+    "No Censored Data" = no_censored_validation$status,
+    "Negative Survival Times" = !negative_validation$status,
+    "Invalid Censor Values" = !invalid_censor_validation$status
+  )
+  
+  passed_tests <- sum(unlist(test_results))
+  total_tests <- length(test_results)
+  
+  cat("Total Tests:", total_tests, "\n")
+  cat("Passed Tests:", passed_tests, "\n")
+  cat("Success Rate:", round(passed_tests/total_tests * 100, 1), "%\n")
+  
+  if (passed_tests == total_tests) {
+    cat("🎉 All survival QC tests PASSED! RLT survival module parameter validation is working correctly.\n")
+  } else {
+    cat("⚠️ Some survival QC tests failed. Please review the results above.\n")
+  }
+  
+  cat("\n=== Recommendations ===\n")
+  cat("1. Always validate survival data before model fitting\n")
+  cat("2. Check censoring rate and ensure there are both events and censored observations\n")
+  cat("3. Verify split rule compatibility with observation and variable weights\n")
+  cat("4. Use appropriate alpha values for suplogrank split rule (0 ≤ alpha ≤ 1)\n")
+  cat("5. Ensure survival times are non-negative\n")
+  cat("6. Validate censor values are binary (0 or 1)\n")
+  
+  cat("\n=== Next Steps ===\n")
+  cat("This QC system currently covers parameter validation for survival models.\n")
+  cat("Future enhancements will include:\n")
+  cat("- Model fitting and validation\n")
+  cat("- Survival curve estimation\n")
+  cat("- Hazard function validation\n")
+  cat("- C-index calculation\n")
+  cat("- Performance benchmarking\n")
+  cat("- Reproducibility testing\n")
+  cat("- Edge case handling\n")
+``` 

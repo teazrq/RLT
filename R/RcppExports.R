@@ -87,8 +87,8 @@ SurvUniForestFit <- function(X, Y, Censor, Ncat, obsweight, varweight, ObsTrack,
     .Call('_RLT_SurvUniForestFit', PACKAGE = 'RLT', X, Y, Censor, Ncat, obsweight, varweight, ObsTrack, param_r)
 }
 
-SurvUniForestPred <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, NodeHaz, X, Ncat, NFail, VarEst, keep_all, usecores, verbose) {
-    .Call('_RLT_SurvUniForestPred', PACKAGE = 'RLT', SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, NodeHaz, X, Ncat, NFail, VarEst, keep_all, usecores, verbose)
+SurvUniForestPred <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, NodeHaz, X, Ncat, NFail, mapping_indices, VarEst, keep_all, usecores, verbose) {
+    .Call('_RLT_SurvUniForestPred', PACKAGE = 'RLT', SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, NodeHaz, X, Ncat, NFail, mapping_indices, VarEst, keep_all, usecores, verbose)
 }
 
 mc_band <- function(mar_sd, S, alpha, N) {

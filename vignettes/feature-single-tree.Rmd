@@ -1,5 +1,5 @@
 ---
-title: "Variable Importance — Tutorial (RLT)"
+title: "Single Tree — Tutorial (RLT)"
 author: "Ruoqing Zhu"
 date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
 output:
@@ -20,14 +20,14 @@ output:
 # Clean, consistent output for all chunks
 knitr::opts_chunk$set(
   message = FALSE, warning = FALSE,
-  fig.width = 7, fig.height = 5, out.width = "80%", fig.align = "center",
+  fig.width = 7, fig.height = 5, out.width = "70%", fig.align = "center",
   collapse = TRUE, class.source = "fold-show"
 )
 ```
 
 ## Overview
 
-This page demonstrates how to obtain and visualize variable importance (VI) from RLT.
+This page shows how to inspect a single tree grown inside an RLT forest using `get.one.tree()`.
 
 ## Data
 
@@ -60,15 +60,12 @@ testX  <- X[(trainn + 1):(trainn + testn), ]
 testY  <- y[(trainn + 1):(trainn + testn)]
 ```
 
-## Option A — Permutation importance
+## Fit
 
-Set `importance` to enable permutation-based VI during training.
-
-```{r perm-importance}
+```{r fit-model}
 # install.packages("devtools"); devtools::install_github("teazrq/RLT")
 library(RLT)
 
-# Minimal, sensible defaults
 ntrees <- 200
 ncores <- max(1, parallel::detectCores() - 1)
 nmin   <- 5
@@ -77,57 +74,25 @@ samplereplace <- TRUE
 sampleprob    <- 0.80
 rule    <- "best"
 nsplit  <- ifelse(rule == "best", 0, 3)
+importance <- TRUE
 
-fit_perm <- RLT(
+fit <- RLT(
   trainX, trainY, model = "regression",
   ntrees = ntrees, mtry = mtry, nmin = nmin,
   resample.prob = sampleprob, split.gen = rule,
   resample.replace = samplereplace,
-  nsplit = nsplit,
-  importance = "permute",   # permutation-based VI
+  nsplit = nsplit, importance = importance,
+  param.control = list(alpha = 0),
   ncores = ncores, verbose = FALSE
 )
-
-# VI vector lives in fit$VarImp
-str(head(fit_perm$VarImp))
 ```
 
-```{r perm-viz}
-# Simple visualization
-barplot(
-  as.vector(fit_perm$VarImp),
-  main = "Permutation Variable Importance (RLT)",
-  ylab = "Importance",
-  xlab = "Predictors",
-  las = 2
-)
-```
+## Inspect one tree
 
-## Option B — Distributed assignment importance (leave-one-oob style)
+Use `get.one.tree(<fit>, <tree_id>)` to print a single tree.
+Choose `tree_id` from 1 to `ntrees` (here we take the first tree).
 
-This configuration assigns importance using distributed attribution with OOB tracking. Use `importance = "distribute"` for distributed assignment importance.
-```{r dist-importance}
-fit_dist <- RLT(
-  trainX, trainY, model = "regression",
-  ntrees = ntrees, mtry = mtry, nmin = nmin,
-  split.gen = rule, nsplit = nsplit,
-  resample.prob = (trainn - 1)/trainn,   # leave-one-out style OOB
-  resample.replace = FALSE,               # without replacement
-  importance = "distribute",              # distributed assignment VI
-  ncores = ncores, verbose = FALSE,
-  param.control = list("resample.track" = TRUE)
-)
-
-# VI vector lives in fit$VarImp
-str(head(fit_dist$VarImp))
-```
-
-```{r dist-viz}
-barplot(
-  as.vector(fit_dist$VarImp),
-  main = "Distributed Variable Importance (RLT)",
-  ylab = "Importance",
-  xlab = "Predictors",
-  las = 2
-)
+```{r inspect-tree}
+# Peek into a single tree
+get.one.tree(fit, 1)
 ```

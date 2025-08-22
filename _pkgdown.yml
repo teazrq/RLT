@@ -1,5 +1,5 @@
 # RLT package pkgdown site configuration file
-# Version 1.1 - Adapted for existing tutorial files
+# Version 1.2 - Reorganized tutorials (core vs features)
 
 # 1. Basic site information
 url: https://teazrq.github.io/RLT
@@ -15,23 +15,31 @@ navbar:
   type: default
   left:
     - text: "Get Started"
-      href: articles/Test-RLT.html 
+      href: articles/Test-RLT.html
     - text: "Reference"
       href: reference/index.html
     - text: "Tutorials"
       menu:
+        # Core modeling (minimal, ~100 obs)
         - text: "Regression"
           href: articles/Test-Reg.html
         - text: "Classification"
           href: articles/Test-Cla.html
         - text: "Survival"
           href: articles/Test-Surv.html
+        # Features (split into separate pages)
+        - text: "Random Seed & Reproducibility"
+          href: articles/feature-seed.html   # 从现有 Rmd 中整理产出
         - text: "Variable Importance"
           href: articles/Variable-Importance.html
+        - text: "Single Tree"
+          href: articles/feature-single-tree.html  # 从现有 Rmd 中整理产出
+        - text: "Kernel"
+          href: articles/feature-kernel.html       # 从现有 Rmd 中整理产出
         - text: "Confidence Interval Estimation"
           href: articles/Confidence-Interval.html
         - text: "Reinforcement Learning Splitting Rule"
-          href: articles/tutorial_rl.html
+          href: articles/rl_splitting_rule.html
     - text: "Developing"
       href: DEVELOPING.html
     - text: "Changelog"
@@ -61,7 +69,4 @@ reference:
   - title: "Other Functions"
     desc: "Other auxiliary or testing functions."
     contents:
-      - mytest  
-
-
-
+      - mytest

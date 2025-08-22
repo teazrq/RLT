@@ -1,330 +1,156 @@
 ---
-title: "Confidence Interval Estimation"
+title: "Confidence Interval / Band — Survival Tutorial (RLT)"
+author: "Ruoqing Zhu"
+date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
 output:
-  rmarkdown::html_document:
-    toc: true
-    toc_float: true
-    theme: default
-vignette: >
-  %\VignetteIndexEntry{Confidence Interval Estimation}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+  html_document:
+    code_folding: hide
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: true
+      smooth_scroll: true 
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
 ---
 
-
-```{r setup, include = FALSE}
+```{r setup, include=FALSE}
+# Clean, consistent output for all chunks
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.width = 7,
-  fig.height = 5
+  message = FALSE, warning = FALSE,
+  fig.width = 7, fig.height = 5, out.width = "80%", fig.align = "center",
+  collapse = TRUE, class.source = "fold-show"
 )
 ```
 
-## Introduction
+## Overview
 
-Confidence interval estimation is essential for understanding the uncertainty in random forest predictions. The RLT package provides comprehensive tools for estimating confidence intervals across different types of models, including regression, classification, and survival analysis.
+This page shows how to construct confidence bands for individual survival curves predicted by RLT.
 
-## Variance Estimation for Regression
+## Data
 
-For regression models, RLT can estimate prediction variance and construct confidence intervals using the out-of-bag samples.
+We simulate right-censored survival data with standard normal predictors.
 
-```{r regression-variance}
+```{r data-prep}
+# (Optional) For reproducibility in this tutorial only
+set.seed(2)
+
+# ---- Generate a small survival dataset (~120 obs) ----
+n <- 120
+p <- 10
+X <- matrix(rnorm(n * p), n, p)
+
+xlink <- function(x) exp(x[, 1] + x[, 3] / 2)
+FT <- rexp(n, rate = xlink(X))          # event times
+CT <- pmin(6, rexp(n, rate = 0.25))     # censoring times (cap at 6)
+
+Y <- pmin(FT, CT)                        # observed time
+Censor <- as.numeric(FT <= CT)           # 1 = event observed
+
+# A few test subjects to visualize (keep small for a clean figure)
+ntest  <- 6
+testX  <- matrix(rnorm(ntest * p), ntest, p)
+
+# True survival for reference (only for simulated data)
+timepoints <- sort(unique(Y[Censor == 1]))
+SurvMat    <- matrix(NA, nrow(testX), length(timepoints))
+exprate    <- xlink(testX)
+
+for (j in seq_along(timepoints)) {
+  SurvMat[, j] <- 1 - pexp(timepoints[j], rate = exprate)
+}
+```
+
+## Fit and predict with variance
+
+```{r fit-predict}
+# install.packages("devtools"); devtools::install_github("teazrq/RLT")
 library(RLT)
 
-# Generate regression data
-set.seed(1)
-trainn = 1000
-testn = 100
-n = trainn + testn
-p = 20
+fit <- RLT(
+  X, Y, Censor, model = "survival",
+  ntrees = 800, mtry = min(p, 10), nmin = 5,
+  split.gen = "random", nsplit = 3,
+  resample.prob = 0.8, resample.replace = FALSE,
+  importance = FALSE, verbose = FALSE,
+  ncores = max(1, parallel::detectCores() - 1),
+  param.control = list(split.rule = "logrank", "var.ready" = TRUE)
+)
 
-# Generate features
-X1 = matrix(rnorm(n*p/2), n, p/2)
-X2 = matrix(as.integer(runif(n*p/2)*3), n, p/2)
+# Predict survival curves and covariance for test subjects
+RLTPred <- predict(fit, testX, var.est = TRUE, ncores = max(1, parallel::detectCores() - 1))
 
-X = data.frame(X1, X2)
-for (j in (p/2 + 1):p) X[,j] = as.factor(X[,j])
-
-# Generate response
-y = 1 + X[, 1] + rnorm(n)
-
-# Split data
-trainX = X[1:trainn, ]
-trainY = y[1:trainn]
-testX = X[(trainn+1):n, ]
-testY = y[(trainn+1):n]
-
-# Order test data for visualization
-xorder = order(testX[, 1])
-testX = testX[xorder, ]
-testY = testY[xorder]
 ```
 
-### Regression Confidence Intervals
+## Option A — Eigenvalue-thresholded Monte Carlo
 
-```{r regression-ci, fig.width=8, fig.height=6}
-# Fit RLT model with variance estimation
-RLTfit <- RLT(trainX, trainY, model = "regression", 
-              ntrees = 2000, mtry = p, nmin = 40, 
-              split.gen = "best", resample.prob = 0.5,
-              param.control = list("var.ready" = TRUE, 
-                                   "resample.track" = TRUE),
-              verbose = TRUE)
+This option computes bands using a Monte Carlo scheme with eigenvalue thresholding.
+We also plot pointwise ±1.96 * sd from the diagonal of the covariance for reference.
 
-# Predict with variance estimation
-RLTPred <- predict(RLTfit, testX, var.est = TRUE, keep.all = TRUE)
+```{r eigen-bands, fig.width=10, fig.height=8}
+alpha <- 0.05
+logt  <- log(1 + timepoints)
 
-# Calculate confidence intervals
-upper = RLTPred$Prediction + 1.96*sqrt(RLTPred$Variance)
-lower = RLTPred$Prediction - 1.96*sqrt(RLTPred$Variance)
-cover = (1 + testX$X1 > lower) & (1 + testX$X1 < upper)
+SurvBand_A <- get.surv.band(RLTPred, alpha = alpha, approach = "eigen-th-mc")
 
-# Plot results
-plot(1 + testX$X1, RLTPred$Prediction, pch = 19, 
-     col = ifelse(is.na(cover), "red", ifelse(cover, "green", "black")),
-     xlab = "Truth", ylab = "Predicted", 
-     xlim = c(min(y)+1, max(y)-1), ylim = c(min(y)+1, max(y)-1),
-     main = "Regression Confidence Intervals")
-
-abline(0, 1, col = "darkorange", lwd = 2)
-
-# Add confidence intervals
-for (i in 1:testn)
-  segments(1+testX$X1[i], lower[i], 1+testX$X1[i], upper[i], 
-           col = ifelse(is.na(cover[i]), "red", ifelse(cover[i], "green", "black")))
-
-legend("topleft", c("covered", "not covered"), col = c("green", "black"), 
-       lty = 1, pch = 19, cex = 1.2)
-```
-
-## Variance Estimation for Classification
-
-For classification models, RLT can estimate variance for class probabilities and construct confidence intervals.
-
-```{r classification-variance}
-# Generate classification data
-set.seed(1)
-trainn <- 1000
-testn <- 100
-n <- trainn + testn
-p <- 20
-
-# Generate features
-X1 <- matrix(rnorm(n * p / 2), n, p / 2)
-X2 <- matrix(as.integer(runif(n * p / 2) * 4), n, p / 2)
-
-X <- data.frame(X1, X2)
-X[, (p / 2 + 1):p] <- lapply(X[, (p / 2 + 1):p], as.factor)
-
-# Generate outcomes
-logit <- function(x) exp(x) / (1 + exp(x))
-y <- as.factor(rbinom(n, 1, prob = logit(-0.5 + 2*X[, 1])))
-
-# Split data
-trainX = X[1:trainn, ]
-trainY = y[1:trainn]
-testX = X[(trainn+1):n, ]
-testY = y[(trainn+1):n]
-
-# Order test data
-xorder = order(testX[, 1])
-testX = testX[xorder, ]
-testY = testY[xorder]
-testprob = logit(-0.5 + 2*testX$X1)
-```
-
-### Classification Confidence Intervals
-
-```{r classification-ci, fig.width=8, fig.height=6}
-# Fit classification model with variance estimation
-RLTfit <- RLT(trainX, trainY, model = "classification", 
-              ntrees = 2000, mtry = p, nmin = 20, 
-              split.gen = "random", resample.prob = 0.5,
-              param.control = list("var.ready" = TRUE, "resample.track" = TRUE),
-              verbose = TRUE)
-
-# Predict with variance estimation
-RLTPred <- predict(RLTfit, testX, var.est = TRUE, keep.all = TRUE)
-
-# Calculate confidence intervals for P(Y = 1)
-upper = RLTPred$Prob[, 2] + 1.96*sqrt(RLTPred$Variance[,2])
-lower = RLTPred$Prob[, 2] - 1.96*sqrt(RLTPred$Variance[,2])
-cover = (testprob > lower) & (testprob < upper)
-
-# Plot results
-plot(testX$X1, RLTPred$Prob[,2], pch = 19, 
-     col = ifelse(is.na(cover), "red", ifelse(cover, "green", "black")),
-     xlab = "X1", ylab = "P(Y = 1)", 
-     xlim = c(min(testX$X1)-0.1, max(testX$X1)+0.1), 
-     ylim = c(min(RLTPred$Prob[,1])-0.1, max(RLTPred$Prob[,1])+0.1),
-     main = "Classification Confidence Intervals")
-
-lines(testX$X1, testprob, col = "darkorange", lwd = 2)
-
-# Add confidence intervals
-for (i in 1:testn)
-  segments(testX$X1[i], lower[i], testX$X1[i], upper[i], 
-           col = ifelse(is.na(cover[i]), "red", ifelse(cover[i], "green", "black")))
-
-legend("topleft", c("covered", "not covered"), col = c("green", "black"), 
-       lty = 1, pch = 19, cex = 1.2)
-```
-
-## Survival Analysis Confidence Bands
-
-For survival analysis, RLT provides sophisticated methods for constructing confidence bands around survival curves.
-
-```{r survival-bands}
-# Generate survival data
-set.seed(2)
-n = 600
-p = 20
-X = matrix(rnorm(n*p), n, p)
-
-# Create survival times
-xlink <- function(x) exp(x[, 1] + x[, 3]/2)
-FT = rexp(n, rate = xlink(X))
-CT = pmin(6, rexp(n, rate = 0.25))
-
-Y = pmin(FT, CT)
-Censor = as.numeric(FT <= CT)
-
-# Generate test data
-ntest = 15
-testx = matrix(rnorm(ntest*p), ntest, p)
-
-# Calculate true survival function
-timepoints = sort(unique(Y[Censor==1]))
-SurvMat = matrix(NA, nrow(testx), length(timepoints))
-exprate = xlink(testx)
-
-for (j in 1:length(timepoints)) {
-  SurvMat[, j] = 1 - pexp(timepoints[j], rate = exprate)
+layout(matrix(1:ntest, nrow = 2, byrow = TRUE))
+par(mar = c(3, 3, 2, 1))
+for (i in 1:ntest) {
+  # truth (red) — only available here because data are simulated
+  plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red",
+       xlab = "log(1 + time)", ylab = paste("Subject", i),
+       ylim = c(0, 1))
+  
+  # estimated survival (black solid) and pointwise 1.96 bands (black dotted)
+  lines(logt, RLTPred$Survival[i, ], lwd = 2, col = "black")
+  lines(logt, RLTPred$Survival[i, ] - qnorm(1 - alpha/2) * sqrt(diag(RLTPred$Cov[,, i])),
+        lty = 2, col = "black")
+  lines(logt, RLTPred$Survival[i, ] + qnorm(1 - alpha/2) * sqrt(diag(RLTPred$Cov[,, i])),
+        lty = 2, col = "black")
+  
+  # eigen-th-mc band (blue dotted)
+  lines(logt, SurvBand_A[[i]]$lower[, 1], lty = 3, lwd = 2, col = "deepskyblue")
+  lines(logt, SurvBand_A[[i]]$upper[, 1], lty = 3, lwd = 2, col = "deepskyblue")
 }
 ```
 
-### Survival Model Fitting
+## Option B — Smoothed low-rank
 
-```{r survival-fit}
-# Fit survival model
-RLTfit <- RLT(X, Y, Censor, model = "survival", 
-              ntrees = 2000, nmin = 20, mtry = 20, split.gen = "random",
-              resample.prob = 0.5, resample.replace = FALSE, nsplit = 5,
-              param.control = list(split.rule = "logrank", "var.ready" = TRUE), 
-              importance = FALSE, verbose = TRUE, ncores = 1)
+This option builds smoothed, low-rank bands which can be more stable.
+Here we use a small rank `r = 5` for illustration.
 
-# Predict with variance estimation
-RLTPred <- predict(RLTfit, testx, ncores = 1, var.est = TRUE)
-```
+```{r smoothed-bands, fig.width=10, fig.height=8}
+alpha <- 0.05
+logt  <- log(1 + timepoints)
 
-### Confidence Band Methods
+SurvBand_B <- get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-lr", r = 5)
 
-RLT provides several approaches for constructing confidence bands:
-
-#### 1. Naive Monte Carlo Approach
-
-```{r naive-mc, fig.width=12, fig.height=8}
-alpha = 0.05
-
-# Original Monte Carlo approach without smoothing
-SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "eigen-th-mc")
-
-# Plot results for first few subjects
-par(mfrow = c(2, 3))
-logt = log(1 + timepoints)
-
-for (i in 1:min(6, ntest)) {
-  # Truth
-  plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red", 
-       ylab = paste("Subject", i), main = paste("Subject", i))
-  
-  # Estimated survival
-  lines(logt, RLTPred$Survival[i,], lwd = 2, col = "black")
-  
-  # Naive confidence bands
-  lines(logt, SurvBand[[i]]$lower[,1], lty = 2, lwd = 2, col = "deepskyblue")
-  lines(logt, SurvBand[[i]]$upper[,1], lty = 2, lwd = 2, col = "deepskyblue")
+layout(matrix(1:ntest, nrow = 2, byrow = TRUE))
+par(mar = c(3, 3, 2, 1))
+for (i in 1:ntest) {
+  plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red",
+       xlab = "log(1 + time)", ylab = paste("Subject", i),
+       ylim = c(0, 1))
+  lines(logt, RLTPred$Survival[i, ], lwd = 2, col = "black")
+  lines(logt, RLTPred$Survival[i, ] - qnorm(1 - alpha/2) * sqrt(diag(RLTPred$Cov[,, i])),
+        lty = 2, col = "black")
+  lines(logt, RLTPred$Survival[i, ] + qnorm(1 - alpha/2) * sqrt(diag(RLTPred$Cov[,, i])),
+        lty = 2, col = "black")
+  lines(logt, SurvBand_B[[i]]$lower[, 1], lty = 3, lwd = 2, col = "deepskyblue")
+  lines(logt, SurvBand_B[[i]]$upper[, 1], lty = 3, lwd = 2, col = "deepskyblue")
 }
 ```
 
-#### 2. Smoothed Monte Carlo Approach
+## (Optional) Smoothed Monte Carlo
 
-```{r smoothed-mc, fig.width=12, fig.height=8}
-# Monte Carlo approach using smoothed rescaled covariance matrix
-SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-mc", nsim = 1000)
+For completeness, another option is smoothed Monte Carlo:
 
-# Plot results
-par(mfrow = c(2, 3))
-logt = log(1 + timepoints)
-
-for (i in 1:min(6, ntest)) {
-  # Truth
-  plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red", 
-       ylab = paste("Subject", i), main = paste("Subject", i))
-  
-  # Estimated survival
-  lines(logt, RLTPred$Survival[i,], lwd = 2, col = "black")
-  
-  # Smoothed confidence bands
-  lines(logt, SurvBand[[i]]$lower[,1], lty = 2, lwd = 2, col = "deepskyblue")
-  lines(logt, SurvBand[[i]]$upper[,1], lty = 2, lwd = 2, col = "deepskyblue")
-}
+```r
+SurvBand_C <- get.surv.band(RLTPred, alpha = 0.05, approach = "smoothed-mc", nsim = 500)
 ```
 
-#### 3. Smoothed Low-rank Monte Carlo
+You can increase `nsim` for stability at the cost of runtime.
 
-```{r smoothed-lr, fig.width=12, fig.height=8}
-# Low rank smoothed approach with adaptive Bonferroni critical value
-SurvBand = get.surv.band(RLTPred, alpha = alpha, approach = "smoothed-lr", r = 5)
 
-# Plot results
-par(mfrow = c(2, 3))
-logt = log(1 + timepoints)
-
-for (i in 1:min(6, ntest)) {
-  # Truth
-  plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red", 
-       ylab = paste("Subject", i), main = paste("Subject", i))
-  
-  # Estimated survival
-  lines(logt, RLTPred$Survival[i,], lwd = 2, col = "black")
-  
-  # Low-rank confidence bands
-  lines(logt, SurvBand[[i]]$lower[,1], lty = 2, lwd = 2, col = "deepskyblue")
-  lines(logt, SurvBand[[i]]$upper[,1], lty = 2, lwd = 2, col = "deepskyblue")
-}
-
-# Report average approximation error
-cat(paste("Average approximation error:", mean(sapply(SurvBand, "[[", 3))))
-```
-
-## Covariance Matrix Visualization
-
-```{r covariance-viz, fig.width=8, fig.height=8}
-# Visualize covariance matrices
-i = 5  # Choose a subject
-ccov = RLTPred$Cov[,,i]
-
-# Original covariance matrix
-heatmap(ccov[rev(1:nrow(ccov)),], Rowv = NA, Colv = NA, symm = TRUE,
-        main = "Original Covariance Matrix")
-
-# Note: The smoothed covariance approximation code is used internally
-# in the get.surv.band function for better numerical stability
-```
-
-## Key Points
-
-1. **Regression**: Variance estimation provides confidence intervals for continuous predictions
-2. **Classification**: Variance estimation provides confidence intervals for class probabilities
-3. **Survival**: Multiple approaches for confidence bands around survival curves
-4. **Methods**: 
-   - Naive Monte Carlo: Simple but may be computationally intensive
-   - Smoothed Monte Carlo: Uses smoothed covariance for better numerical stability
-   - Low-rank Monte Carlo: Efficient approach with adaptive critical values
-5. **Coverage**: Confidence intervals should cover the true values with the specified confidence level
-
-## Summary
-
-The RLT package provides comprehensive tools for confidence interval estimation across different types of models. The choice of method depends on the model type and computational requirements. For survival analysis, the smoothed approaches generally provide better numerical stability and computational efficiency. 

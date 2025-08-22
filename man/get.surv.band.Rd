@@ -10,8 +10,10 @@ get.surv.band(
   i = 0,
   alpha = 0.05,
   approach = "naive-mc",
-  nsim = 1000,
+  nsim = 5000,
   r = 3,
+  bw = 1/2,
+  thre_order = 1,
   ...
 )
 }
@@ -41,6 +43,9 @@ Set this to be a large number. Default is 1000.}
 
 \item{r}{maximum number of ranks used in the \code{smoothed-lr} approximation. Usually 5 is
 enough for approximating the covariance matrix due to smoothness.}
+
+\item{bw}{bandwidth in the \code{ksmooth()} function for the kernel smoothing of standard deviation.
+Default is \eqn{n^{1/2}}, where \eqn{n} is the number of the time points.}
 
 \item{...}{...}
 }

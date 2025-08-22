@@ -131,131 +131,94 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
                        arma::field<arma::field<arma::vec>>& NodeHaz,
                        arma::mat& X,
                        arma::uvec& Ncat,
-                       size_t& NFail,
+                       size_t& NFail, 
+                       const arma::uvec& mapping_indices, // (New) Index vector from R for filtering
                        bool VarEst,
                        bool keep_all,
                        size_t usecores,
                        size_t verbose)
 {
-  // check number of cores
   usecores = checkCores(usecores, verbose);
   
-  // convert R object to forest
-  Surv_Uni_Forest_Class SURV_FOREST(SplitVar, 
-                                    SplitValue, 
-                                    LeftNode, 
-                                    RightNode, 
-                                    NodeWeight,
-                                    NodeHaz);
+  Surv_Uni_Forest_Class SURV_FOREST(SplitVar, SplitValue, LeftNode, RightNode, 
+                                    NodeWeight, NodeHaz);
   
-  // parameters
   size_t N = X.n_rows;
   size_t ntrees = SURV_FOREST.SplitVarList.size();
   
-  // all terminal nodes
+  // --- MODIFIED: New, smaller grid size determined by index vector length ---
+  size_t effective_grid_size = mapping_indices.n_elem;
+
   umat AllTermNode(N, ntrees, fill::zeros);
   
-  // predictions
-  mat Hazard(N, NFail);
-  mat CHazard(N, NFail);
-  mat Surv(N, NFail);
+  // --- MODIFIED: All output matrices use new, smaller dimensions ---
+  mat Hazard(N, effective_grid_size);
+  mat CHazard(N, effective_grid_size);
+  mat Surv(N, effective_grid_size);
   
   cube Cov;
-
   if (VarEst)
-    Cov.zeros(NFail, NFail, N);
+    Cov.zeros(effective_grid_size, effective_grid_size, N);
   
   cube AllHazard;
-  
   if (keep_all)
-  {
-    AllHazard.zeros(ntrees, NFail, N);
-  }
+    AllHazard.zeros(ntrees, effective_grid_size, N);
   
-  // get terminal node ids for all observations
+  
 #pragma omp parallel num_threads(usecores)
   {
 #pragma omp for schedule(static)
     for (size_t nt = 0; nt < ntrees; nt++)
     {
-      // initiate all observations
-      uvec proxy_id = linspace<uvec>(0, N-1, N);
-      uvec real_id = linspace<uvec>(0, N-1, N);
+      uvec proxy_id = linspace<uvec>(0, N - 1, N);
+      uvec real_id = linspace<uvec>(0, N - 1, N);
       uvec TermNode(N, fill::zeros);
-      
-      Tree_Class OneTree(SURV_FOREST.SplitVarList(nt),
-                         SURV_FOREST.SplitValueList(nt),
-                         SURV_FOREST.LeftNodeList(nt),
-                         SURV_FOREST.RightNodeList(nt),
+      Tree_Class OneTree(SURV_FOREST.SplitVarList(nt), SURV_FOREST.SplitValueList(nt),
+                         SURV_FOREST.LeftNodeList(nt), SURV_FOREST.RightNodeList(nt),
                          SURV_FOREST.NodeWeightList(nt));
-      
       Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, real_id, TermNode);
-      
       AllTermNode.col(nt) = TermNode;
     }
     
 #pragma omp barrier
-    
-    // calculate prediction for each observations
-    
+
+    // This part calculates predictions
 #pragma omp for schedule(static)
     for (size_t i = 0; i < N; i++)
     {
-      mat pred_i(ntrees, NFail + 1);
+      // 1. Compute the full hazard matrix for all trees
+      mat pred_i_hazard_full(ntrees, NFail);
+      for (size_t nt = 0; nt < ntrees; nt++){
+        arma::vec H_full = SURV_FOREST.NodeHazList(nt).at(AllTermNode(i, nt));
+        pred_i_hazard_full.row(nt) = H_full.subvec(1, NFail).t(); 
+      }
 
-      // get hazard functions of all trees
-      for (size_t nt = 0; nt < ntrees; nt++)
-        pred_i.row(nt) = SURV_FOREST.NodeHazList(nt).at(AllTermNode(i, nt)).t();
-      
-      pred_i.shed_col(0);
-      
-      if (keep_all)
-        AllHazard.slice(i) = pred_i;
-      
-      // get mean hazard, cumulative hazard and survival
-      Hazard.row(i) = mean(pred_i, 0);
+      // 2. Compute the full survival matrix for all trees
+      mat pred_i_survival_full = cumprod(1 - pred_i_hazard_full, 1); // row-wise cumulative product
+
+      // 3. Subset both matrices using mapping_indices to get reduced matrices
+      mat pred_i_hazard_reduced = pred_i_hazard_full.cols(mapping_indices);
+      mat pred_i_survival_reduced = pred_i_survival_full.cols(mapping_indices);
+
+      // 4. Assign the mean of the reduced hazard and survival matrices to the output
+      Hazard.row(i) = mean(pred_i_hazard_reduced, 0);
+      Surv.row(i) = mean(pred_i_survival_reduced, 0);
       CHazard.row(i) = cumsum(Hazard.row(i));
-      //Surv.row(i) = exp(- CHazard.row(i));
-      Surv.row(i) = cumprod( 1 - Hazard.row(i) );
 
-      // survival of all trees, KM estimate
-      pred_i = cumprod(1 - pred_i, 1 ); // change to survival      
-      // if we want the variance of CH, then use NA
-      // pred_i = cumsum(pred_i, 1);
-
-      // calculate variance
+      // 5. For variance estimation, use the reduced survival matrix
       if (VarEst)
       {
-        if (ntrees % 2 == 1){
-          RLTcout << "not an even number of trees for variance estimation\n" << std::endl;
-        }
-
-        size_t B = ntrees / 2; // ntrees must be an even number
-
-        // tree variance
-        mat Diff = pred_i.rows(0, B-1) - pred_i.rows(B, ntrees-1);
+        mat pred_i_for_var = pred_i_survival_reduced;
+        size_t B = ntrees / 2;
+        mat Diff = pred_i_for_var.rows(0, B - 1) - pred_i_for_var.rows(B, ntrees - 1);
         mat Vh = Diff.t() * Diff / ntrees;
-
-        // sample variance
-        mat Vs = cov(pred_i, 1); // use 1/N
-        
-        // correct negative eigen values
+        mat Vs = cov(pred_i_for_var, 1);
         vec eigval;
         mat eigvec;
         eig_sym(eigval, eigvec, Vh - Vs);
-
-        // correct negative eigen values to at least 1e-6
-        for (size_t j = 0; j < eigval.n_elem; j++)
-          eigval(j) = std::max(eigval(j), 1e-6);
-
-        // reconstruct corrected covariance matrix
-        Cov.slice(i) = (eigvec.each_row() % eigval.t()) * eigvec.t();
+        eigval.elem(find(eigval < 1e-6)).fill(1e-6);
+        Cov.slice(i) = eigvec * diagmat(eigval) * eigvec.t();
         Cov.slice(i) = (Cov.slice(i) + Cov.slice(i).t())/2;
-        
-        // output raw covariance matrix estimation 
-        // Cov.slice(i) = Vh - Vs;
-        
-        // Var.row(i) = diagvec( Cov.slice(i) ).t();
       }
     }
   }
@@ -268,7 +231,6 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
   if (VarEst)
   {
     ReturnList["Cov"] = Cov;
-    // ReturnList["MarVar"] = Var;
   }
   
   if (keep_all)
@@ -292,7 +254,7 @@ arma::mat mc_band(const arma::vec& mar_sd,
   // all cut-offs
   arma::vec cutoffs = max(abs(X),0).t();
   
-  arma::vec q = quantile(cutoffs, 1 - alpha/2);
+  arma::vec q = quantile(cutoffs, 1 - alpha);
   
   // RLTcout<< " quantile estimated:" << q << std::endl;
   return(mar_sd * q.t());

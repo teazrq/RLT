@@ -1,18 +1,21 @@
 #' @title prediction using RLT
-#' @description Predict the outcome (regression, classification or survival) 
+#' @description  Predict the outcome (regression, classification or survival) 
 #'              using a fitted RLT object
-#' @param object   A fitted RLT object
-#' @param testx    The testing samples, must have the same structure as the 
-#'                 training samples
-#' @param var.est  Whether to estimate the variance of each testing data. 
-#'                 The original forest must be fitted with \code{var.ready = TRUE}.
-#'                 For survival forests, calculates the covariance matrix over all
-#'                 observed time points and calculates critical value for the confidence 
-#'                 band.
-#' @param keep.all whether to keep the prediction from all trees. Warning: this can 
-#'                 occupy a large storage space, especially in survival model
-#' @param ncores   number of cores
-#' @param verbose  print additional information
+#' @param object          A fitted RLT object
+#' @param testx           The testing samples, must have the same structure as the training samples
+#' @param var.est         Whether to estimate the variance of each testing data. 
+#'                        The original forest must be fitted with \code{var.ready = TRUE}.
+#'                        For survival forests, calculates the covariance matrix over all
+#'                        observed time points and calculates critical value for the confidence 
+#'                        band.
+#' @param keep.all        whether to keep the prediction from all trees. Warning: this can 
+#'                        occupy a large storage space, especially in survival model
+#' @param ncores          number of cores
+#' @param verbose         print additional information
+#' @param band.grid.size  An integer specifying the number of time points for confidence band calculation. 
+#'                        Default is 0, which uses all unique failure time points. If a positive integer
+#'                        is provided, a subset of time points will be selected using quantiles,
+#'                        skipping the earliest 5% of time points to improve stability.
 #' @param ... ...
 #'
 #' @return 
@@ -61,9 +64,10 @@
 predict.RLT<- function(object,
                        testx = NULL,
                        var.est = FALSE,
-                       keep.all = FALSE,
+                       keep.all = FALSE, 
                        ncores = 1,
                        verbose = 0,
+                       band.grid.size = 0, 
                        ...)
 {
   
@@ -159,6 +163,29 @@ predict.RLT<- function(object,
   
   if( class(object)[2] == "fit" &  class(object)[3] == "surv" )
   {
+    # Get original timepoints and NFail
+    original_timepoints <- object$timepoints
+    NFail <- length(object$timepoints)
+    
+    # Default: use all points
+    new_grid_timepoints <- original_timepoints
+
+    # Only perform reduction when user specifies valid band.grid.size
+    if (band.grid.size > 0) {
+      effective_grid_size <- min(band.grid.size, NFail)
+      
+      # Only execute selection when reduction is actually needed
+      if (effective_grid_size < NFail){
+        probs_to_select <- seq(from = 0.05, to = 1.0, length.out = effective_grid_size)
+        new_grid_timepoints <- unique(as.numeric(stats::quantile(original_timepoints, probs = probs_to_select, type = 1)))
+      }
+    }
+    
+    new_grid_timepoints <- sort(new_grid_timepoints)
+    
+    # Create mapping indices for C++ function
+    mapping_indices <- match(new_grid_timepoints, original_timepoints) - 1  # Convert to 0-based indexing
+    
     pred <- SurvUniForestPred(object$FittedForest$SplitVar,
                               object$FittedForest$SplitValue,
                               object$FittedForest$LeftNode,
@@ -167,14 +194,16 @@ predict.RLT<- function(object,
                               object$FittedForest$NodeHaz,
                               testx,
                               object$ncat,
-                              length(object$timepoints),
+                              NFail, 
+                              mapping_indices, # Index vector for filtering
                               var.est,
                               keep.all,
                               ncores,
                               verbose)
-    
-    pred$timepoints <- object$timepoints
 
+    
+    pred$timepoints <- new_grid_timepoints
+    
     class(pred) <- c("RLT", "pred", "surv")
     return(pred)
   }
