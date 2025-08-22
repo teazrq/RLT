@@ -119,7 +119,7 @@ for (i in 1:ntest) {
 ## Option B — Smoothed low-rank
 
 This option builds smoothed, low-rank bands which can be more stable.
-Here we use a small rank `r = 5` for illustration.
+Here we use a small rank for illustration.
 
 ```{r smoothed-bands, fig.width=10, fig.height=8}
 alpha <- 0.05
