@@ -48,6 +48,7 @@ fit_rect <- RLT(
   split.gen = "best",
   resample.prob = 0.8, resample.replace = TRUE,
   importance = TRUE,
+  param.control = list("resample.track" = TRUE),
   ncores = max(1, parallel::detectCores() - 1),
   verbose = FALSE
 )
@@ -156,7 +157,7 @@ RLTfit <- RLT(X, y, model = "regression", obs.w = w,
               split.gen = "random", nsplit = 3, 
               resample.prob = 0.8, resample.replace = FALSE, 
               split.rule = "sir",
-              param.control = list("linear.comb" = 3), #ZRL
+              param.control = list("linear.comb" = 3), 
               importance = TRUE, 
               verbose = TRUE)
 
