@@ -1,0 +1,129 @@
+# Survival - Minimal Tutorial (RLT)
+
+## Overview
+
+This page shows how to fit and predict a survival model with RLT.
+
+## Prerequisites
+
+See [Get Started](https://teazrq.github.io/RLT/articles/get-started.md)
+for installation and loading instructions.
+
+## Data
+
+We generate continuous and integer predictors with right-censored
+survival times. The dataset includes event times following an
+exponential model with rate depending on predictors, and censoring times
+that control the censoring level. We observe time = min(event_time,
+censor_time) and status = 1(event before censor).
+
+``` r
+
+# (Optional) For reproducibility in this tutorial only.
+# Detailed notes on random seeds are in the Seed & Reproducibility feature page.
+set.seed(1)
+
+# ---- Generate a small synthetic dataset ----
+trainn <- 80
+testn  <- 20
+n <- trainn + testn
+p <- 10
+
+# Continuous + integer "categorical" predictors
+X1 <- matrix(rnorm(n * (p/2)), n, p/2)
+X2 <- matrix(as.integer(runif(n * (p/2)) * 3), n, p/2)  # integers 0,1,2
+
+X <- data.frame(X1, X2)
+
+# Link for event rate (uses a few columns to create signal)
+xlink <- function(x) exp(0.6 * x[, 2] + 0.6 * x[, 4] + 0.4 * x[, p])
+
+# Event and censoring times
+FT <- rexp(n, rate = xlink(X))   # event (failure) time
+CT <- rexp(n, rate = 0.5)        # censoring time (controls censoring level)
+
+# Observed time and status (1 = event observed, 0 = censored)
+time   <- pmin(FT, CT)
+status <- as.numeric(FT <= CT)
+
+# Train / test split
+trainX     <- X[1:trainn, ]
+trainTime  <- time[1:trainn]
+trainStat  <- status[1:trainn]
+testX      <- X[(trainn + 1):(trainn + testn), ]
+testTime   <- time[(trainn + 1):(trainn + testn)]
+testStat   <- status[(trainn + 1):(trainn + testn)]
+```
+
+## Fit
+
+``` r
+
+library(RLT)
+
+ntrees <- 200
+ncores <- 1
+nmin   <- 5
+mtry   <- p/2
+samplereplace <- TRUE
+sampleprob    <- 0.80
+rule    <- "best"     # split generator
+nsplit  <- 0
+importance <- TRUE
+
+fit <- RLT(
+  trainX, trainTime, trainStat, model = "survival",
+  ntrees = ntrees, mtry = mtry, nmin = nmin,
+  resample.prob = sampleprob, split.gen = rule,
+  resample.replace = samplereplace,
+  nsplit = nsplit, importance = importance,
+  param.control = list(alpha = 0),
+  ncores = ncores, verbose = FALSE
+)
+```
+
+## Predict
+
+Predict survival and hazard estimates for the test set; compute a simple
+risk score for evaluation.
+
+``` r
+
+pred <- predict(fit, testX, keep.all = TRUE, ncores = ncores)
+
+# Optional helpers depending on returned structure
+# Risk score: sum of cumulative hazards (a simple concordance-friendly score)
+risk_score <- colSums(apply(pred$Hazard, 1, cumsum))
+```
+
+## Evaluate
+
+``` r
+
+c_index <- 1 - cindex(testTime, testStat, risk_score)
+
+# A compact summary
+list(
+  Concordance = round(c_index, 4)
+)
+## $Concordance
+## [1] 0.3282
+```
+
+## Inspect
+
+``` r
+
+print(fit)
+## -------------------------------------
+## RLT Survival Forest
+## -------------------------------------
+##               (N, P) = (80, 10)
+##           # of trees = 200
+##         (mtry, nmin) = (5, 5)
+##       split generate = Best
+##             sampling = 80% w/ replace
+##           importance = permutation
+##           OOB error = 0.3485
+## -------------------------------------
+```

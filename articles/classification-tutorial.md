@@ -1,0 +1,139 @@
+# RLT Classification Tutorial
+
+## Overview
+
+This page shows how to fit and predict a classification model with RLT.
+
+## Prerequisites
+
+Install RLT, then load it with
+[`library(RLT)`](https://cran.r-project.org/package=RLT).
+
+## Data Preparation
+
+We generate continuous and categorical predictors with a binary outcome.
+
+``` r
+
+# (Optional) For reproducibility in this tutorial only.
+# Detailed notes on random seeds are in the Seed & Reproducibility feature page.
+set.seed(1)
+
+# ---- Generate a small synthetic dataset ----
+trainn <- 80
+testn  <- 20
+n <- trainn + testn
+p <- 10
+
+# Continuous + categorical predictors (last half as factors)
+X1 <- matrix(rnorm(n * (p/2)), n, p/2)
+X2 <- matrix(as.integer(runif(n * (p/2)) * 10), n, p/2)  # integers 0-9
+
+X <- data.frame(X1, X2)
+X[, (p/2 + 1):p] <- lapply(X[, (p/2 + 1):p], as.factor)
+
+# Binary outcome via a simple logistic signal
+logit <- function(x) exp(x) / (1 + exp(x))
+prob  <- logit(-0.5 + 2 * X[, 1])  # simple signal using the first continuous feature
+y     <- factor(rbinom(n, 1, prob = prob), levels = c(0, 1))
+
+# Train / test split
+trainX <- X[1:trainn, ]
+trainY <- y[1:trainn]
+testX  <- X[(trainn + 1):(trainn + testn), ]
+testY  <- y[(trainn + 1):(trainn + testn)]
+```
+
+## Fit a classification model
+
+``` r
+
+ntrees <- 200
+ncores <- 1
+nmin   <- 5
+mtry   <- p/2
+samplereplace <- TRUE
+sampleprob    <- 0.80
+rule    <- "best"
+nsplit  <- ifelse(rule == "best", 0, 3)
+importance <- TRUE
+
+fit <- RLT(
+  trainX, trainY, model = "classification",
+  ntrees = ntrees, mtry = mtry, nmin = nmin,
+  resample.prob = sampleprob, split.gen = rule,
+  resample.replace = samplereplace,
+  nsplit = nsplit, importance = importance,
+  param.control = list(alpha = 0),
+  ncores = ncores, verbose = FALSE
+)
+```
+
+## Predict
+
+``` r
+
+pred <- predict(fit, testX, ncores = ncores)
+
+# Helper to extract a numeric or class vector
+get_pred <- function(obj) {
+  if (is.list(obj) && !is.null(obj$Prediction)) obj$Prediction else obj
+}
+
+# Predictions for train/test
+train_pred_raw <- if (!is.null(fit$Prediction)) fit$Prediction else get_pred(predict(fit, trainX, ncores = ncores))
+test_pred_raw  <- get_pred(pred)
+
+# Coerce to class labels aligned with trainY levels
+to_class <- function(x, ref_levels) {
+  if (is.numeric(x)) {
+    # Treat as probability for the "1" class; threshold at 0.5
+    cls <- ifelse(x >= 0.5, as.character(ref_levels[2]), as.character(ref_levels[1]))
+    factor(cls, levels = ref_levels)
+  } else if (is.factor(x)) {
+    factor(x, levels = ref_levels)
+  } else {
+    factor(as.character(x), levels = ref_levels)
+  }
+}
+
+train_pred <- to_class(train_pred_raw, levels(trainY))
+test_pred  <- to_class(test_pred_raw,  levels(trainY))
+```
+
+## Evaluate
+
+``` r
+
+acc_train <- mean(train_pred == trainY)
+acc_test  <- mean(test_pred  == testY)
+
+# A compact summary
+list(
+  Train_Accuracy = round(acc_train, 4),
+  Test_Accuracy  = round(acc_test, 4)
+)
+## $Train_Accuracy
+## [1] 0.725
+## 
+## $Test_Accuracy
+## [1] 0.8
+```
+
+## Inspect the fitted object
+
+``` r
+
+print(fit)
+## -------------------------------------------------------------
+## RLT Classification Forest
+## -------------------------------------------------------------
+##               (N, P) = (80, 10) [5 continuous, 5 categorical]
+##           # of trees = 200
+##         (mtry, nmin) = (5, 5)
+##       split generate = Best
+##             sampling = 80% w/ replace
+##           importance = permutation
+##       OOB misclass = 27.5%
+## -------------------------------------------------------------
+```

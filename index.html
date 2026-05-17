@@ -7,12 +7,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Reinforcement Learning Trees • RLT</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Reinforcement Learning Trees">
-<meta name="description" content="Random forest with a variety of additional features for regression, classification, survival analysis and graphical model. New features include parallel computing with OpenMP, reproduciblity with random seeds, variance and confidence band estimations, embedded model for selecting splitting varibles and constructing linear combination splits, observaton and variable weights, setting and tracking subjects used in each tree, etc.">
-<meta property="og:description" content="Random forest with a variety of additional features for regression, classification, survival analysis and graphical model. New features include parallel computing with OpenMP, reproduciblity with random seeds, variance and confidence band estimations, embedded model for selecting splitting varibles and constructing linear combination splits, observaton and variable weights, setting and tracking subjects used in each tree, etc.">
+<meta name="description" content="Random forest with a variety of additional features for regression, classification, and survival analysis. Features include parallel computing with OpenMP, reproducibility with random seeds, variance and confidence band estimations using U-statistics, embedded model for selecting splitting variables and constructing linear combination splits, permutation and distribution-based variable importance, observation and variable weights, and subject tracking across trees.">
+<meta property="og:description" content="Random forest with a variety of additional features for regression, classification, and survival analysis. Features include parallel computing with OpenMP, reproducibility with random seeds, variance and confidence band estimations using U-statistics, embedded model for selecting splitting variables and constructing linear combination splits, permutation and distribution-based variable importance, observation and variable weights, and subject tracking across trees.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">RLT</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">4.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,20 +31,23 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="articles/Test-RLT.html">Get Started</a></li>
-<li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="articles/get-started.html">Get Started</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorials" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorials</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-tutorials">
-<li><a class="dropdown-item" href="articles/Test-Reg.html">Regression</a></li>
-    <li><a class="dropdown-item" href="articles/Test-Cla.html">Classification</a></li>
-    <li><a class="dropdown-item" href="articles/Test-Surv.html">Survival</a></li>
-    <li><a class="dropdown-item" href="articles/Variable-Importance.html">Variable Importance</a></li>
-    <li><a class="dropdown-item" href="articles/Confidence-Interval.html">Confidence Interval Estimation</a></li>
-    <li><a class="dropdown-item" href="articles/tutorial_rl.html">Reinforcement Learning Splitting Rule</a></li>
+<li><a class="dropdown-item" href="articles/regression-tutorial.html">Regression</a></li>
+    <li><a class="dropdown-item" href="articles/classification-tutorial.html">Classification</a></li>
+    <li><a class="dropdown-item" href="articles/survival-tutorial.html">Survival</a></li>
+    <li><a class="dropdown-item" href="articles/survival-minimal.html">Survival Minimal</a></li>
+    <li><a class="dropdown-item" href="articles/feature-seed.html">Random Seed and Reproducibility</a></li>
+    <li><a class="dropdown-item" href="articles/variable-importance.html">Variable Importance</a></li>
+    <li><a class="dropdown-item" href="articles/feature-single-tree.html">Single Tree</a></li>
+    <li><a class="dropdown-item" href="articles/feature-kernel.html">Kernel</a></li>
+    <li><a class="dropdown-item" href="articles/confidence-interval.html">Confidence Interval Estimation</a></li>
+    <li><a class="dropdown-item" href="articles/reinforcement-splitting.html">Reinforcement Splitting</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="DEVELOPING.html">Developing</a></li>
+<li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -59,29 +62,78 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="rlt">RLT<a class="anchor" aria-label="anchor" href="#rlt"></a>
 </h1></div>
-<!-- badges: start -->
-
-<p>This is a new version (&gt;= 4.0.0) of the <code>RLT</code> package. Versions prior to 4.0.0 are written in <code>C</code> (available at <a href="https://github.com/teazrq/RLT-Archive" class="external-link">RLT-Archive</a>), while newer versions are based on <code>C++</code>. This new version will replace the original CRAN package once it is finished.</p>
-<p>The goal of <code>RLT</code> is to provide new functionalities of random forest models. This includes embedded model fit learning a better splitting rule; linear combination splits, confidence intervals, and several other new approaches that are currently being developed.</p>
+<p><strong>Reinforcement Learning Trees</strong> is an R package for random forest models with regression, classification, and survival analysis support. The package uses a C++/Rcpp backend with OpenMP for parallel computation.</p>
+<p><a href="https://teazrq.github.io/RLT/">Website</a> | <a href="https://github.com/teazrq/RLT" class="external-link">GitHub</a> | <a href="https://github.com/teazrq/RLT/issues" class="external-link">Issues</a></p>
+<div class="section level2">
+<h2 id="highlights">Highlights<a class="anchor" aria-label="anchor" href="#highlights"></a>
+</h2>
+<ul>
+<li>Regression, classification, and survival forests</li>
+<li>Reinforcement learning splits with embedded model guidance</li>
+<li>Linear combination splits for multivariate split directions</li>
+<li>Variable importance and random forest kernel utilities</li>
+<li>Survival prediction, confidence bands, and tree inspection tools</li>
+<li>Reproducible parallel fitting through recorded random seeds</li>
+</ul>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install this version using</p>
-<p><code>{r}     # install.packages("devtools")     devtools::install_github("teazrq/RLT")</code></p>
-<p>If you use MacOS, then you need to install a few libraries to be able to compile the package. Please follow <a href="https://teazrq.github.io/random-forests-tutorial/rlab/basics/packages.html" class="external-link">this guild</a>.</p>
+<p>Install the released version from CRAN when available:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"RLT"</span><span class="op">)</span></span></code></pre></div>
+<p>Install the development version from GitHub:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"teazrq/RLT"</span><span class="op">)</span></span></code></pre></div>
+<p>On Windows, source installation requires Rtools. On macOS and Linux, source installation requires a working C++ toolchain and OpenMP support.</p>
 </div>
 <div class="section level2">
-<h2 id="new-features-highlight">New features highlight<a class="anchor" aria-label="anchor" href="#new-features-highlight"></a>
+<h2 id="quick-example">Quick Example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
+</h2>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://cran.r-project.org/package=RLT" class="external-link">RLT</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">6</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="va">p</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">)</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/RLT.html">RLT</a></span><span class="op">(</span></span>
+<span>  <span class="va">x</span>, <span class="va">y</span>,</span>
+<span>  model <span class="op">=</span> <span class="st">"regression"</span>,</span>
+<span>  ntrees <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  importance <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">pred</span><span class="op">$</span><span class="va">Prediction</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/importance.html">importance</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+</h2>
+<p>The pkgdown site is built from the package vignettes and website-only articles:</p>
+<ul>
+<li><a href="https://teazrq.github.io/RLT/articles/get-started.html">Get Started</a></li>
+<li><a href="https://teazrq.github.io/RLT/articles/regression-tutorial.html">Regression Tutorial</a></li>
+<li><a href="https://teazrq.github.io/RLT/articles/classification-tutorial.html">Classification Tutorial</a></li>
+<li><a href="https://teazrq.github.io/RLT/articles/survival-tutorial.html">Survival Tutorial</a></li>
+<li><a href="https://teazrq.github.io/RLT/reference/index.html">Reference</a></li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
 <ul>
-<li>Unbiased variance estimation (regression forest) based on <a href="https://arxiv.org/abs/2202.09008" class="external-link">Xu, Zhu and Shao (2022+)</a>
+<li>Zhu, R., Zeng, D., and Kosorok, M. R. (2015). Reinforcement Learning Trees. <em>Journal of the American Statistical Association</em>, 110(512), 1770-1784. <a href="https://doi.org/10.1080/01621459.2015.1036994" class="external-link uri">https://doi.org/10.1080/01621459.2015.1036994</a>
 </li>
-<li>Unbiased survival function confidence band estimation based on <a href="https://arxiv.org/abs/2204.12038" class="external-link">Formentini, Liang and Zhu (2022+)</a>
+<li>Xu, T., Zhu, R., and Shao, X. (2024). On variance estimation of random forests with infinite-order U-statistics. <em>Electronic Journal of Statistics</em>, 18(1), 2135-2207.</li>
+<li>Formentini, S., Liang, K., and Zhu, R. (2022). Survival Function Confidence Band Estimation using Random Forests. <a href="https://arxiv.org/abs/2204.12038" class="external-link uri">https://arxiv.org/abs/2204.12038</a>
 </li>
-<li>Reproducibility in parallel tree version with xoshiro256plus random number generator</li>
-<li>Speed and space improvement from earlier <code>c</code> version</li>
-<li>[to be implemented] Graph random forests</li>
-<li>[to be implemented] Python API</li>
 </ul>
 </div>
 </div>
@@ -89,13 +141,15 @@
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
 <li><a href="https://cloud.r-project.org/package=RLT" class="external-link">View on CRAN</a></li>
+<li><a href="https://github.com/teazrq/RLT/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/teazrq/RLT/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
 
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li>GPL (&gt;= 2)</li>
+<li>GPL (&gt;= 3)</li>
 </ul>
 </div>
 
@@ -116,13 +170,7 @@
 </ul>
 </div>
 
-<div class="dev-status">
-<h2 data-toc-skip>Dev status</h2>
-<ul class="list-unstyled">
-<li><a href="https://CRAN.R-project.org/package=RLT" class="external-link"><img src="https://www.r-pkg.org/badges/version/RLT" alt="CRAN status"></a></li>
-<li><a href="https://cran.r-project.org/package=RLT" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/RLT"></a></li>
-</ul>
-</div>
+
 
   </aside>
 </div>
@@ -133,7 +181,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>
