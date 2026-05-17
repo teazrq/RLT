@@ -1,4 +1,4 @@
-# Confidence Interval / Band - Survival Tutorial (RLT)
+# Confidence Interval and Confidence Band - Survival Tutorial (RLT)
 
 ## Overview
 

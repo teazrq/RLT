@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Kernel - Tutorial (RLT) • RLT</title>
+<title>Random Forest Kernel - Tutorial (RLT) • RLT</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Kernel - Tutorial (RLT)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Random Forest Kernel - Tutorial (RLT)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,13 +36,12 @@
 <li><a class="dropdown-item" href="../articles/regression-tutorial.html">Regression</a></li>
     <li><a class="dropdown-item" href="../articles/classification-tutorial.html">Classification</a></li>
     <li><a class="dropdown-item" href="../articles/survival-tutorial.html">Survival</a></li>
-    <li><a class="dropdown-item" href="../articles/survival-minimal.html">Survival Minimal</a></li>
+    <li><a class="dropdown-item" href="../articles/linear-combinations.html">RLT with Linear Combinations</a></li>
     <li><a class="dropdown-item" href="../articles/feature-seed.html">Random Seed and Reproducibility</a></li>
-    <li><a class="dropdown-item" href="../articles/variable-importance.html">Variable Importance</a></li>
+    <li><a class="dropdown-item" href="../articles/variable-importance.html">Variable Importance (Permutation and Distributed)</a></li>
+    <li><a class="dropdown-item" href="../articles/feature-kernel.html">Random Forest Kernel</a></li>
     <li><a class="dropdown-item" href="../articles/feature-single-tree.html">Single Tree</a></li>
-    <li><a class="dropdown-item" href="../articles/feature-kernel.html">Kernel</a></li>
-    <li><a class="dropdown-item" href="../articles/confidence-interval.html">Confidence Interval Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/reinforcement-splitting.html">Reinforcement Splitting</a></li>
+    <li><a class="dropdown-item" href="../articles/confidence-interval.html">Confidence Interval and Confidence Band</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -63,7 +62,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Kernel - Tutorial (RLT)</h1>
+      <h1>Random Forest Kernel - Tutorial (RLT)</h1>
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
@@ -83,12 +82,12 @@ Zhu</h4>
 induced by an RLT forest via <code><a href="../reference/forest.kernel.html">forest.kernel()</a></code>.</p>
 </div>
 <div class="section level2">
-<h2 id="example-1-axis-aligned">Example 1 — Axis-aligned<a class="anchor" aria-label="anchor" href="#example-1-axis-aligned"></a>
+<h2 id="example-1---axis-aligned">Example 1 - Axis-aligned<a class="anchor" aria-label="anchor" href="#example-1---axis-aligned"></a>
 </h2>
 <p>We build a regression forest using “best” splits and compute kernel
 weights.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># ---- Generate a small dataset (≈100 obs) ----</span></span>
+<code class="sourceCode R"><span><span class="co"># ---- Generate a small dataset (about 100 obs) ----</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">120</span>; <span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
 <span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="va">p</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">)</span></span>
@@ -120,14 +119,14 @@ weights.</p>
 <span></span>
 <span><span class="co"># X1 vs X2 (both are signal features)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel • X1 vs X2"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel - X1 vs X2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"bottomright"</span>, <span class="st">"Target Point"</span>, pch <span class="op">=</span> <span class="fl">4</span>, col <span class="op">=</span> <span class="st">"black"</span>, lwd <span class="op">=</span> <span class="fl">5</span>, lty <span class="op">=</span> <span class="cn">NA</span>, cex <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># X1 vs X3 (X3 is noise)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel • X1 vs X3"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel - X1 vs X3"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
@@ -135,13 +134,13 @@ weights.</p>
 <span><span class="va">KW_rect_train</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/forest.kernel.html">forest.kernel</a></span><span class="op">(</span><span class="va">fit_rect</span>, X1 <span class="op">=</span> <span class="va">newX</span>, X2 <span class="op">=</span> <span class="va">X</span>, vs.train <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">Kernel</span></span>
 <span><span class="va">size_scale_train</span> <span class="op">&lt;-</span> <span class="fl">10</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">KW_rect_train</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">KW_rect_train</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel (vs.train=TRUE) • X1 vs X2"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel (vs.train=TRUE) - X1 vs X2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale_train</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Another projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel • X2 vs X3"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel - X2 vs X3"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
 <p><img src="feature-kernel_files/figure-html/rect-viz-1.png" class="r-plt" alt="" width="75%" style="display: block; margin: auto;"></p>
@@ -150,7 +149,7 @@ weights.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example-2-linear-combination">Example 2 — Linear-combination<a class="anchor" aria-label="anchor" href="#example-2-linear-combination"></a>
+<h2 id="example-2---linear-combination">Example 2 - Linear-combination<a class="anchor" aria-label="anchor" href="#example-2---linear-combination"></a>
 </h2>
 <p>We build a regression forest using random linear-combination splits
 and compute kernel weights.</p>
@@ -176,14 +175,14 @@ and compute kernel weights.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Linear-combination kernel • X1 vs X3"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Linear-combination kernel - X1 vs X3"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale_lc</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>, <span class="st">"Target Point"</span>, pch <span class="op">=</span> <span class="fl">4</span>, col <span class="op">=</span> <span class="st">"black"</span>, lwd <span class="op">=</span> <span class="fl">5</span>, lty <span class="op">=</span> <span class="cn">NA</span>, cex <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="feature-kernel_files/figure-html/lc-viz-1.png" class="r-plt" alt="" width="75%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
-<h2 id="example-3-linear-combination-sir-no-embedded-model">Example 3 — Linear-combination (SIR, no embedded model)<a class="anchor" aria-label="anchor" href="#example-3-linear-combination-sir-no-embedded-model"></a>
+<h2 id="example-3---linear-combination-sir-no-embedded-model">Example 3 - Linear-combination (SIR, no embedded model)<a class="anchor" aria-label="anchor" href="#example-3---linear-combination-sir-no-embedded-model"></a>
 </h2>
 <p>Fit a model using linear-combination splits without an embedded
 forest; variables are ranked by marginal screening.</p>

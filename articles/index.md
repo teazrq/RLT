@@ -5,7 +5,7 @@
 - [Get Started with
   RLT](https://teazrq.github.io/RLT/articles/get-started.md):
 
-### Core Tutorials
+### Tutorials
 
 - [RLT Regression
   Tutorial](https://teazrq.github.io/RLT/articles/regression-tutorial.md):
@@ -13,20 +13,15 @@
   Tutorial](https://teazrq.github.io/RLT/articles/classification-tutorial.md):
 - [RLT Survival Analysis
   Tutorial](https://teazrq.github.io/RLT/articles/survival-tutorial.md):
-- [Survival - Minimal Tutorial
-  (RLT)](https://teazrq.github.io/RLT/articles/survival-minimal.md):
-
-### Feature Guides
-
+- [RLT with Linear
+  Combinations](https://teazrq.github.io/RLT/articles/linear-combinations.md):
 - [Random Seed and Reproducibility - Tutorial
   (RLT)](https://teazrq.github.io/RLT/articles/feature-seed.md):
-- [Variable Importance - Tutorial
+- [Variable Importance (Permutation and Distributed) - Tutorial
   (RLT)](https://teazrq.github.io/RLT/articles/variable-importance.md):
+- [Random Forest Kernel - Tutorial
+  (RLT)](https://teazrq.github.io/RLT/articles/feature-kernel.md):
 - [Single Tree - Tutorial
   (RLT)](https://teazrq.github.io/RLT/articles/feature-single-tree.md):
-- [Kernel - Tutorial
-  (RLT)](https://teazrq.github.io/RLT/articles/feature-kernel.md):
-- [Confidence Interval / Band - Survival Tutorial
+- [Confidence Interval and Confidence Band - Survival Tutorial
   (RLT)](https://teazrq.github.io/RLT/articles/confidence-interval.md):
-- [Reinforcement Learning Splitting Rule - Tutorial
-  (RLT)](https://teazrq.github.io/RLT/articles/reinforcement-splitting.md):

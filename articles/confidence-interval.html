@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Confidence Interval / Band - Survival Tutorial (RLT) • RLT</title>
+<title>Confidence Interval and Confidence Band - Survival Tutorial (RLT) • RLT</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Confidence Interval / Band - Survival Tutorial (RLT)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Confidence Interval and Confidence Band - Survival Tutorial (RLT)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,13 +36,12 @@
 <li><a class="dropdown-item" href="../articles/regression-tutorial.html">Regression</a></li>
     <li><a class="dropdown-item" href="../articles/classification-tutorial.html">Classification</a></li>
     <li><a class="dropdown-item" href="../articles/survival-tutorial.html">Survival</a></li>
-    <li><a class="dropdown-item" href="../articles/survival-minimal.html">Survival Minimal</a></li>
+    <li><a class="dropdown-item" href="../articles/linear-combinations.html">RLT with Linear Combinations</a></li>
     <li><a class="dropdown-item" href="../articles/feature-seed.html">Random Seed and Reproducibility</a></li>
-    <li><a class="dropdown-item" href="../articles/variable-importance.html">Variable Importance</a></li>
+    <li><a class="dropdown-item" href="../articles/variable-importance.html">Variable Importance (Permutation and Distributed)</a></li>
+    <li><a class="dropdown-item" href="../articles/feature-kernel.html">Random Forest Kernel</a></li>
     <li><a class="dropdown-item" href="../articles/feature-single-tree.html">Single Tree</a></li>
-    <li><a class="dropdown-item" href="../articles/feature-kernel.html">Kernel</a></li>
-    <li><a class="dropdown-item" href="../articles/confidence-interval.html">Confidence Interval Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/reinforcement-splitting.html">Reinforcement Splitting</a></li>
+    <li><a class="dropdown-item" href="../articles/confidence-interval.html">Confidence Interval and Confidence Band</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -63,7 +62,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Confidence Interval / Band - Survival Tutorial (RLT)</h1>
+      <h1>Confidence Interval and Confidence Band - Survival Tutorial (RLT)</h1>
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
