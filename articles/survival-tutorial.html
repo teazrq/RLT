@@ -93,8 +93,8 @@ infinitesimal jackknife (IJ), and jackknife.</li>
 <strong>Confidence bands</strong>: <code><a href="../reference/get.surv.band.html">get.surv.band()</a></code>
 provides naive or smoothed simultaneous bands for survival curves.</li>
 <li>
-<strong>Tree inspection</strong>: <code><a href="../reference/get.one.tree.html">get.one.tree()</a></code> prints
-individual tree structures.</li>
+<strong>Tree inspection</strong>: <code><a href="../reference/get.one.tree.html">get.one.tree()</a></code>
+inspects individual tree structures.</li>
 </ul>
 <p>The examples below use small simulated datasets so that all code runs
 quickly.</p>
@@ -411,12 +411,13 @@ grid:</p>
 <div class="section level2">
 <h2 id="inspecting-individual-trees">Inspecting individual trees<a class="anchor" aria-label="anchor" href="#inspecting-individual-trees"></a>
 </h2>
-<p>Use <code><a href="../reference/get.one.tree.html">get.one.tree()</a></code> to print the structure of any tree in
-the fitted forest. This is helpful for understanding how splits are made
-and for debugging.</p>
+<p>Use <code><a href="../reference/get.one.tree.html">get.one.tree()</a></code> to inspect the structure of any tree
+in the fitted forest. The preview below shows the first few printed
+lines so the tutorial stays compact.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Standard (single-variable) survival tree</span></span>
-<span><span class="fu"><a href="../reference/get.one.tree.html">get.one.tree</a></span><span class="op">(</span><span class="va">fit</span>, tree <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">tree_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="fu"><a href="../reference/get.one.tree.html">get.one.tree</a></span><span class="op">(</span><span class="va">fit</span>, tree <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tree_output</span>, <span class="fl">14</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Tree #1  [Survival]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Node  Depth  Split                                Value      n</span></span>
@@ -431,109 +432,16 @@ and for debugging.</p>
 <span><span class="co">#&gt;     8     2  V2                                  1.0553     30</span></span>
 <span><span class="co">#&gt;     9     2  *                                        -      3</span></span>
 <span><span class="co">#&gt;    10     3  V1                                 -0.1216     84</span></span>
-<span><span class="co">#&gt;    11     3  V2                                  1.1210     26</span></span>
-<span><span class="co">#&gt;    12     4  V1                                 -0.5965     32</span></span>
-<span><span class="co">#&gt;    13     4  V3                                 -1.8568     79</span></span>
-<span><span class="co">#&gt;    14     5  V4                                 -1.7762     36</span></span>
-<span><span class="co">#&gt;    15     5  V1                                 -0.4547     19</span></span>
-<span><span class="co">#&gt;    16     6  *                                        -      4</span></span>
-<span><span class="co">#&gt;    17     6  V5                                  1.0575      6</span></span>
-<span><span class="co">#&gt;    18     7  *                                        -     30</span></span>
-<span><span class="co">#&gt;    19     7  *                                        -      6</span></span>
-<span><span class="co">#&gt;    20     6  V3                                  0.4114      1</span></span>
-<span><span class="co">#&gt;    21     6  V2                                  0.0950     10</span></span>
-<span><span class="co">#&gt;    22     7  V5                                  0.8194      5</span></span>
-<span><span class="co">#&gt;    23     7  *                                        -      1</span></span>
-<span><span class="co">#&gt;    24     8  V1                                 -0.5387      3</span></span>
-<span><span class="co">#&gt;    25     8  *                                        -      5</span></span>
-<span><span class="co">#&gt;    26     9  *                                        -      4</span></span>
-<span><span class="co">#&gt;    27     9  *                                        -      3</span></span>
-<span><span class="co">#&gt;    28     7  *                                        -      9</span></span>
-<span><span class="co">#&gt;    29     7  V5                                 -2.3802      9</span></span>
-<span><span class="co">#&gt;    30     8  *                                        -      1</span></span>
-<span><span class="co">#&gt;    31     8  V2                                  0.5056      7</span></span>
-<span><span class="co">#&gt;    32     9  *                                        -      2</span></span>
-<span><span class="co">#&gt;    33     9  V2                                  0.6554      5</span></span>
-<span><span class="co">#&gt;    34    10  *                                        -      2</span></span>
-<span><span class="co">#&gt;    35    10  *                                        -      5</span></span>
-<span><span class="co">#&gt;    36     5  *                                        -      5</span></span>
-<span><span class="co">#&gt;    37     5  V3                                 -1.7709     78</span></span>
-<span><span class="co">#&gt;    38     6  *                                        -      1</span></span>
-<span><span class="co">#&gt;    39     6  V4                                 -2.0794     77</span></span>
-<span><span class="co">#&gt;    40     7  *                                        -      1</span></span>
-<span><span class="co">#&gt;    41     7  V3                                  0.6777     20</span></span>
-<span><span class="co">#&gt;    42     8  V2                                 -0.3421     31</span></span>
-<span><span class="co">#&gt;    43     8  V1                                  0.6436      9</span></span>
-<span><span class="co">#&gt;    44     9  V1                                 -0.0849     25</span></span>
-<span><span class="co">#&gt;    45     9  V1                                  0.6699     11</span></span>
-<span><span class="co">#&gt;    46    10  *                                        -      1</span></span>
-<span><span class="co">#&gt;    47    10  V1                                  0.0867     21</span></span>
-<span><span class="co">#&gt;    48    11  *                                        -      4</span></span>
-<span><span class="co">#&gt;    49    11  V3                                  0.0843      3</span></span>
-<span><span class="co">#&gt;    50    12  V2                                 -1.2221     12</span></span>
-<span><span class="co">#&gt;    51    12  *                                        -      3</span></span>
-<span><span class="co">#&gt;    52    13  V3                                 -0.4944      3</span></span>
-<span><span class="co">#&gt;    53    13  V5                                 -1.0804     11</span></span>
-<span><span class="co">#&gt;    54    14  *                                        -      3</span></span>
-<span><span class="co">#&gt;    55    14  *                                        -      3</span></span>
-<span><span class="co">#&gt;    56    14  *                                        -      1</span></span>
-<span><span class="co">#&gt;    57    14  V2                                 -1.1489     10</span></span>
-<span><span class="co">#&gt;    58    15  *                                        -      1</span></span>
-<span><span class="co">#&gt;    59    15  V3                                 -0.8114      7</span></span>
-<span><span class="co">#&gt;    60    16  *                                        -      3</span></span>
-<span><span class="co">#&gt;    61    16  V1                                  1.4518      2</span></span>
-<span><span class="co">#&gt;    62    17  *                                        -      5</span></span>
-<span><span class="co">#&gt;    63    17  *                                        -      2</span></span>
-<span><span class="co">#&gt;    64    10  V3                                 -0.0394      8</span></span>
-<span><span class="co">#&gt;    65    10  V1                                  1.0314      5</span></span>
-<span><span class="co">#&gt;    66    11  V4                                  1.1157      3</span></span>
-<span><span class="co">#&gt;    67    11  V4                                  0.5953      1</span></span>
-<span><span class="co">#&gt;    68    12  V3                                 -0.1546      1</span></span>
-<span><span class="co">#&gt;    69    12  *                                        -      3</span></span>
-<span><span class="co">#&gt;    70    13  V4                                 -0.7547      3</span></span>
-<span><span class="co">#&gt;    71    13  *                                        -      1</span></span>
-<span><span class="co">#&gt;    72    14  *                                        -      5</span></span>
-<span><span class="co">#&gt;    73    14  *                                        -      3</span></span>
-<span><span class="co">#&gt;    74    12  V1                                  0.1023      5</span></span>
-<span><span class="co">#&gt;    75    12  *                                        -      1</span></span>
-<span><span class="co">#&gt;    76    13  *                                        -      2</span></span>
-<span><span class="co">#&gt;    77    13  *                                        -      5</span></span>
-<span><span class="co">#&gt;    78    11  V2                                  0.7092      1</span></span>
-<span><span class="co">#&gt;    79    11  *                                        -      5</span></span>
-<span><span class="co">#&gt;    80    12  *                                        -      5</span></span>
-<span><span class="co">#&gt;    81    12  *                                        -      1</span></span>
-<span><span class="co">#&gt;    82     9  V2                                 -0.2810      7</span></span>
-<span><span class="co">#&gt;    83     9  V1                                  1.0416      6</span></span>
-<span><span class="co">#&gt;    84    10  *                                        -      4</span></span>
-<span><span class="co">#&gt;    85    10  V3                                  1.0710      5</span></span>
-<span><span class="co">#&gt;    86    11  *                                        -      2</span></span>
-<span><span class="co">#&gt;    87    11  *                                        -      5</span></span>
-<span><span class="co">#&gt;    88    10  *                                        -      3</span></span>
-<span><span class="co">#&gt;    89    10  V1                                  1.3455      3</span></span>
-<span><span class="co">#&gt;    90    11  *                                        -      3</span></span>
-<span><span class="co">#&gt;    91    11  *                                        -      3</span></span>
-<span><span class="co">#&gt;    92     4  *                                        -      4</span></span>
-<span><span class="co">#&gt;    93     4  V1                                  0.0440     12</span></span>
-<span><span class="co">#&gt;    94     5  V4                                 -0.1876     11</span></span>
-<span><span class="co">#&gt;    95     5  V3                                 -0.8275      8</span></span>
-<span><span class="co">#&gt;    96     6  *                                        -      3</span></span>
-<span><span class="co">#&gt;    97     6  V4                                  0.2674      8</span></span>
-<span><span class="co">#&gt;    98     7  *                                        -      3</span></span>
-<span><span class="co">#&gt;    99     7  V4                                  1.1056      1</span></span>
-<span><span class="co">#&gt;   100     8  V5                                  0.5966      3</span></span>
-<span><span class="co">#&gt;   101     8  *                                        -      1</span></span>
-<span><span class="co">#&gt;   102     9  *                                        -      4</span></span>
-<span><span class="co">#&gt;   103     9  *                                        -      3</span></span>
-<span><span class="co">#&gt;   104     6  *                                        -      4</span></span>
-<span><span class="co">#&gt;   105     6  V3                                  0.0801      2</span></span>
-<span><span class="co">#&gt;   106     7  V4                                  0.8718      2</span></span>
-<span><span class="co">#&gt;   107     7  *                                        -      2</span></span>
-<span><span class="co">#&gt;   108     8  *                                        -      4</span></span>
-<span><span class="co">#&gt;   109     8  *                                        -      2</span></span></code></pre></div>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">tree_output</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">14</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n... output truncated ...\n"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ... output truncated ...</span></span></code></pre></div>
 <p>For LC forests, <code><a href="../reference/get.one.tree.html">get.one.tree()</a></code> also shows the linear
 combination coefficients at each internal node:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/get.one.tree.html">get.one.tree</a></span><span class="op">(</span><span class="va">fit_lc</span>, tree <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">tree_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="fu"><a href="../reference/get.one.tree.html">get.one.tree</a></span><span class="op">(</span><span class="va">fit_lc</span>, tree <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tree_output</span>, <span class="fl">14</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Tree #1  [Survival, Linear Combination]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Node  Depth  Split                                Value      n</span></span>
@@ -548,111 +456,11 @@ combination coefficients at each internal node:</p>
 <span><span class="co">#&gt;     8     4  0.989·V2 + 0.151·V4              -0.4532     80</span></span>
 <span><span class="co">#&gt;     9     4  0.914·V5 + 0.405·V3               0.3363     28</span></span>
 <span><span class="co">#&gt;    10     5  0.933·V5 + 0.360·V3               0.4243     16</span></span>
-<span><span class="co">#&gt;    11     5  -0.858·V5 + 0.513·V4              0.5935     64</span></span>
-<span><span class="co">#&gt;    12     6  *                                        -     11</span></span>
-<span><span class="co">#&gt;    13     6  *                                        -      5</span></span>
-<span><span class="co">#&gt;    14     6  -0.650·V2 + 0.760·V5              1.1324     48</span></span>
-<span><span class="co">#&gt;    15     6  0.736·V2 + 0.677·V3               0.9499     16</span></span>
-<span><span class="co">#&gt;    16     7  0.085·V2 + 0.996·V1              -0.2798     47</span></span>
-<span><span class="co">#&gt;    17     7  *                                        -      1</span></span>
-<span><span class="co">#&gt;    18     8  0.958·V5 - 0.287·V4               1.7619     43</span></span>
-<span><span class="co">#&gt;    19     8  *                                        -      4</span></span>
-<span><span class="co">#&gt;    20     9  -0.910·V2 + 0.415·V1              0.0870     42</span></span>
-<span><span class="co">#&gt;    21     9  *                                        -      1</span></span>
-<span><span class="co">#&gt;    22    10  0.888·V2 + 0.460·V4              -0.2977     37</span></span>
-<span><span class="co">#&gt;    23    10  *                                        -      5</span></span>
-<span><span class="co">#&gt;    24    11  *                                        -      5</span></span>
-<span><span class="co">#&gt;    25    11  0.837·V3 + 0.547·V4              -0.8450     32</span></span>
-<span><span class="co">#&gt;    26    12  *                                        -      5</span></span>
-<span><span class="co">#&gt;    27    12  0.599·V4 + 0.800·V3               0.4179     27</span></span>
-<span><span class="co">#&gt;    28    13  0.221·V4 + 0.975·V1              -0.8746     18</span></span>
-<span><span class="co">#&gt;    29    13  *                                        -      9</span></span>
-<span><span class="co">#&gt;    30    14  *                                        -      5</span></span>
-<span><span class="co">#&gt;    31    14  -0.972·V1 + 0.236·V2              0.7973     13</span></span>
-<span><span class="co">#&gt;    32    15  2.598·V3 + 6.316·V5               7.3082      8</span></span>
-<span><span class="co">#&gt;    33    15  *                                        -      5</span></span>
-<span><span class="co">#&gt;    34    16  2.479·V5 - 0.845·V1               2.1592      6</span></span>
-<span><span class="co">#&gt;    35    16  *                                        -      2</span></span>
-<span><span class="co">#&gt;    36    17  *                                        -      3</span></span>
-<span><span class="co">#&gt;    37    17  *                                        -      3</span></span>
-<span><span class="co">#&gt;    38     7  -0.975·V4 + 0.220·V3             -0.6725     15</span></span>
-<span><span class="co">#&gt;    39     7  *                                        -      1</span></span>
-<span><span class="co">#&gt;    40     8  0.087·V4 + 0.882·V1              -0.0437      9</span></span>
-<span><span class="co">#&gt;    41     8  *                                        -      6</span></span>
-<span><span class="co">#&gt;    42     9  1.136·V2 + 0.480·V4               0.4491      8</span></span>
-<span><span class="co">#&gt;    43     9  *                                        -      1</span></span>
-<span><span class="co">#&gt;    44    10  *                                        -      1</span></span>
-<span><span class="co">#&gt;    45    10  -2.533·V5 - 0.352·V2              2.0573      7</span></span>
-<span><span class="co">#&gt;    46    11  *                                        -      4</span></span>
-<span><span class="co">#&gt;    47    11  *                                        -      3</span></span>
-<span><span class="co">#&gt;    48     5  0.998·V3 - 0.063·V5               1.2621     19</span></span>
-<span><span class="co">#&gt;    49     5  -9.219·V4 + 1.942·V5             -4.7201      9</span></span>
-<span><span class="co">#&gt;    50     6  0.677·V2 - 0.736·V5               0.2501     18</span></span>
-<span><span class="co">#&gt;    51     6  *                                        -      1</span></span>
-<span><span class="co">#&gt;    52     7  *                                        -      9</span></span>
-<span><span class="co">#&gt;    53     7  -0.045·V1 - 0.457·V5              0.2922      9</span></span>
-<span><span class="co">#&gt;    54     8  *                                        -      2</span></span>
-<span><span class="co">#&gt;    55     8  -0.404·V1 - 1.979·V5              1.5049      7</span></span>
-<span><span class="co">#&gt;    56     9  *                                        -      2</span></span>
-<span><span class="co">#&gt;    57     9  *                                        -      5</span></span>
-<span><span class="co">#&gt;    58     6  *                                        -      3</span></span>
-<span><span class="co">#&gt;    59     6  -1.975·V5 + 5.053·V4             -6.6797      6</span></span>
-<span><span class="co">#&gt;    60     7  *                                        -      2</span></span>
-<span><span class="co">#&gt;    61     7  *                                        -      4</span></span>
-<span><span class="co">#&gt;    62     4  0.999·V2 - 0.051·V5              -0.7297     65</span></span>
-<span><span class="co">#&gt;    63     4  0.538·V1 - 0.843·V3               0.9156     18</span></span>
-<span><span class="co">#&gt;    64     5  0.560·V3 + 0.828·V1               1.6763     20</span></span>
-<span><span class="co">#&gt;    65     5  -1.000·V3 + 0.018·V5              1.8963     45</span></span>
-<span><span class="co">#&gt;    66     6  -0.994·V4 + 0.107·V3             -0.4150     18</span></span>
-<span><span class="co">#&gt;    67     6  *                                        -      2</span></span>
-<span><span class="co">#&gt;    68     7  *                                        -      6</span></span>
-<span><span class="co">#&gt;    69     7  -0.999·V5 + 0.033·V3             -1.4621     12</span></span>
-<span><span class="co">#&gt;    70     8  *                                        -      3</span></span>
-<span><span class="co">#&gt;    71     8  -12.869·V3 - 1.775·V5           -11.7087      9</span></span>
-<span><span class="co">#&gt;    72     9  *                                        -      2</span></span>
-<span><span class="co">#&gt;    73     9  9.529·V5 + 1.216·V1               0.7138      7</span></span>
-<span><span class="co">#&gt;    74    10  *                                        -      4</span></span>
-<span><span class="co">#&gt;    75    10  *                                        -      3</span></span>
-<span><span class="co">#&gt;    76     6  -1.000·V3 + 0.016·V5              0.1564     44</span></span>
-<span><span class="co">#&gt;    77     6  *                                        -      1</span></span>
-<span><span class="co">#&gt;    78     7  0.994·V4 + 0.108·V2              -0.6632     22</span></span>
-<span><span class="co">#&gt;    79     7  1.000·V3 - 0.015·V5              -0.5938     22</span></span>
-<span><span class="co">#&gt;    80     8  *                                        -      5</span></span>
-<span><span class="co">#&gt;    81     8  -0.622·V1 + 0.783·V4              0.3575     17</span></span>
-<span><span class="co">#&gt;    82     9  -0.767·V3 + 0.641·V4             -1.3116     16</span></span>
-<span><span class="co">#&gt;    83     9  *                                        -      1</span></span>
-<span><span class="co">#&gt;    84    10  *                                        -      1</span></span>
-<span><span class="co">#&gt;    85    10  0.989·V5 + 0.150·V1               0.3125     15</span></span>
-<span><span class="co">#&gt;    86    11  0.306·V2 + 0.952·V5              -0.1039     10</span></span>
-<span><span class="co">#&gt;    87    11  *                                        -      5</span></span>
-<span><span class="co">#&gt;    88    12  *                                        -      4</span></span>
-<span><span class="co">#&gt;    89    12  1.350·V1 - 1.472·V5               1.2054      6</span></span>
-<span><span class="co">#&gt;    90    13  *                                        -      3</span></span>
-<span><span class="co">#&gt;    91    13  *                                        -      3</span></span>
-<span><span class="co">#&gt;    92     8  0.032·V2 - 3.811·V5              -8.5675      6</span></span>
-<span><span class="co">#&gt;    93     8  0.971·V3 + 0.239·V4              -0.4098     16</span></span>
-<span><span class="co">#&gt;    94     9  *                                        -      1</span></span>
-<span><span class="co">#&gt;    95     9  *                                        -      5</span></span>
-<span><span class="co">#&gt;    96     9  *                                        -      5</span></span>
-<span><span class="co">#&gt;    97     9  1.000·V3 - 0.005·V5              -0.2166     11</span></span>
-<span><span class="co">#&gt;    98    10  -1.392·V4 + 0.154·V1             -0.5013      8</span></span>
-<span><span class="co">#&gt;    99    10  *                                        -      3</span></span>
-<span><span class="co">#&gt;   100    11  *                                        -      2</span></span>
-<span><span class="co">#&gt;   101    11  -0.201·V3 - 3.591·V5             -7.2022      6</span></span>
-<span><span class="co">#&gt;   102    12  *                                        -      2</span></span>
-<span><span class="co">#&gt;   103    12  *                                        -      4</span></span>
-<span><span class="co">#&gt;   104     5  0.578·V4 + 0.816·V2               1.9344     15</span></span>
-<span><span class="co">#&gt;   105     5  *                                        -      3</span></span>
-<span><span class="co">#&gt;   106     6  0.511·V4 + 0.859·V3               0.0407     14</span></span>
-<span><span class="co">#&gt;   107     6  *                                        -      1</span></span>
-<span><span class="co">#&gt;   108     7  0.629·V1 + 0.479·V2               1.0523      6</span></span>
-<span><span class="co">#&gt;   109     7  -1.803·V1 - 1.835·V3             -0.9561      8</span></span>
-<span><span class="co">#&gt;   110     8  *                                        -      1</span></span>
-<span><span class="co">#&gt;   111     8  *                                        -      5</span></span>
-<span><span class="co">#&gt;   112     8  1.857·V5 - 0.995·V2               0.4455      7</span></span>
-<span><span class="co">#&gt;   113     8  *                                        -      1</span></span>
-<span><span class="co">#&gt;   114     9  *                                        -      4</span></span>
-<span><span class="co">#&gt;   115     9  *                                        -      3</span></span></code></pre></div>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">tree_output</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">14</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n... output truncated ...\n"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ... output truncated ...</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>

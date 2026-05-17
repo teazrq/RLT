@@ -105,8 +105,9 @@ barplot(RLTfit$VarImp, main = "RLT Variable Importance (Distributed)")
 
 ``` r
 
-# Look at the first tree structure
-get.one.tree(RLTfit, 1)
+# Preview the first few printed lines.
+tree_output <- capture.output(get.one.tree(RLTfit, 1))
+cat(head(tree_output, 14), sep = "\n")
 ## Tree #1  [Classification]
 ## 
 ## Node  Depth  Split                                Value      n  ClassProbs
@@ -121,11 +122,9 @@ get.one.tree(RLTfit, 1)
 ##     8     2  X5                                  0.2335     31  {0.61, 0.39}
 ##     9     2  X5                                 -0.3909     16  {0.12, 0.88}
 ##    10     3  X1.1(F)                           378.0000     12  {0.75, 0.25}
-##    11     3  X5                                  0.9617     19  {0.53, 0.47}
-##    12     4  *                                        -      3  {0.33, 0.67}
-##    13     4  *                                        -      9  {0.89, 0.11}
-##    14     4  *                                        -     10  {0.80, 0.20}
-##    15     4  *                                        -      9  {0.22, 0.78}
-##    16     3  *                                        -      8  {0.25, 0.75}
-##    17     3  *                                        -      8  {0.00, 1.00}
+if (length(tree_output) > 14) {
+  cat("\n... output truncated ...\n")
+}
+## 
+## ... output truncated ...
 ```

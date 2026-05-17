@@ -71,13 +71,14 @@ fit <- RLT(
 
 ## Inspect one tree
 
-Use `get.one.tree(<fit>, <tree_id>)` to print a single tree. Choose
+Use `get.one.tree(<fit>, <tree_id>)` to inspect a single tree. Choose
 `tree_id` from 1 to `ntrees` (here we take the first tree).
 
 ``` r
 
-# Peek into a single tree
-get.one.tree(fit, 1)
+# Preview the first few printed lines.
+tree_output <- capture.output(get.one.tree(fit, 1))
+cat(head(tree_output, 14), sep = "\n")
 ## Tree #1  [Regression]
 ## 
 ## Node  Depth  Split                                Value      n     NodeAve
@@ -92,39 +93,9 @@ get.one.tree(fit, 1)
 ##     8     4  X3.1(F)                             6.0000     17      0.0000
 ##     9     4  *                                        -      1      2.9351
 ##    10     5  X4.1(F)                             6.0000      7      0.0000
-##    11     5  X4                                  0.2242     10      0.0000
-##    12     6  *                                        -      1     -1.9927
-##    13     6  X4.1(F)                             2.0000      6      0.0000
-##    14     7  *                                        -      2     -1.4353
-##    15     7  *                                        -      4     -1.1561
-##    16     6  *                                        -      3     -0.6253
-##    17     6  X5.1(F)                             2.0000      7      0.0000
-##    18     7  *                                        -      4      0.6492
-##    19     7  *                                        -      3      1.3944
-##    20     3  *                                        -      4     -0.3549
-##    21     3  X4                                  0.8119     18      0.0000
-##    22     4  X5                                 -1.4252     16      0.0000
-##    23     4  *                                        -      2      7.1715
-##    24     5  *                                        -      3      1.2651
-##    25     5  X2.1(F)                            12.0000     13      0.0000
-##    26     6  *                                        -      5      3.2027
-##    27     6  X2                                 -0.4950      8      0.0000
-##    28     7  *                                        -      1      2.1524
-##    29     7  X5                                 -0.4019      7      0.0000
-##    30     8  *                                        -      4      4.2790
-##    31     8  *                                        -      3      5.8188
-##    32     2  X5                                 -1.0821     17      0.0000
-##    33     2  *                                        -      3      8.5867
-##    34     3  *                                        -      2      2.8976
-##    35     3  X4                                 -1.0991     15      0.0000
-##    36     4  *                                        -      1      2.5067
-##    37     4  X4                                 -0.6040     14      0.0000
-##    38     5  *                                        -      3      6.7543
-##    39     5  X3                                 -0.1644     11      0.0000
-##    40     6  *                                        -      4      4.4821
-##    41     6  X4                                  0.1635      7      0.0000
-##    42     7  *                                        -      1      5.1204
-##    43     7  X3                                  0.1327      6      0.0000
-##    44     8  *                                        -      2      5.4671
-##    45     8  *                                        -      4      5.8524
+if (length(tree_output) > 14) {
+  cat("\n... output truncated ...\n")
+}
+## 
+## ... output truncated ...
 ```

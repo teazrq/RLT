@@ -177,8 +177,9 @@ importance.</p>
 <h2 id="inspect-one-tree">Inspect one tree<a class="anchor" aria-label="anchor" href="#inspect-one-tree"></a>
 </h2>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Look at the first tree structure</span></span>
-<span><span class="fu"><a href="../reference/get.one.tree.html">get.one.tree</a></span><span class="op">(</span><span class="va">RLTfit</span>, <span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Preview the first few printed lines.</span></span>
+<span><span class="va">tree_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="fu"><a href="../reference/get.one.tree.html">get.one.tree</a></span><span class="op">(</span><span class="va">RLTfit</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tree_output</span>, <span class="fl">14</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">## Tree #1  [Classification]</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Node  Depth  Split                                Value      n  ClassProbs</span></span>
@@ -193,13 +194,11 @@ importance.</p>
 <span><span class="co">##     8     2  X5                                  0.2335     31  {0.61, 0.39}</span></span>
 <span><span class="co">##     9     2  X5                                 -0.3909     16  {0.12, 0.88}</span></span>
 <span><span class="co">##    10     3  X1.1(F)                           378.0000     12  {0.75, 0.25}</span></span>
-<span><span class="co">##    11     3  X5                                  0.9617     19  {0.53, 0.47}</span></span>
-<span><span class="co">##    12     4  *                                        -      3  {0.33, 0.67}</span></span>
-<span><span class="co">##    13     4  *                                        -      9  {0.89, 0.11}</span></span>
-<span><span class="co">##    14     4  *                                        -     10  {0.80, 0.20}</span></span>
-<span><span class="co">##    15     4  *                                        -      9  {0.22, 0.78}</span></span>
-<span><span class="co">##    16     3  *                                        -      8  {0.25, 0.75}</span></span>
-<span><span class="co">##    17     3  *                                        -      8  {0.00, 1.00}</span></span></code></pre></div>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">tree_output</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">14</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n... output truncated ...\n"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## ... output truncated ...</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
