@@ -1,5 +1,14 @@
 # RLT
 
+[![CRAN
+Version](https://www.r-pkg.org/badges/version/RLT)](https://cran.r-project.org/package=RLT)
+[![CRAN
+Downloads](https://cranlogs.r-pkg.org/badges/grand-total/RLT?color=blue)](https://cran.r-project.org/package=RLT)
+[![GitHub
+Version](https://img.shields.io/github/r-package/v/teazrq/RLT?label=GitHub&color=brightgreen)](https://github.com/teazrq/RLT)
+[![R build
+status](https://github.com/teazrq/RLT/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/teazrq/RLT/actions)
+
 **Reinforcement Learning Trees** is an R package for random forest
 models with regression, classification, and survival analysis support.
 The package uses a C++/Rcpp backend with OpenMP for parallel
