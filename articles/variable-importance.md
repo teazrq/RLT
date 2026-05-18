@@ -95,7 +95,11 @@ barplot(
 
 This configuration assigns importance using distributed attribution with
 OOB tracking. Use `importance = "distribute"` for distributed assignment
-importance.
+importance. Unlike permutation importance, distributed importance works
+by probabilistically routing OOB observations through the tree when a
+split on the target variable is encountered. This requires sufficient
+OOB samples per tree — avoid very high `resample.prob` with
+`resample.replace = FALSE`, which leaves too few OOB observations.
 
 ``` r
 
@@ -103,16 +107,15 @@ fit_dist <- RLT(
   trainX, trainY, model = "regression",
   ntrees = ntrees, mtry = mtry, nmin = nmin,
   split.gen = rule, nsplit = nsplit,
-  resample.prob = (trainn - 1)/trainn,   # leave-one-out style OOB
-  resample.replace = FALSE,               # without replacement
-  importance = "distribute",              # distributed assignment VI
-  ncores = ncores, verbose = FALSE,
-  param.control = list("resample.track" = TRUE)
+  resample.prob = 0.632,                # ~63.2% in-bag, ~36.8% OOB
+  resample.replace = FALSE,              # without replacement
+  importance = "distribute",             # distributed assignment VI
+  ncores = ncores, verbose = FALSE
 )
 
 # VI vector lives in fit$VarImp
 str(head(fit_dist$VarImp))
-##  num [1:6, 1] 0 0 0 0 0 0
+##  num [1:6, 1] -0.064 0.915 1.847 0.687 0.98 ...
 ##  - attr(*, "dimnames")=List of 2
 ##   ..$ : chr [1:6] "X1" "X2" "X3" "X4" ...
 ##   ..$ : NULL
