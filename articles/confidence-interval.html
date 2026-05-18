@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Confidence Interval and Confidence Band — Survival Tutorial (RLT) • RLT</title>
+<title>Survival Confidence Band - Tutorial (RLT) • RLT</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Confidence Interval and Confidence Band — Survival Tutorial (RLT)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Survival Confidence Band - Tutorial (RLT)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -41,7 +41,7 @@
     <li><a class="dropdown-item" href="../articles/variable-importance.html">Variable Importance (Permutation and Distributed)</a></li>
     <li><a class="dropdown-item" href="../articles/feature-kernel.html">Random Forest Kernel</a></li>
     <li><a class="dropdown-item" href="../articles/feature-single-tree.html">Single Tree</a></li>
-    <li><a class="dropdown-item" href="../articles/confidence-interval.html">Confidence Interval and Confidence Band</a></li>
+    <li><a class="dropdown-item" href="../articles/confidence-interval.html">Survival Confidence Band</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -62,7 +62,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Confidence Interval and Confidence Band — Survival Tutorial (RLT)</h1>
+      <h1>Survival Confidence Band - Tutorial (RLT)</h1>
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
@@ -80,54 +80,65 @@ Zhu</h4>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>This page demonstrates how to construct <strong>pointwise confidence
-intervals</strong> and <strong>simultaneous confidence bands</strong>
-for individual survival curves predicted by RLT. The bands use a
-smoothed low-rank covariance approach — GAM-smoothed eigenvalue
-decomposition plus an eigenvalue-ratio weighted residual correction —
-which produces stable, well-calibrated bands even when the number of
-time points is large relative to the number of trees.</p>
+<p>This page demonstrates how to construct simultaneous confidence bands
+for individual survival curves predicted by RLT. The example uses the
+smoothed covariance approach in <code><a href="../reference/get.surv.band.html">get.surv.band()</a></code>.</p>
+<p>Two details matter for a sensible visualization:</p>
+<ul>
+<li>Target points should be inside the observed predictor domain,
+especially for the important variables.</li>
+<li>The displayed time range should avoid the far tail where very few
+training observations remain at risk.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a>
 </h2>
 <p>We simulate right-censored survival data from a proportional hazards
-model with exponential event times. The first and third predictors carry
-signal; the rest are noise.</p>
+model. The first and third predictors carry signal; the rest are
+noise.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="va">p</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">xlink</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">FT</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n</span>, rate <span class="op">=</span> <span class="fu">xlink</span><span class="op">(</span><span class="va">X</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">CT</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n</span>, rate <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="va">FT</span>, <span class="va">CT</span><span class="op">)</span></span>
-<span><span class="va">Censor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">FT</span> <span class="op">&lt;=</span> <span class="va">CT</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Test subjects for visualization</span></span>
-<span><span class="va">ntest</span>  <span class="op">&lt;-</span> <span class="fl">4</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span></span>
-<span><span class="va">testX</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">ntest</span> <span class="op">*</span> <span class="va">p</span><span class="op">)</span>, <span class="va">ntest</span>, <span class="va">p</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># True survival for reference</span></span>
-<span><span class="va">timepoints</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">Y</span><span class="op">[</span><span class="va">Censor</span> <span class="op">==</span> <span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">SurvMat</span>    <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">testX</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">timepoints</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">exprate</span>    <span class="op">&lt;-</span> <span class="fu">xlink</span><span class="op">(</span><span class="va">testX</span><span class="op">)</span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">timepoints</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">SurvMat</span><span class="op">[</span>, <span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">pexp</a></span><span class="op">(</span><span class="va">timepoints</span><span class="op">[</span><span class="va">j</span><span class="op">]</span>, rate <span class="op">=</span> <span class="va">exprate</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<span><span class="va">Censor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">FT</span> <span class="op">&lt;=</span> <span class="va">CT</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="fit-and-predict-with-variance">Fit and predict with variance<a class="anchor" aria-label="anchor" href="#fit-and-predict-with-variance"></a>
+<h2 id="target-points">Target Points<a class="anchor" aria-label="anchor" href="#target-points"></a>
 </h2>
-<p>We use <code>var.mode = "matched"</code> (matched-sample U-statistic)
-for variance estimation. This automatically adjusts sampling to
-subsampling without replacement at 50%.</p>
+<p>We choose two target points at interior quantiles of the important
+variables <code>X1</code> and <code>X3</code>. The remaining variables
+are fixed at their training medians.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">target_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">X</span>, <span class="fl">2</span>, <span class="va">median</span><span class="op">)</span></span>
+<span><span class="va">testX</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">target_base</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">testX</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">testX</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.35</span>, <span class="fl">0.65</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">testX</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.35</span>, <span class="fl">0.65</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">testX</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Interior lower-risk target"</span>, <span class="st">"Interior higher-risk target"</span><span class="op">)</span></span>
+<span><span class="va">testX</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">##                                     X1         X3</span></span>
+<span><span class="co">## Interior lower-risk target  -0.5695469 -0.3250708</span></span>
+<span><span class="co">## Interior higher-risk target  0.4737417  0.4440657</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="fit-and-predict-with-variance">Fit and Predict with Variance<a class="anchor" aria-label="anchor" href="#fit-and-predict-with-variance"></a>
+</h2>
+<p>We use <code>var.mode = "matched"</code> for variance estimation.
+This prepares covariance estimates on the cumulative hazard scale, which
+is the scale used by the confidence-band calculation.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">X</span>, <span class="va">Y</span>, <span class="va">Censor</span>, model <span class="op">=</span> <span class="st">"survival"</span>,</span>
 <span>  ntrees <span class="op">=</span> <span class="fl">1000</span>, mtry <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">p</span>, <span class="fl">10</span><span class="op">)</span>, nmin <span class="op">=</span> <span class="fl">5</span>,</span>
@@ -139,105 +150,72 @@ subsampling without replacement at 50%.</p>
 <span>  param.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>split.rule <span class="op">=</span> <span class="st">"logrank"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Predict survival curves and covariance for test subjects</span></span>
 <span><span class="va">RLTPred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">testX</span>, var.est <span class="op">=</span> <span class="cn">TRUE</span>, ncores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="pointwise-confidence-intervals">Pointwise confidence intervals<a class="anchor" aria-label="anchor" href="#pointwise-confidence-intervals"></a>
+<h2 id="restrict-to-supported-follow-up-times">Restrict to Supported Follow-up Times<a class="anchor" aria-label="anchor" href="#restrict-to-supported-follow-up-times"></a>
 </h2>
-<p>Before constructing simultaneous bands, it is useful to look at
-pointwise intervals
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>1.96</mn><mo>×</mo><mtext mathvariant="normal">SD</mtext></mrow><annotation encoding="application/x-tex">\pm 1.96 \times \text{SD}</annotation></semantics></math>
-from the diagonal of the covariance matrix). These are
-<strong>not</strong> simultaneous — each time point is considered
-independently.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">ntest</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">tp</span>  <span class="op">&lt;-</span> <span class="va">RLTPred</span><span class="op">$</span><span class="va">timepoints</span></span>
-<span>  <span class="va">S</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">Survival</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="va">sd_i</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">Cov</span><span class="op">[</span>,, <span class="va">i</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">pw_lower</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="va">S</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span> <span class="op">*</span> <span class="va">sd_i</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="va">pw_upper</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="va">S</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span> <span class="op">*</span> <span class="va">sd_i</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">SurvMat</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Plot estimate with shaded pointwise CI</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">tp</span>, <span class="va">S</span>, type <span class="op">=</span> <span class="st">"n"</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>       xlab <span class="op">=</span> <span class="st">"Time"</span>, ylab <span class="op">=</span> <span class="st">"Survival Probability"</span>,</span>
-<span>       main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Subject"</span>, <span class="va">i</span><span class="op">)</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Shaded pointwise band</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/polygon.html" class="external-link">polygon</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">tp</span>, <span class="fu"><a href="https://rdrr.io/r/base/rev.html" class="external-link">rev</a></span><span class="op">(</span><span class="va">tp</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">pw_lower</span>, <span class="fu"><a href="https://rdrr.io/r/base/rev.html" class="external-link">rev</a></span><span class="op">(</span><span class="va">pw_upper</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>          col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html" class="external-link">rgb</a></span><span class="op">(</span><span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">0.5</span><span class="op">)</span>, border <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Truth (dashed red)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">tp</span>, <span class="va">truth</span>, col <span class="op">=</span> <span class="st">"#E41A1C"</span>, lwd <span class="op">=</span> <span class="fl">2</span>, lty <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Estimate (step function, black)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">tp</span>, <span class="va">S</span>, type <span class="op">=</span> <span class="st">"s"</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>, legend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Estimated S(t)"</span>, <span class="st">"True S(t)"</span>, <span class="st">"Pointwise 95% CI"</span><span class="op">)</span>,</span>
-<span>         lty <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="cn">NA</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="cn">NA</span><span class="op">)</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"black"</span>, <span class="st">"#E41A1C"</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>         fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html" class="external-link">rgb</a></span><span class="op">(</span><span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>         border <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>         bty <span class="op">=</span> <span class="st">"n"</span>, cex <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<p><img src="confidence-interval_files/figure-html/pointwise-plot-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p>The fitted object can return predictions over the observed event-time
+grid, but the far right tail has little data support. For this example,
+we only display the region <code>t &lt;= 2</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">risk_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">timepoints</span>, <span class="kw">function</span><span class="op">(</span><span class="va">t</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">Y</span> <span class="op">&gt;=</span> <span class="va">t</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">plot_time_max</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
+<span><span class="va">plot_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">timepoints</span> <span class="op">&lt;=</span> <span class="va">plot_time_max</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">plot_id</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">plot_id</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  Plot_Time_Range <span class="op">=</span> <span class="st">"t &lt;= 2"</span>,</span>
+<span>  Minimum_At_Risk_in_Plotted_Range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">risk_set</span><span class="op">[</span><span class="va">plot_id</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  Number_of_Plotted_Timepoints <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">plot_id</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">## $Plot_Time_Range</span></span>
+<span><span class="co">## [1] "t &lt;= 2"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $Minimum_At_Risk_in_Plotted_Range</span></span>
+<span><span class="co">## [1] 24</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $Number_of_Plotted_Timepoints</span></span>
+<span><span class="co">## [1] 140</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="simultaneous-confidence-band">Simultaneous confidence band<a class="anchor" aria-label="anchor" href="#simultaneous-confidence-band"></a>
+<h2 id="simultaneous-confidence-band">Simultaneous Confidence Band<a class="anchor" aria-label="anchor" href="#simultaneous-confidence-band"></a>
 </h2>
 <p><code><a href="../reference/get.surv.band.html">get.surv.band()</a></code> with <code>approach = "smoothed"</code>
-constructs a simultaneous confidence band using a GAM-smoothed low-rank
-approximation of the covariance matrix, plus an eigenvalue-ratio
-weighted residual correction. The smoothed approach is more stable than
-the naive Monte Carlo method, especially when the number of time points
-is large.</p>
+constructs a simultaneous confidence band using a smoothed low-rank
+approximation of the covariance matrix.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">SurvBand</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get.surv.band.html">get.surv.band</a></span><span class="op">(</span><span class="va">RLTPred</span>, alpha <span class="op">=</span> <span class="fl">0.05</span>, approach <span class="op">=</span> <span class="st">"smoothed"</span>, k_rank <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">ntest</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">tp</span>  <span class="op">&lt;-</span> <span class="va">RLTPred</span><span class="op">$</span><span class="va">timepoints</span></span>
-<span>  <span class="va">S</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">Survival</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="va">sd_i</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">Cov</span><span class="op">[</span>,, <span class="va">i</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">pw_lower</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="va">S</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span> <span class="op">*</span> <span class="va">sd_i</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="va">pw_upper</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="va">S</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">0.975</span><span class="op">)</span> <span class="op">*</span> <span class="va">sd_i</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">SurvMat</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="va">b_lower</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">SurvBand</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">lower</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="va">b_upper</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">SurvBand</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">upper</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span>  </span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">testX</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">tp</span> <span class="op">&lt;-</span> <span class="va">RLTPred</span><span class="op">$</span><span class="va">timepoints</span><span class="op">[</span><span class="va">plot_id</span><span class="op">]</span></span>
+<span>  <span class="va">S</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">Survival</span><span class="op">[</span><span class="va">i</span>, <span class="va">plot_id</span><span class="op">]</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fu">xlink</span><span class="op">(</span><span class="va">testX</span><span class="op">)</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">*</span> <span class="va">tp</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">b_lower</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">SurvBand</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">lower</span><span class="op">)</span><span class="op">[</span><span class="va">plot_id</span><span class="op">]</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="va">b_upper</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">SurvBand</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">upper</span><span class="op">)</span><span class="op">[</span><span class="va">plot_id</span><span class="op">]</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">tp</span>, <span class="va">S</span>, type <span class="op">=</span> <span class="st">"n"</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>       xlab <span class="op">=</span> <span class="st">"Time"</span>, ylab <span class="op">=</span> <span class="st">"Survival Probability"</span>,</span>
-<span>       main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Subject"</span>, <span class="va">i</span><span class="op">)</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Shaded simultaneous band (blue)</span></span>
+<span>       main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">testX</span><span class="op">)</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/polygon.html" class="external-link">polygon</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">tp</span>, <span class="fu"><a href="https://rdrr.io/r/base/rev.html" class="external-link">rev</a></span><span class="op">(</span><span class="va">tp</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">b_lower</span>, <span class="fu"><a href="https://rdrr.io/r/base/rev.html" class="external-link">rev</a></span><span class="op">(</span><span class="va">b_upper</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>          col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html" class="external-link">rgb</a></span><span class="op">(</span><span class="fl">0.23</span>, <span class="fl">0.51</span>, <span class="fl">0.96</span>, <span class="fl">0.25</span><span class="op">)</span>, border <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Shaded pointwise band (grey)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/polygon.html" class="external-link">polygon</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">tp</span>, <span class="fu"><a href="https://rdrr.io/r/base/rev.html" class="external-link">rev</a></span><span class="op">(</span><span class="va">tp</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">pw_lower</span>, <span class="fu"><a href="https://rdrr.io/r/base/rev.html" class="external-link">rev</a></span><span class="op">(</span><span class="va">pw_upper</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>          col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html" class="external-link">rgb</a></span><span class="op">(</span><span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">0.3</span><span class="op">)</span>, border <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Truth (dashed red)</span></span>
+<span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">tp</span>, <span class="va">truth</span>, col <span class="op">=</span> <span class="st">"#E41A1C"</span>, lwd <span class="op">=</span> <span class="fl">2</span>, lty <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Estimate (step function, black)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">tp</span>, <span class="va">S</span>, type <span class="op">=</span> <span class="st">"s"</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span>  </span>
+<span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>,</span>
-<span>         legend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Estimated S(t)"</span>, <span class="st">"True S(t)"</span>,</span>
-<span>                    <span class="st">"Pointwise 95% CI"</span>, <span class="st">"Simultaneous 95% Band"</span><span class="op">)</span>,</span>
-<span>         lty <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>         col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"black"</span>, <span class="st">"#E41A1C"</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>         fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html" class="external-link">rgb</a></span><span class="op">(</span><span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>, <span class="fl">0.5</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html" class="external-link">rgb</a></span><span class="op">(</span><span class="fl">0.23</span>, <span class="fl">0.51</span>, <span class="fl">0.96</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>         border <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>         legend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Estimated S(t)"</span>, <span class="st">"True S(t)"</span>, <span class="st">"Simultaneous 95% Band"</span><span class="op">)</span>,</span>
+<span>         lty <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="cn">NA</span><span class="op">)</span>, lwd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>         col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"black"</span>, <span class="st">"#E41A1C"</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>         fill <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="fu"><a href="https://rdrr.io/r/grDevices/rgb.html" class="external-link">rgb</a></span><span class="op">(</span><span class="fl">0.23</span>, <span class="fl">0.51</span>, <span class="fl">0.96</span>, <span class="fl">0.35</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>         border <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
 <span>         bty <span class="op">=</span> <span class="st">"n"</span>, cex <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p><img src="confidence-interval_files/figure-html/band-plot-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
@@ -246,7 +224,7 @@ is large.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="optional-proportion-selected-smoothing">(Optional) Proportion-selected smoothing<a class="anchor" aria-label="anchor" href="#optional-proportion-selected-smoothing"></a>
+<h2 id="optional-rank-selection">Optional Rank Selection<a class="anchor" aria-label="anchor" href="#optional-rank-selection"></a>
 </h2>
 <p>The smoothed approach can also choose the rank by cumulative
 eigenvalue proportion instead of a fixed <code>k_rank</code>:</p>
@@ -259,17 +237,6 @@ eigenvalue proportion instead of a fixed <code>k_rank</code>:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>You can increase <code>nsim</code> for stability at the cost of
 runtime.</p>
-</div>
-<div class="section level2">
-<h2 id="optional-reducing-the-time-grid">(Optional) Reducing the time grid<a class="anchor" aria-label="anchor" href="#optional-reducing-the-time-grid"></a>
-</h2>
-<p>For large datasets, the full set of failure times can make covariance
-matrices unwieldy. Use <code>band.grid.size</code> in
-<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> to evaluate variance on a reduced quantile-based
-grid:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pred_reduced</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">testX</span>, var.est <span class="op">=</span> <span class="cn">TRUE</span>, band.grid.size <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pred_reduced</span><span class="op">$</span><span class="va">timepoints</span><span class="op">)</span>  <span class="co"># &lt;= 50 time points</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
