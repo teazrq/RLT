@@ -1,41 +1,50 @@
-# Confidence Interval and Confidence Band - Survival Tutorial (RLT)
-
-## Overview
-
-This page shows how to construct confidence bands for individual
-survival curves predicted by RLT.
-
-## Data
-
-We simulate right-censored survival data with standard normal
-predictors.
+# Confidence Interval and Confidence Band — Survival Tutorial (RLT)
 
 ``` r
 
-# (Optional) For reproducibility in this tutorial only
+library(RLT)
+```
+
+## Overview
+
+This page demonstrates how to construct **pointwise confidence
+intervals** and **simultaneous confidence bands** for individual
+survival curves predicted by RLT. The bands use a smoothed low-rank
+covariance approach — GAM-smoothed eigenvalue decomposition plus an
+eigenvalue-ratio weighted residual correction — which produces stable,
+well-calibrated bands even when the number of time points is large
+relative to the number of trees.
+
+## Data
+
+We simulate right-censored survival data from a proportional hazards
+model with exponential event times. The first and third predictors carry
+signal; the rest are noise.
+
+``` r
+
 set.seed(2)
 
-# ---- Generate a small survival dataset (~120 obs) ----
-n <- 120
+n <- 200
 p <- 10
 X <- matrix(rnorm(n * p), n, p)
 
 xlink <- function(x) exp(x[, 1] + x[, 3] / 2)
-FT <- rexp(n, rate = xlink(X))          # event times
-CT <- pmin(6, rexp(n, rate = 0.25))     # censoring times (cap at 6)
+FT <- rexp(n, rate = xlink(X))
+CT <- pmin(6, rexp(n, rate = 0.25))
 
-Y <- pmin(FT, CT)                        # observed time
-Censor <- as.numeric(FT <= CT)           # 1 = event observed
+Y <- pmin(FT, CT)
+Censor <- as.numeric(FT <= CT)
 
-# A few test subjects to visualize (keep small for a clean figure)
-ntest  <- 6
+# Test subjects for visualization
+ntest  <- 4
+set.seed(100)
 testX  <- matrix(rnorm(ntest * p), ntest, p)
 
-# True survival for reference (only for simulated data)
+# True survival for reference
 timepoints <- sort(unique(Y[Censor == 1]))
 SurvMat    <- matrix(NA, nrow(testX), length(timepoints))
 exprate    <- xlink(testX)
-
 for (j in seq_along(timepoints)) {
   SurvMat[, j] <- 1 - pexp(timepoints[j], rate = exprate)
 }
@@ -43,14 +52,15 @@ for (j in seq_along(timepoints)) {
 
 ## Fit and predict with variance
 
-``` r
+We use `var.mode = "matched"` (matched-sample U-statistic) for variance
+estimation. This automatically adjusts sampling to subsampling without
+replacement at 50%.
 
-# install.packages("devtools"); devtools::install_github("teazrq/RLT")
-library(RLT)
+``` r
 
 fit <- RLT(
   X, Y, Censor, model = "survival",
-  ntrees = 200, mtry = min(p, 10), nmin = 5,
+  ntrees = 1000, mtry = min(p, 10), nmin = 5,
   split.gen = "random", nsplit = 3,
   resample.prob = 0.8, resample.replace = FALSE,
   importance = FALSE, verbose = FALSE,
@@ -63,80 +73,130 @@ fit <- RLT(
 RLTPred <- predict(fit, testX, var.est = TRUE, ncores = 1)
 ```
 
-## Option A — Naive Monte Carlo
+## Pointwise confidence intervals
 
-This option computes bands using a Monte Carlo scheme with the
-covariance estimate. We also plot pointwise ±1.96 \* sd from the
-diagonal of the covariance for reference.
-
-``` r
-
-alpha <- 0.05
-logt  <- log(1 + timepoints)
-
-SurvBand_A <- get.surv.band(RLTPred, alpha = alpha, approach = "naive")
-
-layout(matrix(1:ntest, nrow = 2, byrow = TRUE))
-par(mar = c(3, 3, 2, 1))
-for (i in 1:ntest) {
-  # truth (red) — only available here because data are simulated
-  plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red",
-       xlab = "log(1 + time)", ylab = paste("Subject", i),
-       ylim = c(0, 1))
-  
-  # estimated survival (black solid) and pointwise 1.96 bands (black dotted)
-  lines(logt, RLTPred$Survival[i, ], lwd = 2, col = "black")
-  lines(logt, RLTPred$Survival[i, ] - qnorm(1 - alpha/2) * sqrt(diag(RLTPred$Cov[,, i])),
-        lty = 2, col = "black")
-  lines(logt, RLTPred$Survival[i, ] + qnorm(1 - alpha/2) * sqrt(diag(RLTPred$Cov[,, i])),
-        lty = 2, col = "black")
-  
-  # naive band (blue dotted)
-  lines(logt, as.numeric(SurvBand_A[[i]]$lower), lty = 3, lwd = 2, col = "deepskyblue")
-  lines(logt, as.numeric(SurvBand_A[[i]]$upper), lty = 3, lwd = 2, col = "deepskyblue")
-}
-```
-
-![](confidence-interval_files/figure-html/naive-bands-1.png)
-
-## Option B — Smoothed covariance
-
-This option builds smoothed bands which can be more stable. Here we use
-a small rank for illustration.
+Before constructing simultaneous bands, it is useful to look at
+pointwise intervals ($`\pm 1.96 \times \text{SD}`$ from the diagonal of
+the covariance matrix). These are **not** simultaneous — each time point
+is considered independently.
 
 ``` r
 
-alpha <- 0.05
-logt  <- log(1 + timepoints)
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
-SurvBand_B <- get.surv.band(RLTPred, alpha = alpha, approach = "smoothed", k_rank = 5)
-
-layout(matrix(1:ntest, nrow = 2, byrow = TRUE))
-par(mar = c(3, 3, 2, 1))
 for (i in 1:ntest) {
-  plot(logt, SurvMat[i, ], type = "l", lwd = 2, col = "red",
-       xlab = "log(1 + time)", ylab = paste("Subject", i),
-       ylim = c(0, 1))
-  lines(logt, RLTPred$Survival[i, ], lwd = 2, col = "black")
-  lines(logt, RLTPred$Survival[i, ] - qnorm(1 - alpha/2) * sqrt(diag(RLTPred$Cov[,, i])),
-        lty = 2, col = "black")
-  lines(logt, RLTPred$Survival[i, ] + qnorm(1 - alpha/2) * sqrt(diag(RLTPred$Cov[,, i])),
-        lty = 2, col = "black")
-  lines(logt, as.numeric(SurvBand_B[[i]]$lower), lty = 3, lwd = 2, col = "deepskyblue")
-  lines(logt, as.numeric(SurvBand_B[[i]]$upper), lty = 3, lwd = 2, col = "deepskyblue")
+  tp  <- RLTPred$timepoints
+  S   <- pmin(pmax(as.numeric(RLTPred$Survival[i, ]), 0), 1)
+  sd_i <- sqrt(diag(RLTPred$Cov[,, i]))
+  pw_lower <- pmin(pmax(S - qnorm(0.975) * sd_i, 0), 1)
+  pw_upper <- pmin(pmax(S + qnorm(0.975) * sd_i, 0), 1)
+  truth <- as.numeric(SurvMat[i, ])
+  
+  # Plot estimate with shaded pointwise CI
+  plot(tp, S, type = "n", ylim = c(0, 1),
+       xlab = "Time", ylab = "Survival Probability",
+       main = paste("Subject", i))
+  
+  # Shaded pointwise band
+  polygon(c(tp, rev(tp)), c(pw_lower, rev(pw_upper)),
+          col = rgb(0.7, 0.7, 0.7, 0.5), border = NA)
+  
+  # Truth (dashed red)
+  lines(tp, truth, col = "#E41A1C", lwd = 2, lty = 2)
+  
+  # Estimate (step function, black)
+  lines(tp, S, type = "s", lwd = 2)
+  
+  legend("topright", legend = c("Estimated S(t)", "True S(t)", "Pointwise 95% CI"),
+         lty = c(1, 2, NA), lwd = c(2, 2, NA), col = c("black", "#E41A1C", NA),
+         fill = c(NA, NA, rgb(0.7, 0.7, 0.7, 0.5)),
+         border = c(NA, NA, NA),
+         bty = "n", cex = 0.8)
 }
 ```
 
-![](confidence-interval_files/figure-html/smoothed-bands-1.png)
+![](confidence-interval_files/figure-html/pointwise-plot-1.png)
+
+``` r
+
+
+par(mfrow = c(1, 1))
+```
+
+## Simultaneous confidence band
+
+[`get.surv.band()`](https://teazrq.github.io/RLT/reference/get.surv.band.md)
+with `approach = "smoothed"` constructs a simultaneous confidence band
+using a GAM-smoothed low-rank approximation of the covariance matrix,
+plus an eigenvalue-ratio weighted residual correction. The smoothed
+approach is more stable than the naive Monte Carlo method, especially
+when the number of time points is large.
+
+``` r
+
+SurvBand <- get.surv.band(RLTPred, alpha = 0.05, approach = "smoothed", k_rank = 10)
+```
+
+``` r
+
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+for (i in 1:ntest) {
+  tp  <- RLTPred$timepoints
+  S   <- pmin(pmax(as.numeric(RLTPred$Survival[i, ]), 0), 1)
+  sd_i <- sqrt(diag(RLTPred$Cov[,, i]))
+  pw_lower <- pmin(pmax(S - qnorm(0.975) * sd_i, 0), 1)
+  pw_upper <- pmin(pmax(S + qnorm(0.975) * sd_i, 0), 1)
+  truth <- as.numeric(SurvMat[i, ])
+  
+  b_lower <- pmin(pmax(as.numeric(SurvBand[[i]]$lower), 0), 1)
+  b_upper <- pmin(pmax(as.numeric(SurvBand[[i]]$upper), 0), 1)
+  
+  plot(tp, S, type = "n", ylim = c(0, 1),
+       xlab = "Time", ylab = "Survival Probability",
+       main = paste("Subject", i))
+  
+  # Shaded simultaneous band (blue)
+  polygon(c(tp, rev(tp)), c(b_lower, rev(b_upper)),
+          col = rgb(0.23, 0.51, 0.96, 0.25), border = NA)
+  
+  # Shaded pointwise band (grey)
+  polygon(c(tp, rev(tp)), c(pw_lower, rev(pw_upper)),
+          col = rgb(0.7, 0.7, 0.7, 0.3), border = NA)
+  
+  # Truth (dashed red)
+  lines(tp, truth, col = "#E41A1C", lwd = 2, lty = 2)
+  
+  # Estimate (step function, black)
+  lines(tp, S, type = "s", lwd = 2)
+  
+  legend("topright",
+         legend = c("Estimated S(t)", "True S(t)",
+                    "Pointwise 95% CI", "Simultaneous 95% Band"),
+         lty = c(1, 2, NA, NA), lwd = c(2, 2, NA, NA),
+         col = c("black", "#E41A1C", NA, NA),
+         fill = c(NA, NA, rgb(0.7, 0.7, 0.7, 0.5), rgb(0.23, 0.51, 0.96, 0.4)),
+         border = c(NA, NA, NA, NA),
+         bty = "n", cex = 0.75)
+}
+```
+
+![](confidence-interval_files/figure-html/band-plot-1.png)
+
+``` r
+
+
+par(mfrow = c(1, 1))
+```
 
 ## (Optional) Proportion-selected smoothing
 
-For completeness, the smoothed approach can choose the rank by
-cumulative eigenvalue proportion:
+The smoothed approach can also choose the rank by cumulative eigenvalue
+proportion instead of a fixed `k_rank`:
 
 ``` r
 
-SurvBand_C <- get.surv.band(
+SurvBand_prop <- get.surv.band(
   RLTPred, alpha = 0.05,
   approach = "smoothed",
   k_mode = "proportion",
@@ -145,3 +205,16 @@ SurvBand_C <- get.surv.band(
 ```
 
 You can increase `nsim` for stability at the cost of runtime.
+
+## (Optional) Reducing the time grid
+
+For large datasets, the full set of failure times can make covariance
+matrices unwieldy. Use `band.grid.size` in
+[`predict()`](https://rdrr.io/r/stats/predict.html) to evaluate variance
+on a reduced quantile-based grid:
+
+``` r
+
+pred_reduced <- predict(fit, testX, var.est = TRUE, band.grid.size = 50)
+length(pred_reduced$timepoints)  # <= 50 time points
+```

@@ -23,5 +23,5 @@
   (RLT)](https://teazrq.github.io/RLT/articles/feature-kernel.md):
 - [Single Tree - Tutorial
   (RLT)](https://teazrq.github.io/RLT/articles/feature-single-tree.md):
-- [Confidence Interval and Confidence Band - Survival Tutorial
+- [Confidence Interval and Confidence Band — Survival Tutorial
   (RLT)](https://teazrq.github.io/RLT/articles/confidence-interval.md):
