@@ -12,6 +12,7 @@
 #' @param k_mode Rank selection mode: "fixed" (use k_rank) or "proportion" (auto-select by eigenvalue cumulative ratio).
 #' @param k_prop Proportion threshold (0,1] for cumulative eigenvalue ratio when k_mode = "proportion".
 #' @param ...   Further arguments (currently not used).
+#' @return An object of class \code{c("RLT", "band", "surv")} with components: \code{lower} (lower bound), \code{upper} (upper bound), and \code{timepoints} (evaluation grid). If \code{i = 0}, a list of such objects for all observations.
 #' @export
 #' @examples
 #' \donttest{

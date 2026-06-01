@@ -39,6 +39,9 @@ get.surv.band(
 
 \item{...}{Further arguments (currently not used).}
 }
+\value{
+An object of class \code{c("RLT", "band", "surv")} with components: \code{lower} (lower bound), \code{upper} (upper bound), and \code{timepoints} (evaluation grid). If \code{i = 0}, a list of such objects for all observations.
+}
 \description{
 Calculate the survival function (two-sided) confidence band from a RLT survival prediction.
 }

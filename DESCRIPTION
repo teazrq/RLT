@@ -4,23 +4,13 @@ Title: Reinforcement Learning Trees
 Version: 6.0.2
 Date: 2026-05-16
 Authors@R: c(
-    person("Ruoqing", "Zhu",
-           email = "teazrq@gmail.com", 
-           role = c("aut", "cre", "cph"),
+    person("Ruoqing", "Zhu", , "teazrq@gmail.com", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0002-0753-5716")),
-    person("Sarah", "Formentini",
-           email = "sarahef2@illinois.edu",
-           role = c("aut")),
-    person("Haowen", "Zhou",
-           email = "pja9pw@virginia.edu", 
-           role = c("ctb")),
-    person("Tianning", "Xu",
-           email = "tx8@illinois.edu", 
-           role = c("ctb")),
-    person("Zhechao", "Huang",
-           email = "huangzhechao1995@gmail.com", 
-           role = c("ctb"))
-    )
+    person("Sarah", "Formentini", , "sarahef2@illinois.edu", role = "aut"),
+    person("Haowen", "Zhou", , "pja9pw@virginia.edu", role = "ctb"),
+    person("Tianning", "Xu", , "tx8@illinois.edu", role = "ctb"),
+    person("Zhechao", "Huang", , "huangzhechao1995@gmail.com", role = "ctb")
+  )
 Description: Random forest with a variety of additional features for regression, 
              classification, and survival analysis. Features include parallel 
              computing with OpenMP, reproducibility with random seeds, variance 
@@ -33,7 +23,6 @@ Author: Ruoqing Zhu [aut, cre, cph] (<https://orcid.org/0000-0002-0753-5716>),
   Haowen Zhou [ctb],
   Tianning Xu [ctb],
   Zhechao Huang [ctb]
-Maintainer: Ruoqing Zhu <teazrq@gmail.com>
 Suggests: testthat, knitr, rmarkdown, mgcv
 VignetteBuilder: knitr
 License: GPL (>= 3)

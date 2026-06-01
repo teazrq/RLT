@@ -35,3 +35,5 @@
 ^OWLTest$
 ^Test_Files$
 ^vignettes/articles$
+^cran-comments\.md$
+^CRAN-SUBMISSION$

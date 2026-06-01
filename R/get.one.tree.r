@@ -3,6 +3,7 @@
 #' @param x A fitted RLT object
 #' @param tree the tree number, starting from 1 to \code{ntrees}.
 #' @param ... ...
+#' @return A data.frame with columns: Node (depth, BFS), NodeType (Split=1, Leaf=-1), SplitVar, SplitValue, LeftNode, RightNode, N (sample count). Model-specific columns include YAvg (regression), Prob (classification), or Hazard/SurvProb (survival).
 #' @export
 #' @examples
 #' \donttest{
