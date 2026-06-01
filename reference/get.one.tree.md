@@ -22,6 +22,13 @@ get.one.tree(x, tree = 1, ...)
 
   ...
 
+## Value
+
+A data.frame with columns: Node (depth, BFS), NodeType (Split=1,
+Leaf=-1), SplitVar, SplitValue, LeftNode, RightNode, N (sample count).
+Model-specific columns include YAvg (regression), Prob (classification),
+or Hazard/SurvProb (survival).
+
 ## Examples
 
 ``` r

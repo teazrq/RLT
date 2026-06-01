@@ -67,6 +67,12 @@ get.surv.band(
 
   Further arguments (currently not used).
 
+## Value
+
+An object of class `c("RLT", "band", "surv")` with components: `lower`
+(lower bound), `upper` (upper bound), and `timepoints` (evaluation
+grid). If `i = 0`, a list of such objects for all observations.
+
 ## Examples
 
 ``` r
