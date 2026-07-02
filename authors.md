@@ -18,14 +18,14 @@
 Source:
 [`inst/CITATION`](https://github.com/teazrq/RLT/blob/master/inst/CITATION)
 
-Zhu R. (2026). Reinforcement Learning Trees, R package version 6.0.2.
+Zhu R. (2026). Reinforcement Learning Trees, R package version 6.1.1.
 
     @Manual{,
       title = {RLT: Reinforcement Learning Trees},
       author = {R. Zhu},
       publisher = {manual},
       year = {2026},
-      note = {R package version 6.0.2},
+      note = {R package version 6.1.1},
       url = {https://cran.r-project.org/package=RLT},
     }
 

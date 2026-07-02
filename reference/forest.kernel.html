@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">RLT</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,6 +63,7 @@
 <span>  X1 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  X2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  vs.train <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  oob <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -96,6 +97,18 @@ specify <code>resample.track = TRUE</code> in <code>param.control</code> when fi
 the forest</p></dd>
 
 
+<dt id="arg-oob">oob<a class="anchor" aria-label="anchor" href="#arg-oob"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, compute the OOB (out-of-bag) self-kernel, which
+counts co-occurrence only from trees where both observations are OOB.
+This eliminates the self-contamination bias that arises when in-bag
+observations influence tree structure. Requires <code>resample.track = TRUE</code>
+and <code>X1</code> to be the original training data. <code>X2</code> must be
+<code>NULL</code> (OOB kernel is defined for self-kernel only). The returned
+list contains three matrices: <code>Kernel</code> (normalized co-occurrence
+in \([0,1]\)), <code>N</code> (number of trees where both are OOB), and
+<code>C</code> (number of trees where both are OOB and share a leaf).</p></dd>
+
+
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Whether fitting should be printed.</p></dd>
 
@@ -106,7 +119,8 @@ the forest</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A kernel matrix that contains kernel weights for each observation in <code>X1</code> with respect to <code>X1</code></p>
+    <p>A list containing the kernel matrix. For <code>oob = TRUE</code>, the list also
+contains <code>N</code> (OOB co-occurrence count) and <code>C</code> (OOB leaf-sharing count).</p>
     </div>
 
     <div class="section level2">

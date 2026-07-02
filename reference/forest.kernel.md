@@ -12,6 +12,7 @@ forest.kernel(
   X1 = NULL,
   X2 = NULL,
   vs.train = FALSE,
+  oob = FALSE,
   verbose = FALSE,
   ...
 )
@@ -42,6 +43,18 @@ forest.kernel(
   must specify `resample.track = TRUE` in `param.control` when fitting
   the forest
 
+- oob:
+
+  Logical. If `TRUE`, compute the OOB (out-of-bag) self-kernel, which
+  counts co-occurrence only from trees where both observations are OOB.
+  This eliminates the self-contamination bias that arises when in-bag
+  observations influence tree structure. Requires
+  `resample.track = TRUE` and `X1` to be the original training data.
+  `X2` must be `NULL` (OOB kernel is defined for self-kernel only). The
+  returned list contains three matrices: `Kernel` (normalized
+  co-occurrence in \\\[0,1\]\\), `N` (number of trees where both are
+  OOB), and `C` (number of trees where both are OOB and share a leaf).
+
 - verbose:
 
   Whether fitting should be printed.
@@ -52,8 +65,8 @@ forest.kernel(
 
 ## Value
 
-A kernel matrix that contains kernel weights for each observation in
-`X1` with respect to `X1`
+A list containing the kernel matrix. For `oob = TRUE`, the list also
+contains `N` (OOB co-occurrence count) and `C` (OOB leaf-sharing count).
 
 ## Examples
 

@@ -7,7 +7,7 @@ This page shows how to fit and predict a classification model with RLT.
 ## Prerequisites
 
 Install RLT, then load it with
-[`library(RLT)`](https://cran.r-project.org/package=RLT).
+[`library(RLT)`](https://github.com/teazrq/RLT).
 
 ## Data Preparation
 
