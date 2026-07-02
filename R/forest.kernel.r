@@ -18,12 +18,23 @@
 #'                  due to re-samplings of the training process. To use this feature, you must
 #'                  specify \code{resample.track = TRUE} in \code{param.control} when fitting 
 #'                  the forest 
-#' 
+#'                  
+#' @param oob       Logical. If \code{TRUE}, compute the OOB (out-of-bag) self-kernel, which 
+#'                  counts co-occurrence only from trees where both observations are OOB. 
+#'                  This eliminates the self-contamination bias that arises when in-bag
+#'                  observations influence tree structure. Requires \code{resample.track = TRUE}
+#'                  and \code{X1} to be the original training data. \code{X2} must be 
+#'                  \code{NULL} (OOB kernel is defined for self-kernel only). The returned
+#'                  list contains three matrices: \code{Kernel} (normalized co-occurrence
+#'                  in \eqn{[0,1]}), \code{N} (number of trees where both are OOB), and
+#'                  \code{C} (number of trees where both are OOB and share a leaf).
+#'                  
 #' @param verbose   Whether fitting should be printed.
 #' 
 #' @param ... ...   Additional arguments.
 #' 
-#' @return A kernel matrix that contains kernel weights for each observation in \code{X1} with respect to \code{X1}
+#' @return A list containing the kernel matrix. For \code{oob = TRUE}, the list also 
+#'   contains \code{N} (OOB co-occurrence count) and \code{C} (OOB leaf-sharing count).
 #' 
 #' @export
 #' @examples
@@ -40,6 +51,7 @@ forest.kernel <- function(object,
                           X1 = NULL,
                           X2 = NULL,
                           vs.train = FALSE,
+                          oob = FALSE,
                           verbose = FALSE,
                           ...)
 {
@@ -72,31 +84,72 @@ forest.kernel <- function(object,
     if (is.null(X2))
     {
       
-      if (object$parameters$linear.comb > 1)
+      if (oob)
       {
-        K <- Kernel_Self_Comb(object$FittedForest$SplitVar,
-                              object$FittedForest$SplitLoad,
-                              object$FittedForest$SplitValue,
-                              object$FittedForest$LeftNode,
-                              object$FittedForest$RightNode,
-                              object$FittedForest$NodeWeight,
-                              X1,
-                              object$ncat,
-                              verbose)
+        # OOB self-kernel: requires resample.track = TRUE
+        if (is.null(object$ObsTrack))
+          stop("Must set resample.track = TRUE in param.control to use oob = TRUE")
+        
+        if (nrow(X1) != object$parameters$n)
+          stop("OOB kernel requires X1 to be the original training data")
+        
+        if (object$parameters$linear.comb > 1)
+        {
+          K <- Kernel_Self_OOB_Comb(object$FittedForest$SplitVar,
+                                    object$FittedForest$SplitLoad,
+                                    object$FittedForest$SplitValue,
+                                    object$FittedForest$LeftNode,
+                                    object$FittedForest$RightNode,
+                                    object$FittedForest$NodeWeight,
+                                    X1,
+                                    object$ncat,
+                                    object$ObsTrack,
+                                    verbose)
+        }else{
+          K <- Kernel_Self_OOB(object$FittedForest$SplitVar,
+                               object$FittedForest$SplitValue,
+                               object$FittedForest$LeftNode,
+                               object$FittedForest$RightNode,
+                               object$FittedForest$NodeWeight,
+                               X1,
+                               object$ncat,
+                               object$ObsTrack,
+                               verbose)
+        }
+        
+        class(K) <- c("RLT", "kernel", "self", "oob")
+        
       }else{
-        K <- Kernel_Self(object$FittedForest$SplitVar,
-                         object$FittedForest$SplitValue,
-                         object$FittedForest$LeftNode,
-                         object$FittedForest$RightNode,
-                         object$FittedForest$NodeWeight,
-                         X1,
-                         object$ncat,
-                         verbose)
+        
+        if (object$parameters$linear.comb > 1)
+        {
+          K <- Kernel_Self_Comb(object$FittedForest$SplitVar,
+                                object$FittedForest$SplitLoad,
+                                object$FittedForest$SplitValue,
+                                object$FittedForest$LeftNode,
+                                object$FittedForest$RightNode,
+                                object$FittedForest$NodeWeight,
+                                X1,
+                                object$ncat,
+                                verbose)
+        }else{
+          K <- Kernel_Self(object$FittedForest$SplitVar,
+                           object$FittedForest$SplitValue,
+                           object$FittedForest$LeftNode,
+                           object$FittedForest$RightNode,
+                           object$FittedForest$NodeWeight,
+                           X1,
+                           object$ncat,
+                           verbose)
+        }
+        
+        class(K) <- c("RLT", "kernel", "self")
       }
       
-      class(K) <- c("RLT", "kernel", "self")
-      
     }else{
+      
+      if (oob)
+        stop("oob = TRUE is only supported for self-kernel (X2 must be NULL)")
     
       # check X2
       

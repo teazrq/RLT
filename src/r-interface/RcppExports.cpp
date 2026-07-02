@@ -163,6 +163,45 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// Kernel_Self_OOB
+List Kernel_Self_OOB(arma::field<arma::ivec>& SplitVar, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeWeight, arma::mat& X, arma::uvec& Ncat, arma::imat& ObsTrack, size_t verbose);
+RcppExport SEXP _RLT_Kernel_Self_OOB(SEXP SplitVarSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeWeightSEXP, SEXP XSEXP, SEXP NcatSEXP, SEXP ObsTrackSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::field<arma::ivec>& >::type SplitVar(SplitVarSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::vec>& >::type SplitValue(SplitValueSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type LeftNode(LeftNodeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type RightNode(RightNodeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::vec>& >::type NodeWeight(NodeWeightSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Ncat(NcatSEXP);
+    Rcpp::traits::input_parameter< arma::imat& >::type ObsTrack(ObsTrackSEXP);
+    Rcpp::traits::input_parameter< size_t >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(Kernel_Self_OOB(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, ObsTrack, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Kernel_Self_OOB_Comb
+List Kernel_Self_OOB_Comb(arma::field<arma::imat>& SplitVar, arma::field<arma::mat>& SplitLoad, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeWeight, arma::mat& X, arma::uvec& Ncat, arma::imat& ObsTrack, size_t verbose);
+RcppExport SEXP _RLT_Kernel_Self_OOB_Comb(SEXP SplitVarSEXP, SEXP SplitLoadSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeWeightSEXP, SEXP XSEXP, SEXP NcatSEXP, SEXP ObsTrackSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::field<arma::imat>& >::type SplitVar(SplitVarSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::mat>& >::type SplitLoad(SplitLoadSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::vec>& >::type SplitValue(SplitValueSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type LeftNode(LeftNodeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::uvec>& >::type RightNode(RightNodeSEXP);
+    Rcpp::traits::input_parameter< arma::field<arma::vec>& >::type NodeWeight(NodeWeightSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::uvec& >::type Ncat(NcatSEXP);
+    Rcpp::traits::input_parameter< arma::imat& >::type ObsTrack(ObsTrackSEXP);
+    Rcpp::traits::input_parameter< size_t >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(Kernel_Self_OOB_Comb(SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, ObsTrack, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // Kernel_Self_Comb
 List Kernel_Self_Comb(arma::field<arma::imat>& SplitVar, arma::field<arma::mat>& SplitLoad, arma::field<arma::vec>& SplitValue, arma::field<arma::uvec>& LeftNode, arma::field<arma::uvec>& RightNode, arma::field<arma::vec>& NodeWeight, arma::mat& X, arma::uvec& Ncat, size_t verbose);
 RcppExport SEXP _RLT_Kernel_Self_Comb(SEXP SplitVarSEXP, SEXP SplitLoadSEXP, SEXP SplitValueSEXP, SEXP LeftNodeSEXP, SEXP RightNodeSEXP, SEXP NodeWeightSEXP, SEXP XSEXP, SEXP NcatSEXP, SEXP verboseSEXP) {
@@ -468,6 +507,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RLT_ARMA_EMPTY_VEC", (DL_FUNC) &_RLT_ARMA_EMPTY_VEC, 0},
     {"_RLT_gen_ms_obs_track_mat_cpp", (DL_FUNC) &_RLT_gen_ms_obs_track_mat_cpp, 4},
     {"_RLT_Kernel_Self", (DL_FUNC) &_RLT_Kernel_Self, 8},
+    {"_RLT_Kernel_Self_OOB", (DL_FUNC) &_RLT_Kernel_Self_OOB, 9},
+    {"_RLT_Kernel_Self_OOB_Comb", (DL_FUNC) &_RLT_Kernel_Self_OOB_Comb, 10},
     {"_RLT_Kernel_Self_Comb", (DL_FUNC) &_RLT_Kernel_Self_Comb, 9},
     {"_RLT_Kernel_Cross", (DL_FUNC) &_RLT_Kernel_Cross, 9},
     {"_RLT_Kernel_Cross_Comb", (DL_FUNC) &_RLT_Kernel_Cross_Comb, 10},

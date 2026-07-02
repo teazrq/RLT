@@ -25,7 +25,6 @@ void Reg_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   size_t mtry = Param.mtry;
   size_t P = var_id.n_elem;
   size_t comb_size = std::min(P, Param.linear_comb);
-  double comb_threshold = Param.embed_threshold;
   size_t N = obs_id.n_elem;
   
   // Tier selection: switch.size = 3 * embed_nmin

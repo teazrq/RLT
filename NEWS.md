@@ -1,3 +1,15 @@
+# RLT 6.1.1
+
+* CRAN submission cleanup: fixed vignette pre-building, DESCRIPTION fields,
+  man page examples, and C++ compiler warning.
+
+# RLT 6.1.0
+
+* Added OOB (out-of-bag) self-kernel to `forest.kernel()` via `oob = TRUE`.
+  Computes kernel co-occurrence only from trees where both observations are OOB,
+  eliminating response-contamination bias for unbiased degrees-of-freedom estimation.
+  Returns `Kernel` (normalized), `N` (OOB count), and `C` (leaf-sharing count).
+
 # RLT 6.0.2
 
 * Improved regression distributed variable importance for multiple test samples.

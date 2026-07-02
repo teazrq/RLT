@@ -235,6 +235,138 @@ List Kernel_Cross_Comb(arma::field<arma::imat>& SplitVar,
 }
 
 // [[Rcpp::export()]]
+List Kernel_Self_OOB(arma::field<arma::ivec>& SplitVar,
+                     arma::field<arma::vec>&   SplitValue,
+                     arma::field<arma::uvec>&  LeftNode,
+                     arma::field<arma::uvec>&  RightNode,
+                     arma::field<arma::vec>&   NodeWeight,
+                     arma::mat&                X,
+                     arma::uvec&               Ncat,
+                     arma::imat&               ObsTrack,
+                     size_t                    verbose)
+{
+  size_t N = X.n_rows;
+  size_t ntrees = SplitVar.n_elem;
+
+  // Output matrices
+  umat C(N, N, fill::zeros);    // co-occurrence: OOB and share leaf
+  umat Nmat(N, N, fill::zeros); // count: both OOB
+
+  for (size_t nt = 0; nt < ntrees; nt++)
+  {
+    // Find OOB observations for this tree
+    uvec oob_idx = find(ObsTrack.col(nt) == 0);
+    size_t n_oob = oob_idx.n_elem;
+
+    if (n_oob < 2) continue;
+
+    // Accumulate OOB co-occurrence counts
+    Nmat.submat(oob_idx, oob_idx) += 1;
+
+    // Drop only OOB observations through the tree
+    Tree_Class OneTree(SplitVar(nt),
+                       SplitValue(nt),
+                       LeftNode(nt),
+                       RightNode(nt),
+                       NodeWeight(nt));
+
+    uvec proxy_id = linspace<uvec>(0, n_oob-1, n_oob);
+    uvec TermNode(n_oob, fill::zeros);
+
+    Find_Terminal_Node(0, OneTree, X, Ncat, proxy_id, oob_idx, TermNode);
+
+    // Accumulate co-occurrence within each leaf
+    uvec UniqueNode = unique(TermNode);
+
+    for (auto j : UniqueNode)
+    {
+      uvec ID = oob_idx(find(TermNode == j));
+
+      C.submat(ID, ID) += 1;
+    }
+  }
+
+  // Normalize: Kernel = C / Nmat (element-wise)
+  mat K = conv_to<mat>::from(C) / conv_to<mat>::from(Nmat);
+  K.replace(datum::nan, 0.0);
+  K.replace(datum::inf, 0.0);
+
+  List ReturnList;
+  ReturnList["Kernel"] = K;
+  ReturnList["N"] = Nmat;
+  ReturnList["C"] = C;
+
+  return(ReturnList);
+}
+
+// [[Rcpp::export()]]
+List Kernel_Self_OOB_Comb(arma::field<arma::imat>& SplitVar,
+                          arma::field<arma::mat>&   SplitLoad,
+                          arma::field<arma::vec>&   SplitValue,
+                          arma::field<arma::uvec>&  LeftNode,
+                          arma::field<arma::uvec>&  RightNode,
+                          arma::field<arma::vec>&   NodeWeight,
+                          arma::mat&                X,
+                          arma::uvec&               Ncat,
+                          arma::imat&               ObsTrack,
+                          size_t                    verbose)
+{
+  size_t N = X.n_rows;
+  size_t ntrees = SplitVar.n_elem;
+
+  // Output matrices
+  umat C(N, N, fill::zeros);    // co-occurrence: OOB and share leaf
+  umat Nmat(N, N, fill::zeros); // count: both OOB
+
+  for (size_t nt = 0; nt < ntrees; nt++)
+  {
+    // Find OOB observations for this tree
+    uvec oob_idx = find(ObsTrack.col(nt) == 0);
+    size_t n_oob = oob_idx.n_elem;
+
+    if (n_oob < 2) continue;
+
+    // Accumulate OOB co-occurrence counts
+    Nmat.submat(oob_idx, oob_idx) += 1;
+
+    // Drop only OOB observations through the tree
+    Comb_Tree_Class OneTree(SplitVar(nt),
+                            SplitLoad(nt),
+                            SplitValue(nt),
+                            LeftNode(nt),
+                            RightNode(nt),
+                            NodeWeight(nt));
+
+    uvec proxy_id = linspace<uvec>(0, n_oob-1, n_oob);
+    uvec TermNode(n_oob, fill::zeros);
+
+    Find_Terminal_Node_Comb(0, OneTree, X, Ncat, proxy_id, oob_idx, TermNode);
+
+    // Accumulate co-occurrence within each leaf
+    uvec UniqueNode = unique(TermNode);
+
+    for (auto j : UniqueNode)
+    {
+      uvec ID = oob_idx(find(TermNode == j));
+
+      C.submat(ID, ID) += 1;
+    }
+  }
+
+  // Normalize: Kernel = C / Nmat (element-wise)
+  mat K = conv_to<mat>::from(C) / conv_to<mat>::from(Nmat);
+  K.replace(datum::nan, 0.0);
+  K.replace(datum::inf, 0.0);
+
+  List ReturnList;
+  ReturnList["Kernel"] = K;
+  ReturnList["N"] = Nmat;
+  ReturnList["C"] = C;
+
+  return(ReturnList);
+}
+
+// [[Rcpp::export()]]
 List Kernel_Train(arma::field<arma::ivec>& SplitVar,
                   arma::field<arma::vec>& SplitValue,
                   arma::field<arma::uvec>& LeftNode,

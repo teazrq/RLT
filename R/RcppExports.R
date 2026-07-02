@@ -41,6 +41,14 @@ Kernel_Self <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X
     .Call(`_RLT_Kernel_Self`, SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, verbose)
 }
 
+Kernel_Self_OOB <- function(SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, ObsTrack, verbose) {
+    .Call(`_RLT_Kernel_Self_OOB`, SplitVar, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, ObsTrack, verbose)
+}
+
+Kernel_Self_OOB_Comb <- function(SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, ObsTrack, verbose) {
+    .Call(`_RLT_Kernel_Self_OOB_Comb`, SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, ObsTrack, verbose)
+}
+
 Kernel_Self_Comb <- function(SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, verbose) {
     .Call(`_RLT_Kernel_Self_Comb`, SplitVar, SplitLoad, SplitValue, LeftNode, RightNode, NodeWeight, X, Ncat, verbose)
 }

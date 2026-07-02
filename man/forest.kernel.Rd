@@ -9,6 +9,7 @@ forest.kernel(
   X1 = NULL,
   X2 = NULL,
   vs.train = FALSE,
+  oob = FALSE,
   verbose = FALSE,
   ...
 )
@@ -30,12 +31,23 @@ due to re-samplings of the training process. To use this feature, you must
 specify \code{resample.track = TRUE} in \code{param.control} when fitting
 the forest}
 
+\item{oob}{Logical. If \code{TRUE}, compute the OOB (out-of-bag) self-kernel, which
+counts co-occurrence only from trees where both observations are OOB.
+This eliminates the self-contamination bias that arises when in-bag
+observations influence tree structure. Requires \code{resample.track = TRUE}
+and \code{X1} to be the original training data. \code{X2} must be
+\code{NULL} (OOB kernel is defined for self-kernel only). The returned
+list contains three matrices: \code{Kernel} (normalized co-occurrence
+in \eqn{[0,1]}), \code{N} (number of trees where both are OOB), and
+\code{C} (number of trees where both are OOB and share a leaf).}
+
 \item{verbose}{Whether fitting should be printed.}
 
 \item{...}{...   Additional arguments.}
 }
 \value{
-A kernel matrix that contains kernel weights for each observation in \code{X1} with respect to \code{X1}
+A list containing the kernel matrix. For \code{oob = TRUE}, the list also
+contains \code{N} (OOB co-occurrence count) and \code{C} (OOB leaf-sharing count).
 }
 \description{
 \if{html}{\out{<div class="sourceCode">}}\preformatted{Get random forest induced kernel weight matrix of testing samples 

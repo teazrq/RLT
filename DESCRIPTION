@@ -1,8 +1,8 @@
 Package: RLT
 Type: Package
 Title: Reinforcement Learning Trees
-Version: 6.0.2
-Date: 2026-05-16
+Version: 6.1.1
+Date: 2026-07-02
 Authors@R: c(
     person("Ruoqing", "Zhu", , "teazrq@gmail.com", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0002-0753-5716")),
@@ -30,7 +30,7 @@ Encoding: UTF-8
 Imports: Rcpp (>= 1.0.9), stats
 LinkingTo: Rcpp, RcppArmadillo, dqrng, BH, sitmo
 BugReports: https://github.com/teazrq/RLT/issues
-URL: https://cran.r-project.org/package=RLT,
+URL: https://github.com/teazrq/RLT,
      https://teazrq.github.io/RLT/
 Roxygen: list(markdown = TRUE)
-Config/roxygen2/version: 8.0.0
+RoxygenNote: 8.0.0

@@ -5,6 +5,14 @@
 #' 
 #' @importFrom stats var
 #' @export
+#' @examples
+#' \donttest{
+#' set.seed(42)
+#' x <- matrix(rnorm(100 * 5), ncol = 5)
+#' y <- rowSums(x[, 1:2]) + rnorm(100)
+#' fit <- RLT(x, y, ntrees = 50)
+#' print(fit)
+#' }
 print.RLT <- function(x, ...)
 {
   # detect object type
