@@ -1,7 +1,12 @@
-#' @title random forest kernel
-#' @description     Get random forest induced kernel weight matrix of testing samples 
-#'                  or between any two sets of data. This is an experimental feature.
-#'                  Use at your own risk.
+#' @title Compute a random forest kernel
+#' @description Measure how often observations share terminal nodes in a fitted
+#' forest, within one dataset or between two datasets.
+#' This is an experimental feature; the available modes and
+#' their data requirements are described below.
+#' @details Ordinary kernel entries count trees in which two observations share
+#' a terminal node. They are not normalized observation contributions to a forest
+#' prediction. The training-data mode includes in-bag multiplicities; the OOB
+#' mode instead normalizes by the number of trees eligible for each pair.
 #'                  
 #' @param object    A fitted RLT object.
 #' 
@@ -13,21 +18,24 @@
 #'                  kernel matrix. If \code{vs.train} is used, then this must be the original 
 #'                  training data.
 #' 
-#' @param vs.train  To calculate the kernel weights with respect to the training data. 
-#'                  This is slightly different than supplying the training data to \code{X2}
-#'                  due to re-samplings of the training process. To use this feature, you must
+#' @param vs.train  Include each reference observation's in-bag multiplicity in
+#'                  its leaf-sharing count. \code{X2} must be the original training
+#'                  data in its original row order. To use this feature, you must
 #'                  specify \code{resample.track = TRUE} in \code{param.control} when fitting 
 #'                  the forest 
 #'                  
 #' @param oob       Logical. If \code{TRUE}, compute the OOB (out-of-bag) self-kernel, which 
 #'                  counts co-occurrence only from trees where both observations are OOB. 
-#'                  This eliminates the self-contamination bias that arises when in-bag
-#'                  observations influence tree structure. Requires \code{resample.track = TRUE}
+#'                  Each contributing tree was fitted without either observation
+#'                  in the pair. Requires \code{resample.track = TRUE}
 #'                  and \code{X1} to be the original training data. \code{X2} must be 
 #'                  \code{NULL} (OOB kernel is defined for self-kernel only). The returned
 #'                  list contains three matrices: \code{Kernel} (normalized co-occurrence
-#'                  in \eqn{[0,1]}), \code{N} (number of trees where both are OOB), and
-#'                  \code{C} (number of trees where both are OOB and share a leaf).
+#'                  in \eqn{[0,1]} where \code{N > 0}), \code{N} (number of trees
+#'                  where both are OOB), and \code{C} (number of trees where both
+#'                  are OOB and share a leaf). Entries with \code{N = 0} are
+#'                  returned as zero; inspect \code{N} to distinguish these
+#'                  unsupported pairs from observed zero leaf sharing.
 #'                  
 #' @param verbose   Whether fitting should be printed.
 #' 
@@ -61,25 +69,7 @@ forest.kernel <- function(object,
   if (is.null(X1))
     stop("X1 must be provided. To compute the kernel on training data, pass the training data as X1 and set X2 = NULL.")
 
-  if (!is.matrix(X1) & !is.data.frame(X1)) stop("X1 must be a matrix or a data.frame")
-
-    
-    # check X1 data 
-    if (is.null(colnames(X1))){
-      if (ncol(X1) != object$parameters$p) 
-        stop("X1 dimension does not match training data, variable names are not supplied...")
-    }else if (any(colnames(X1) != object$xnames)){
-      warning("X1 data variables names does not match training data ...")
-    
-      varmatch = match(object$xnames, colnames(X1))
-    
-      if (any(is.na(varmatch)))
-        stop("X1 is missing some variables from the orignal training data ...")
-      
-      X1 = X1[, varmatch]
-    }
-    
-    X1 <- data.matrix(X1)
+    X1 <- encode_RLT_features(object, X1, "X1")
     
     if (is.null(X2))
     {
@@ -151,26 +141,7 @@ forest.kernel <- function(object,
       if (oob)
         stop("oob = TRUE is only supported for self-kernel (X2 must be NULL)")
     
-      # check X2
-      
-      if (!is.null(X2))
-        if (!is.matrix(X2) & !is.data.frame(X2))
-          stop("X2 must be a matrix or a data.frame")    
-      
-      if (is.null(colnames(X2))){
-        if (ncol(X2) != object$parameters$p) 
-          stop("X2 dimension does not match training data, variable names are not supplied...")
-      }else if (any(colnames(X2) != object$xnames)){
-        warning("X2 data variables names does not match training data ...")
-        
-        varmatch = match(object$xnames, colnames(X2))
-        
-        if (any(is.na(varmatch))) stop("X2 missing some variables from the orignal training data ...")
-        
-        X2 = X2[, varmatch]
-      }
-      
-      X2 <- data.matrix(X2)
+      X2 <- encode_RLT_features(object, X2, "X2")
       
       if (!vs.train)
       {
@@ -225,6 +196,7 @@ forest.kernel <- function(object,
                                  X1,
                                  X2,
                                  object$ncat,
+                                  ObsTrack,
                                  verbose)
         }else{
           K <- Kernel_Train(object$FittedForest$SplitVar,

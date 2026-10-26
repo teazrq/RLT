@@ -12,11 +12,13 @@ importance(object, ...)
 \item{...}{Additional arguments (unused).}
 }
 \value{
-A \code{data.frame} with columns:
+A \code{data.frame} with columns \code{Variable} and \code{VI}.
+If the fitted object also contains importance variance estimates, the result
+includes \code{SD}, \code{Z} and \code{Sig}:
 \itemize{
 \item \code{Variable}: variable name
 \item \code{VI}: variable importance
-\item \code{SD}: standard deviation of VI (\code{NA} if not estimated or negative variance)
+\item \code{SD}: estimated standard error of VI (\code{NA} for unavailable or negative variance)
 \item \code{Z}: Z-score (\code{VI / SD}, \code{NA} if SD is \code{NA})
 \item \code{Sig}: significance code (\code{""} if not estimated or negative variance)
 }
@@ -25,14 +27,18 @@ Significance codes: \code{***} |Z| >= 2.58, \code{**} |Z| >= 1.96, \code{*} |Z| 
 }
 \description{
 Extract variable importance from a fitted RLT model.
-When variance estimation was enabled via \code{var.mode},
-standard deviations, Z-scores, and significance codes are
-also reported. Negative variance estimates yield \code{NA}
-for SD, Z, and significance.
+When importance variance is supplied by \code{var.mode = "matched"},
+estimated standard errors, Z-scores, and significance codes are
+also reported. Unavailable or negative variance estimates yield
+\code{NA} for SD and Z, and an empty significance code.
 }
 \examples{
-\dontrun{
-fit <- RLT(x, y, model = "classification", importance = TRUE, var.mode = TRUE)
+\donttest{
+set.seed(42)
+x <- matrix(rnorm(100 * 5), ncol = 5)
+colnames(x) <- paste0("X", seq_len(ncol(x)))
+y <- x[, 1] - x[, 2] + rnorm(100)
+fit <- RLT(x, y, ntrees = 100, importance = TRUE, seed = 42)
 importance(fit)
 }
 

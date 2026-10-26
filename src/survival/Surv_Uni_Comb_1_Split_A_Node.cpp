@@ -83,8 +83,10 @@ void Surv_Uni_Comb_Split_A_Node(size_t Node,
     }
 
     // if this happens something about the splitting rule is wrong
-    if (left_id.n_elem == 0 || left_id.n_elem == N)
+    if (left_id.n_elem == 0 || left_id.n_elem == N ||
+        (useobsweight && !positive_child_weights(SURV_DATA.obsweight, left_id, obs_id)))
     {
+      // A terminal estimate must use the complete positive-mass parent.
       obs_id = join_cols(left_id, obs_id);
       goto TERMINATENODE;
     }
@@ -159,7 +161,7 @@ void Surv_Uni_Comb_Terminate_Node(size_t Node,
     
     for (size_t i = 0; i < obs_id.n_elem; i++)
     {
-      double wi = obs_weight(obs_id(i)) / wbar;
+      double wi = survival_node_weight(obs_weight(obs_id(i)), wsum, wbar, obs_id.n_elem);
       if (Censor(obs_id(i)) == 0)
         NodeCensor_w( Y(obs_id(i)) ) += wi;
       else

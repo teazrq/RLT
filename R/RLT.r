@@ -1,31 +1,35 @@
 #' @title Reinforcement Learning Trees
-#' @description           Fit models for regression, classification and survival
-#' analysis using reinforced splitting rules. The model
-#' fits regular random forest models by default unless the
-#' parameter \code{reinforcement} is set to `"TRUE"`. Using
-#' \code{reinforcement = TRUE} activates embedded model for
-#' splitting variable selection and allows linear combination
-#' split. To specify parameters of embedded models, see
-#' definition of \code{param.control} for details.
+#' @description Fit random forest models for regression, classification and
+#' survival analysis. By default, splits use one variable at a time.
+#' Set \code{reinforcement = TRUE} to use embedded-model guidance for
+#' single-variable splits, or \code{linear.comb > 1} for linear combination
+#' splits. Linear combination splits do not require \code{reinforcement = TRUE};
+#' regression and classification combination splits still use embedded screening
+#' at sufficiently large nodes. See \code{param.control} for details.
 #'
-#' @param x               A `matrix` or `data.frame` of features. If \code{x} is
-#'                        a data.frame, then all factors are treated as categorical
-#'                        variables, which will go through an exhaustive search of
-#'                        splitting criteria.
+#' @param x               A numeric `matrix` or a `data.frame` of features. Unordered
+#'                        factors in a data frame use categorical splits. Ordered factors
+#'                        and character columns retain their numerical rank-code treatment.
+#'                        Training label dictionaries are saved for all three types, so
+#'                        prediction and kernels match labels to the training codes.
+#'                        Numeric inputs for these columns are interpreted as integer
+#'                        training codes in \code{1:length(training_labels)}, not as labels.
+#'                        Character matrices are not supported.
 #'
-#' @param y               Response variable. a `numeric`/`factor` vector.
+#' @param y               Response vector: numeric for regression or observed survival
+#'                        times, and a factor for classification.
 #'
-#' @param censor          Censoring indicator if survival model is used.
+#' @param censor          Survival event indicator: 1 for an observed event and 0
+#'                        for a right-censored observation.
 #'
 #' @param model           The model type: `"regression"`, `"classification"`,
 #'                        or `"survival"`. Quantile forest is not yet implemented.
 #'
-#' @param reinforcement   Should reinforcement splitting rule be used. Default
-#'                        is `"FALSE"`, i.e., regular random forests with marginal
-#'                        search of splitting variable. When it is activated, an
-#'                        embedded model is fitted to find the best splitting variable
-#'                        or a linear combination of them, if \code{linear.comb} $> 1$.
-#'                        They can also be specified in \code{param.control}.
+#' @param reinforcement   Whether to use embedded-model guidance for
+#'                        single-variable splits. Default: \code{FALSE}.
+#'                        Linear combination splits are selected separately by
+#'                        \code{linear.comb}; see \code{param.control} for their
+#'                        model-specific screening behavior.
 #'
 #' @param ntrees          Number of trees, `ntrees = 100` if reinforcement is
 #'                        used and `ntrees = 500` otherwise.
@@ -69,135 +73,127 @@
 #'                        \code{"coxgrad"} splitting rules. Weighted logrank and
 #'                        suplogrank use a variance estimator that accounts for
 #'                        the observation weights.
+#'                        Weights must be finite and nonnegative with positive total mass;
+#'                        individual zero weights are allowed. A sampled outer or embedded
+#'                        tree with zero total observation weight produces a catchable error.
 #'
 #' @param var.prob        Variable probabilities for split variable selection. A
 #'                        numeric vector of length \code{p} (number of predictors)
-#'                        with non-negative weights. When supplied, \code{mtry}
-#'                        variables are sampled \emph{without replacement} with
-#'                        probabilities proportional to these weights at each
-#'                        internal node. This effectively up-weights or
-#'                        down-weights individual predictors during tree
-#'                        construction. Works for all models (regression,
-#'                        classification, survival). The vector does
-#'                        not need to sum to 1; it is internally normalized.
+#'                        with finite nonnegative weights and positive total mass.
+#'                        The vector is normalized internally and guides sampling
+#'                        of split candidates. In particular,
+#'                        requesting the whole candidate pool returns all variables,
+#'                        and some regression/classification linear combination screening
+#'                        paths sample uniformly. Zero-probability exclusion is therefore
+#'                        not guaranteed across these paths.
 #'                        If \code{NULL} (default), uniform sampling is used.
 #'
-#' @param importance      Whether to calculate variable importance measures. When
-#'                        set to `"TRUE"` (or `"permute"`), the calculation follows
-#'                        Breiman's original permutation strategy. If set to `"distribute"`,
-#'                        then it sends the oob data to both child nodes with
-#'                        weights proportional to their sample sizes. Hence
-#'                        the final prediction is a weighted average of all possible
-#'                        terminal nodes that a perturbed observation could fall into.
-#'                        This feature is currently only available in regression
-#'                        and classification models.
+#' @param importance      Whether to calculate variable importance. Use \code{TRUE}
+#'                        or \code{"permute"} to measure the deterioration in
+#'                        out-of-bag (OOB) performance after permuting a predictor.
+#'                        With \code{"distribute"}, an OOB observation follows both
+#'                        children whenever a split uses the assessed predictor.
+#'                        Routing probabilities are proportional to child node weights,
+#'                        or sample counts for unweighted data. Regression and
+#'                        classification average terminal-node losses; survival
+#'                        evaluates concordance using averaged terminal-node risk scores.
+#'                        Both strategies are available for regression, classification,
+#'                        and survival. Survival importance uses OOB concordance and
+#'                        is unavailable when no usable OOB comparisons exist.
 #'
-#' @param linear.comb    Number of variables to combine in each linear combination split.
-#'                       Default is 1 (standard axis-aligned splits). See also
-#'                       \code{linear.comb.method} and \code{param.control}.
-#' @param linear.comb.method  Method for constructing linear combinations:
-#'                       \code{"default"}, \code{"coxph"} (Cox PH loading, survival only),
-#'                       or \code{"naive"} (covariance-based loading). See \code{param.control}.
+#' @param linear.comb    Maximum number of variables in each linear combination
+#'                       split. Default: 1 (single-variable splits). Values greater
+#'                       than 1 do not require \code{reinforcement = TRUE}.
+#'                       See \code{linear.comb.method} and \code{param.control}.
+#' @param linear.comb.method Method for constructing linear combinations.
+#'                       \code{"default"} selects \code{"sir"} for regression,
+#'                       \code{"lda"} for classification, and \code{"coxph"} for
+#'                       survival. See \code{param.control} for all methods.
 #' @param split.rule     Splitting criterion. Default \code{"default"} selects the
 #'                       standard rule for each model. For survival: \code{"logrank"},
 #'                       \code{"suplogrank"}, or \code{"coxgrad"}. See \code{param.control}.
-#' @param var.mode        Variance estimation mode. Default is \code{"none"}
-#'                        (no variance estimation). Set to \code{"matched"} or
-#'                        \code{TRUE} to use matched-sample U-statistic
-#'                        decomposition for prediction variance and variable
-#'                        importance variance. When active, several resampling
-#'                        parameters are automatically adjusted. Equivalent to
-#'                        setting \code{param.control = list(var.mode = "matched")}.
-#'                        See \code{param.control} for full details.
+#' @param var.mode        Variance estimation mode: \code{"none"} (default),
+#'                        \code{"matched"}, \code{"IJ"}, or \code{"jack"}.
+#'                        \code{TRUE} is equivalent to \code{"matched"}.
+#'                        Matched sampling supports prediction and importance
+#'                        variance; IJ and jackknife modes support prediction
+#'                        variance. Active modes adjust resampling settings and
+#'                        retain observation tracking. See \code{param.control}.
 #'
-#' @param param.control   A list of additional parameters. This can be used to
-#'                        specify other features in a random forest or set embedded
-#'                        model parameters for reinforcement splitting rules.
-#'                        Using \code{reinforcement = TRUE} will automatically
-#'                        generate some default tuning for the embedded model.
-#'                        \strong{Reinforcement is available for regression,
-#'                        classification, and survival models.}
-#'                        They are not necessarily optimized.
-#'                        \itemize{
-#'                        \item \code{embed.ntrees}: number of trees in the embedded model. Default: 50.
-#'                        \item \code{embed.mtry}: proportion of variables for embedded splits. Default: 0.5.
-#'                        \item \code{embed.nmin}: terminal node size for embedded model. Default: 5.
-#'                        \item \code{embed.nsplit}: number of random cutting points. Default: 3.
-#'                        \item \code{embed.resample.replace}: whether to sample
-#'                              with replacement. Default: TRUE.
-#'                        \item \code{embed.resample.prob}: proportion of samples
-#'                              (of the internal node) in the embedded model. Default: 0.9.
-#'                        \item \code{embed.mute}: variables to mute per split.
-#'                              If >= 1: exact count; if < 1: proportion. Default: 0 (no muting).
-#'                        \item \code{embed.protect}: number of top variables to protect
-#'                              from muting. Default: ceiling(log(n)).
-#'                        \item \code{embed.threshold}: threshold, as a fraction
-#'                              of the best VI, for being included in the protected
-#'                              set at an internal node. Default: 0.25.
-#'                        \item \code{linear.comb}: number of variables to use in linear
-#'                              combination splits. Requires \code{reinforcement = TRUE}.
-#'                              Default: 1 (no linear combination).
-#'                        \item \code{linear.comb.method}: method for constructing linear
-#'                              combination splits. Regression: \code{"naive"} (1),
-#'                              \code{"lm"} (2), \code{"pca"} (3), \code{"sir"} (4, default).
-#'                        Classification: \code{"lda"} (1, default), \code{"naive"} (2),
-#'                              \code{"random"} (3), \code{"logistic"} (4).
-#'                        \item \code{time.grid.size}: number of unique time points for
-#'                              survival estimation (default 0 = all). See \code{time.grid.size}
-#'                              argument for details.
-#'                        }
+#' @param param.control A list of additional forest and embedded-model settings.
+#' Reinforcement is available for regression, classification, and survival.
+#' Embedded-model defaults are provided automatically but may need tuning.
 #'
-#'                        See \code{linear.comb} and \code{linear.comb.method} under
-#'                        \code{param.control} documentation above.
+#' Embedded-model settings:
+#' \itemize{
+#' \item \code{embed.ntrees}: number of embedded trees. Default: 50.
+#' \item \code{embed.mtry}: candidate-variable proportion when less than 1,
+#' or count when at least 1. Default: 0.5.
+#' \item \code{embed.nmin}: embedded terminal node size. Default: 5.
+#' \item \code{embed.nsplit}: random cutting points; 0 uses the best split. Default: 3.
+#' \item \code{embed.resample.replace}: sample with replacement. Default: TRUE.
+#' \item \code{embed.resample.prob}: sample proportion within the current node.
+#' Default: 0.9.
+#' \item \code{embed.mute}: variables to mute per split, as a count when at least
+#' 1 or a proportion when less than 1. Default: 0 (no muting).
+#' \item \code{embed.protect}: number of top variables protected from muting.
+#' Default: \code{ceiling(log(n))}.
+#' \item \code{embed.threshold}: threshold relative to the best importance for
+#' inclusion in the protected set. Default: 0.25.
+#' }
 #'
-#'                        \code{split.rule} specifies the splitting criterion for each model type.
-#'                        \itemize{
-#'                        \item \strong{Regression}: \code{"var"} (variance reduction, default and only option)
-#'                        \item \strong{Classification}: \code{"gini"} (Gini index, default and only option)
-#'                        \item \strong{Survival}: \code{"logrank"} (default), \code{"suplogrank"}, \code{"coxgrad"}
-#'                        }
-#'                        Internally mapped to integers: var=1, gini=1, logrank=1, suplogrank=2, coxgrad=3.
+#' Linear combination settings:
+#' \itemize{
+#' \item \code{linear.comb}: maximum variables per combination. Default: 1.
+#' Values greater than 1 select combination splits independently of
+#' \code{reinforcement}. Regression and classification use embedded importance
+#' screening when the node has at least \code{3 * embed.nmin} observations and
+#' direct screening at smaller nodes. Survival combination splits screen
+#' \code{mtry} candidates without an embedded forest.
+#' \item \code{linear.comb.method}: regression accepts \code{"naive"},
+#' \code{"lm"}, \code{"pca"}, and \code{"sir"} (default); classification accepts
+#' \code{"lda"} (default), \code{"naive"}, \code{"random"}, and \code{"logistic"};
+#' survival accepts \code{"coxph"} (default) and \code{"naive"}.
+#' }
 #'
-#'                        \code{resample.track} indicates whether to keep track
-#'                        of which observations are used in each tree. This is
-#'                        required for variance estimation (via \code{var.mode}).
+#' \code{split.rule} selects the splitting criterion:
+#' \itemize{
+#' \item Regression: \code{"var"} (variance reduction).
+#' \item Classification: \code{"gini"} (Gini index).
+#' \item Survival: \code{"logrank"} (default), \code{"suplogrank"}, or \code{"coxgrad"}.
+#' }
 #'
-#'                        \code{var.mode} specifies the variance estimation method
-#'                        to prepare during model fitting. Currently available methods:
-#'                        \itemize{
-#'                        \item \code{"none"} (default): No variance estimation.
-#'                        \item \code{"matched"}: Uses matched-sample U-statistic
-#'                        decomposition (Xu, Zhu & Shao, 2023) for prediction
-#'                        variance and variable importance variance. Also used for
-#'                        confidence band in survival models (Formentini, Liang & Zhu, 2023).
-#'                        }
-#'                        Specifying \code{var.mode = TRUE} is equivalent to
-#'                        \code{var.mode = "matched"}.
-#'                        When \code{var.mode} is not \code{"none"}, the following
-#'                        parameters are automatically adjusted if not already set:
-#'                        \itemize{
-#'                        \item \code{resample.preset} is constructed automatically
-#'                        \item \code{resample.replace} is set to \code{FALSE}
-#'                        \item \code{resample.prob} is set to 0.5
-#'                        \item \code{resample.track} is set to \code{TRUE}
-#'                        \item \code{importance} is set to \code{"distribute"}
-#'                        }
+#' \code{resample.track} retains the in-bag count for each observation and tree.
+#' Default: FALSE. All active variance modes enable it automatically.
 #'
-#'                        It is recommended to use a very large \code{ntrees},
-#'                        e.g, 10000 or larger. For \code{resample.prob} greater
-#'                        than 0.5, one should consider the bootstrap
-#'                        approach in Xu, Zhu & Shao (2023).
+#' \code{var.mode} prepares variance estimation during fitting:
+#' \itemize{
+#' \item \code{"none"} (default): no variance estimation.
+#' \item \code{"matched"} (or \code{TRUE}): matched-sample U-statistic
+#' decomposition for prediction and variable importance variance. Uses paired
+#' half-samples without replacement, sets \code{resample.prob = 0.5}, and
+#' generates \code{resample.preset}, replacing any supplied preset. An odd
+#' \code{ntrees} is reduced to the preceding even number; at least 2 are required.
+#' \item \code{"IJ"}: infinitesimal jackknife prediction variance.
+#' \item \code{"jack"}: jackknife-after-bootstrap prediction variance.
+#' }
+#' IJ and jackknife modes set \code{resample.replace = TRUE}, retain the requested
+#' \code{resample.prob}, and generate bootstrap counts instead of using a supplied
+#' \code{resample.preset}. They do not estimate variable importance variance.
+#' All active variance modes enable \code{importance = "distribute"} when
+#' importance was disabled; an explicitly requested importance method is retained.
+#' Stable variance estimates generally require many trees. IJ and jackknife
+#' modes recommend at least 2000 trees.
 #'
-#'                        \\code{time.grid.size} specifies the number of unique
-#'                        time points used for survival estimation. By default
-#'                        (0), all observed failure times are used. Setting a
-#'                        smaller number (e.g., 50) can speed up computation
-#'                        for large datasets. The time points are selected at
-#'                        evenly spaced quantiles of the observed failure times,
-#'                        always including the minimum and maximum failure times.
+#' \code{time.grid.size} is 0 by default and retains all distinct observed failure
+#' times for survival fitting. A positive integer must be at least the number of
+#' distinct failure times; it does not add times to the training grid. Requests
+#' that would reduce the training grid are rejected. Use \code{band.grid.size} in
+#' \code{predict()} to reduce the evaluation grid instead.
 #'
 #' @param ncores          Number of CPU logical cores. Default is 0 (using all
-#'                        available cores).
+#'                        available cores when compiled with OpenMP). Builds
+#'                        without OpenMP run serially.
 #'
 #' @param verbose         Whether info should be printed.
 #'
@@ -210,25 +206,38 @@
 #'
 #' @return
 #'
-#' A \code{RLT} fitted object, constructed as a list consisting
-#' \item{FittedForest}{Fitted tree structures}
-#' \item{VarImp}{Variable importance measures, if \code{importance = TRUE}}
-#' \item{Prediction}{Out-of-bag prediction}
-#' \item{Error}{Out-of-bag prediction error, adaptive to the model type}
+#' A fitted object of class \code{RLT}. OOB predictions for each training
+#' observation use only trees that did not sample that observation.
+#' \describe{
+#' \item{Prediction}{OOB numeric predictions for regression, factor labels for
+#' classification, or a matrix of hazard increments for survival. Survival rows
+#' correspond to observations and columns to \code{timepoints}.}
+#' \item{Error}{OOB mean squared error for regression, misclassification rate for
+#' classification, or \eqn{1-C} for survival. The survival concordance score uses
+#' the sum of the OOB cumulative hazards over the failure-time grid, not just
+#' the cumulative hazard at the final time. Lower error is better.}
+#' \item{VarImp}{Variable importance when requested. Use \code{\link{importance}}
+#' to obtain a named summary.}
+#' \item{FittedForest}{Fitted tree structures.}
+#' \item{xlevels}{Training label dictionaries for factor, ordered-factor, and character
+#' data-frame columns, with \code{NULL} entries for numerical features.}
 #' \item{ObsTrack}{Provided if \code{resample.track = TRUE}, \code{var.mode != "none"},
 #'                 or if \code{resample.preset} was supplied. This is an \code{n} \eqn{\times} \code{ntrees}
 #'                 matrix that has the same meaning as \code{resample.preset}.}
+#' }
 #'
-#' For classification forests, these items are further provided or will replace
-#' the regression version
-#' \item{NClass}{The number of classes}
-#' \item{Prob}{Out-of-bag predicted probability}
+#' Classification forests also provide:
+#' \describe{
+#' \item{nclass}{Number of response classes.}
+#' \item{Prob}{OOB class probabilities, with one row per observation and one
+#' column per class in the order given by \code{ylabels}.}
+#' }
 #'
-#' For survival forests, these items are further provided or will replace the
-#' regression version
+#' Survival forests also provide:
+#' \describe{
 #' \item{timepoints}{ordered observed failure times}
 #' \item{NFail}{The number of observed failure times}
-#' \item{Prediction}{Out-of-bag prediction of hazard function}
+#' }
 #'
 #' @references
 #' \itemize{
@@ -289,6 +298,10 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   if (missing(x)) stop("x is missing")
 
   if (missing(y)) stop("y is missing")
+
+  if (!is.matrix(x) && !is.data.frame(x)) stop("x must be a matrix or a data.frame")
+  if (is.matrix(x) && !is.numeric(x) && !is.logical(x))
+    stop("x must be a numeric matrix; character matrices are not supported")
 
   if (model == "survival")
     if (missing(censor)) stop("censor is missing")
@@ -466,16 +479,20 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   if (is.data.frame(x))
   {
     # data.frame, check for categorical variables
-    xlevels <- lapply(x, function(x) if (is.factor(x)) levels(x) else 0)
-    ncat <- sapply(xlevels, length)
-
-    ## Treat ordered factors as numeric.
-    ncat <- ifelse(sapply(x, is.ordered), 1, ncat)
+    xlevels <- lapply(x, function(value) {
+      if (is.factor(value)) levels(value)
+      else if (is.character(value)) levels(factor(value))
+      else NULL
+    })
+    # Ordered factors and character columns retain their continuous rank codes.
+    ncat <- vapply(x, function(value) {
+      if (is.factor(value) && !is.ordered(value)) nlevels(value) else 1L
+    }, integer(1))
   }else{
     # numerical matrix for x, all continuous
     ncat <- rep(1, p)
     names(ncat) <- colnames(x)
-    xlevels <- as.list(rep(0, p))
+    xlevels <- rep(list(NULL), p)
 
     # Check for variables with very few unique values (potential categoricals)
     for (j in 1:p)
@@ -544,6 +561,7 @@ RLT <- function(x, y, censor = NULL, model = NULL,
   }
 
   RLT.fit$"xnames" = xnames
+  RLT.fit$"xlevels" = xlevels
 
   if (importance)
     rownames(RLT.fit$"VarImp") = xnames

@@ -22,23 +22,44 @@ C++/Rcpp backend with OpenMP for parallel computation.
 - Survival prediction, confidence bands, and tree inspection tools
 - Reproducible parallel fitting through recorded random seeds
 
+The default fit uses ordinary single-variable splits. Set `reinforcement = TRUE`
+to guide those splits with embedded models fitted within nodes. Linear combination
+splits use a combined predictor direction and are selected separately with
+`linear.comb > 1`; they do not require reinforcement. The
+[Get Started guide](https://teazrq.github.io/RLT/articles/get-started.html)
+shows an ordinary fit and a reinforced fit using the same data and settings.
+
 ## Installation
 
-Install the released version from CRAN when available:
+These guides describe **RLT source version 6.1.1**. The CRAN
+release is a separate, older version whose interfaces and features may differ.
+Source installation requires a C++ toolchain compatible with your R installation.
+Set it up using the [platform requirements](https://teazrq.github.io/RLT/articles/get-started.html#platform-requirements),
+then install the latest GitHub source into your normal shared R library:
+
+```r
+# install.packages("remotes")
+remotes::install_github("teazrq/RLT")
+packageVersion("RLT")
+```
+
+GitHub installation uses the repository's current default branch.
+`packageVersion()` checks the version number, which may be shared by different
+source revisions. See [matching the documentation revision](https://teazrq.github.io/RLT/articles/get-started.html#match-the-documentation-revision)
+when you need the exact source used by these guides.
+
+The separate CRAN release can be installed with:
 
 ```r
 install.packages("RLT")
 ```
 
-Install the development version from GitHub:
-
-```r
-# install.packages("remotes")
-remotes::install_github("teazrq/RLT")
-```
-
-On Windows, source installation requires Rtools. On macOS and Linux, source
-installation requires a working C++ toolchain and OpenMP support.
+On Windows, use the matching [Rtools](https://cran.r-project.org/bin/windows/Rtools/).
+For macOS and Linux requirements, see the
+[installation guide](https://teazrq.github.io/RLT/articles/get-started.html).
+OpenMP enables parallel computation; builds without it run serially. Windows
+builds with and without OpenMP have been validated. macOS and Linux source
+installation has not been verified for this documentation revision.
 
 ## Quick Example
 
@@ -56,6 +77,7 @@ fit <- RLT(
   model = "regression",
   ntrees = 100,
   importance = TRUE,
+  seed = 1,
   verbose = FALSE
 )
 
@@ -65,15 +87,20 @@ pred$Prediction
 importance(fit)
 ```
 
+The five training rows illustrate the returned numeric predictions. To evaluate
+prediction performance, use out-of-bag predictions or held-out observations as in
+the [Get Started analysis](https://teazrq.github.io/RLT/articles/get-started.html#fit-and-evaluate-a-regression-forest).
+`importance(fit)` reports how much the fitted forest relies on each predictor.
+
 ## Documentation
 
-The pkgdown site is built from the package vignettes and website-only articles:
+Use the guides to install RLT, fit models, and interpret their predictions:
 
-- [Get Started](https://teazrq.github.io/RLT/articles/get-started.html)
-- [Regression Tutorial](https://teazrq.github.io/RLT/articles/regression-tutorial.html)
-- [Classification Tutorial](https://teazrq.github.io/RLT/articles/classification-tutorial.html)
-- [Survival Tutorial](https://teazrq.github.io/RLT/articles/survival-tutorial.html)
-- [Reference](https://teazrq.github.io/RLT/reference/index.html)
+- [Get Started](https://teazrq.github.io/RLT/articles/get-started.html): complete a first analysis
+- [Regression Tutorial](https://teazrq.github.io/RLT/articles/regression-tutorial.html): predict a continuous response
+- [Classification Tutorial](https://teazrq.github.io/RLT/articles/classification-tutorial.html): predict class labels and probabilities
+- [Survival Tutorial](https://teazrq.github.io/RLT/articles/survival-tutorial.html): analyze censored event times
+- [Reference](https://teazrq.github.io/RLT/reference/index.html): look up arguments and returned values
 
 ## References
 

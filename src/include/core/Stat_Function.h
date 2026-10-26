@@ -27,6 +27,9 @@ arma::mat sir(arma::mat& newX,
               size_t nslice);
 
 // c-index
+bool cindex_has_comparable_pairs(const arma::uvec& Y,
+                                 const arma::uvec& Censor);
+
 double cindex_d(arma::vec& Y,
                 arma::uvec& Censor,
                 arma::vec& pred);

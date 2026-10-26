@@ -245,6 +245,9 @@ void cla_uni_cat_score_best(std::vector<Cla_Cat_Class>& cat_reduced,
       }
     }
     
+    if (!(Left_w > 0 && Right_w > 0))
+      continue;
+
     tempscore = accu( square(LeftSum) ) / Left_w + 
                 accu( square(RightSum) ) / Right_w;    
       
@@ -346,6 +349,9 @@ void cla_uni_cat_score_best_large(std::vector<Cla_Cat_Class>& cat_reduced,
       }
     }
     
+    if (!(Left_w > 0 && Right_w > 0))
+      continue;
+
     tempscore = accu( square(LeftSum) ) / Left_w + 
                 accu( square(RightSum) ) / Right_w;  
     

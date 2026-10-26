@@ -27,9 +27,9 @@ inline arma::vec compute_ij_variance(const arma::mat& PredAll, const arma::imat&
     arma::mat pred_centered = PredAll - arma::repmat(arma::mean(PredAll, 1), 1, B);
 
     // Center inbag counts per observation
-    arma::vec row_means_ot = arma::conv_to<arma::vec>::from(arma::mean(ObsTrack_clean, 1));
-    arma::imat N_centered_i = ObsTrack_clean - arma::repmat(arma::conv_to<arma::imat>::from(row_means_ot), 1, B);
-    arma::mat N_centered = arma::conv_to<arma::mat>::from(N_centered_i);
+    arma::mat counts = arma::conv_to<arma::mat>::from(ObsTrack_clean);
+    arma::vec row_means_ot = arma::mean(counts, 1);
+    arma::mat N_centered = counts - arma::repmat(row_means_ot, 1, B);
 
     // Compute raw IJ:
     // V_IJ = (1/B^2) * sum_i (sum_b N_c[i,b] * pred_c[j,b])^2
@@ -41,8 +41,8 @@ inline arma::vec compute_ij_variance(const arma::mat& PredAll, const arma::imat&
     arma::vec raw_IJ = arma::sum(pred_centered % PNTN, 1) / (B * B);
 
     // Monte Carlo bias correction
-    arma::vec row_means_N = arma::conv_to<arma::vec>::from(arma::mean(ObsTrack_clean, 1));
-    arma::vec row_means_sq_N = arma::conv_to<arma::vec>::from(arma::mean(arma::square(ObsTrack_clean), 1));
+    arma::vec row_means_N = arma::mean(counts, 1);
+    arma::vec row_means_sq_N = arma::mean(arma::square(counts), 1);
     double N_var = arma::mean(row_means_sq_N - arma::square(row_means_N));
     arma::vec boot_var = arma::sum(arma::square(pred_centered), 1) / B;
     arma::vec bias_corr = n_train * N_var * boot_var / B;
@@ -215,16 +215,16 @@ inline arma::mat compute_cla_ij_variance(const arma::cube& PredAll,
         ObsTrack_clean.elem(neg_idx).zeros();
 
     // Center inbag counts per observation
-    arma::vec row_means_ot = arma::conv_to<arma::vec>::from(arma::mean(ObsTrack_clean, 1));
-    arma::imat N_centered_i = ObsTrack_clean - arma::repmat(arma::conv_to<arma::imat>::from(row_means_ot), 1, ntrees);
-    arma::mat N_centered = arma::conv_to<arma::mat>::from(N_centered_i);
+    arma::mat counts = arma::conv_to<arma::mat>::from(ObsTrack_clean);
+    arma::vec row_means_ot = arma::mean(counts, 1);
+    arma::mat N_centered = counts - arma::repmat(row_means_ot, 1, ntrees);
 
     // NTN = N_centered' * N_centered  (ntrees x ntrees)
     arma::mat NTN = N_centered.t() * N_centered;
 
     // Monte Carlo bias correction terms
-    arma::vec row_means_N = arma::conv_to<arma::vec>::from(arma::mean(ObsTrack_clean, 1));
-    arma::vec row_means_sq_N = arma::conv_to<arma::vec>::from(arma::mean(arma::square(ObsTrack_clean), 1));
+    arma::vec row_means_N = arma::mean(counts, 1);
+    arma::vec row_means_sq_N = arma::mean(arma::square(counts), 1);
     double N_var = arma::mean(row_means_sq_N - arma::square(row_means_N));
     size_t n_train = ObsTrack.n_rows;
 
@@ -395,9 +395,9 @@ inline arma::mat compute_surv_ij_variance(const arma::mat& pred_i,
     arma::mat pred_centered = pred_i - arma::repmat(pred_mean, ntrees, 1);
 
     // Center ObsTrack per observation
-    arma::vec row_means_ot = arma::conv_to<arma::vec>::from(arma::mean(ObsTrack_clean, 1));
-    arma::mat N_centered = arma::conv_to<arma::mat>::from(
-        ObsTrack_clean - arma::repmat(arma::conv_to<arma::imat>::from(row_means_ot), 1, ntrees));
+    arma::mat counts = arma::conv_to<arma::mat>::from(ObsTrack_clean);
+    arma::vec row_means_ot = arma::mean(counts, 1);
+    arma::mat N_centered = counts - arma::repmat(row_means_ot, 1, ntrees);
 
     // NTN = N_centered' * N_centered  (ntrees × ntrees)
     arma::mat NTN = N_centered.t() * N_centered;
@@ -407,8 +407,8 @@ inline arma::mat compute_surv_ij_variance(const arma::mat& pred_i,
     arma::mat raw_IJ = PNTN * pred_centered / (ntrees * ntrees);  // T × T
 
     // MC bias correction: (n_train * N_var / ntrees) * cov(pred_centered)
-    arma::vec row_means_N = arma::conv_to<arma::vec>::from(arma::mean(ObsTrack_clean, 1));
-    arma::vec row_means_sq_N = arma::conv_to<arma::vec>::from(arma::mean(arma::square(ObsTrack_clean), 1));
+    arma::vec row_means_N = arma::mean(counts, 1);
+    arma::vec row_means_sq_N = arma::mean(arma::square(counts), 1);
     double N_var = arma::mean(row_means_sq_N - arma::square(row_means_N));
     arma::mat boot_var = arma::cov(pred_centered, 1);  // T × T
     arma::mat bias_corr = (n_train * N_var / ntrees) * boot_var;

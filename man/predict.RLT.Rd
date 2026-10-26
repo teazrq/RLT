@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.r
 \name{predict.RLT}
 \alias{predict.RLT}
-\title{prediction using RLT}
+\title{Predict with an RLT forest}
 \usage{
 \method{predict}{RLT}(
   object,
@@ -19,13 +19,19 @@
 \arguments{
 \item{object}{A fitted RLT object}
 
-\item{testx}{The testing samples, must have the same structure as the training samples}
+\item{testx}{New observations with the training feature structure.
+If omitted, returns the stored OOB \code{object$Prediction}
+directly. For supplied data, labels are
+matched using the saved training dictionaries; numerical values for
+encoded features mean integer training codes. Legacy fits require
+their original dictionaries or refitting before accepting labels.}
 
-\item{var.est}{Whether to estimate the variance of each testing data.
-The original forest must be fitted with \code{var.mode != "none"}.
-For survival forests, calculates the covariance matrix over all
-observed time points and calculates critical value for the confidence
-band.}
+\item{var.est}{Whether to estimate prediction uncertainty. Fit with an
+active \code{var.mode}, or satisfy the requirements for
+an explicit prediction-time mode described below.
+Regression returns prediction variance; classification
+returns variance for each class probability. Survival returns
+cumulative-hazard covariance over the evaluation times.}
 
 \item{var.mode}{Variance estimation mode for prediction. Can be \code{"none"},
 \code{"matched"}, \code{"IJ"}, or \code{"jack"}. If \code{NULL}
@@ -42,50 +48,52 @@ occupy a large storage space, especially in survival model}
 
 \item{verbose}{print additional information}
 
-\item{band.grid.size}{An integer specifying the number of time points for confidence band calculation.
+\item{band.grid.size}{A nonnegative integer specifying the requested maximum number of evaluation time points.
 Default is 0, which uses all unique failure time points. If a positive integer
-is provided, a subset of time points will be selected using quantiles,
-skipping the earliest 5\% of time points to improve stability.}
+is provided, a subset of time points will be selected using quantiles
+from the fifth percentile through the last time point. Quantile selection
+may return fewer distinct points. A request of 1 selects the fifth-percentile point.}
 
 \item{...}{...}
 }
 \value{
-A \code{RLT} prediction object, constructed as a list consisting
+With \code{testx = NULL}, returns \code{object$Prediction} directly,
+without a prediction list. Otherwise returns an \code{RLT} prediction list.
 
-\item{Prediction}{Prediction}
-\item{Variance}{if \code{var.est = TRUE} and the fitted object is
-\code{var.mode != "none"}}
+For regression and classification:
+\describe{
+\item{Prediction}{Regression: an \eqn{N \times 1} numeric matrix.
+Classification: a factor of predicted labels using the training response levels.
+Here \code{N = nrow(testx)}.}
+\item{Prob}{Classification only: an \eqn{N \times K} matrix of class
+probabilities, with columns in the order of the fitted object's \code{ylabels},
+where \code{K} is the number of classes.}
+\item{Variance}{When variance estimation is requested, regression prediction
+variances or an \eqn{N \times K} matrix of class-probability variances.
+Negative variance estimates are returned as \code{NA}.}
+}
 
 \strong{For Survival Forests}
-\item{hazard}{predicted hazard functions}
-\item{CumHazard}{predicted cumulative hazard function}
-\item{Survival}{predicted survival function}
-\item{Allhazard}{if \code{keep.all = TRUE}, the predicted hazard function for each
-observation and each tree}
-\item{AllCHF}{if \code{keep.all = TRUE}, the predicted cumulative hazard function for each
-observation and each tree}
-\item{Cov}{if \code{var.est = TRUE} and the fitted object is
-\code{var.mode != "none"}. For each test subject, a matrix of size NFail\eqn{\times}NFail
-where NFail is the number of observed failure times in the training data}
-\item{Var}{if \code{var.est = TRUE} and the fitted object is
-\code{var.mode != "none"}. Marginal variance for each subject}
-\item{timepoints}{ordered observed failure times from the training data}
-\item{MarginalVar}{if \code{var.est = TRUE} and the fitted object is
-\code{var.mode != "none"}. Marginal variance for each subject
-from the Cov matrix projected to the nearest positive definite
-matrix}
-\item{MarginalVarSmooth}{if \code{var.est = TRUE} and the fitted object is
-\code{var.mode != "none"}. Marginal variance for each subject
-from the Cov matrix projected to the nearest positive definite
-matrix and then smoothed using Gaussian kernel smoothing}
-\item{CVproj}{if \code{var.est = TRUE} and the fitted object is
-\code{var.mode != "none"}. Critical values to calculate confidence bands around
-cumulative hazard predictions at several confidence levels. Calculated using
-\code{MarginalVar}}
-\item{CVprojSmooth}{if \code{var.est = TRUE} and the fitted object is
-\code{var.mode != "none"}. Critical values to calculate confidence bands around
-cumulative hazard predictions at several confidence levels. Calculated using
-\code{MarginalVarSmooth}}
+
+\code{Hazard}, \code{CHF} and \code{Survival} each have one row per test
+observation and one column per evaluation time. There is no \code{Prediction}
+component in this list.
+\describe{
+\item{Hazard}{predicted pointwise hazard increments at the selected times}
+\item{CHF}{predicted cumulative hazard, accumulated on the complete training grid before
+selecting evaluation times. On a reduced grid, accumulating only \code{Hazard}
+does not in general reproduce \code{CHF}.}
+\item{Survival}{ordinary forests return \code{exp(-CHF)}. Linear combination forests
+return the mean of the tree product-limit survival curves. The
+\code{get.surv.band()} interface uses \code{exp(-CHF)} as its reference curve.}
+\item{AllHazard}{if \code{keep.all = TRUE}, the pointwise hazard increments for each
+tree, selected time, and observation, in that array order}
+\item{Cov}{when variance estimation is requested, an array with one
+\eqn{T\times T} cumulative-hazard covariance matrix per test subject,
+where \code{T = length(timepoints)}. Its dimensions are time,
+time, and test observation, in that order.}
+\item{timepoints}{ordered evaluation times selected from the training failure grid}
+}
 }
 \description{
 Predict the outcome (regression, classification or survival)

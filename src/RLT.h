@@ -32,6 +32,7 @@
 #include "include/core/Tree_Definition.h"
 #include "include/core/Tree_Function.h"
 #include "include/core/Stat_Function.h"
+#include "include/core/Forest_Build_Guards.h"
 #include "include/core/Variance_IJ_Jack.h"
 
 // ============================================================================

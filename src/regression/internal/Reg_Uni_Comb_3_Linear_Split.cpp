@@ -105,7 +105,17 @@ void Reg_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
   }  
   
   if (linear_comb_method == 4) // sir
-    v = sir(newX, newY, newW, useobsweight, sqrt(N)).col(0);
+  {
+    try {
+      mat directions = sir(newX, newY, newW, useobsweight, sqrt(N));
+      if (directions.n_rows == P && directions.n_cols > 0)
+        v = directions.col(0);
+    } catch (...) {
+      // Use the same naive fallback as the other direction methods.
+    }
+    if (v.n_elem != P || !v.is_finite())
+      v = sqrt(split_vi) % sign(cor(newX, newY));
+  }
 
   // Check for NaN/Inf in loading vector and fall back to naive if needed
   if (v.has_nan() || v.has_inf())

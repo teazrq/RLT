@@ -180,7 +180,8 @@ void reg_uni_cat_score_best(std::vector<Reg_Cat_Class>& cat_reduced,
   }
   
   best_cat = lowindex;
-  best_score = LeftSum*LeftSum/leftw + RightSum*RightSum/rightw;
+  best_score = (leftw > 0 && rightw > 0) ?
+    LeftSum*LeftSum/leftw + RightSum*RightSum/rightw : -1;
   
   for (size_t i = lowindex + 1; i <= highindex; i++)
   {
@@ -190,7 +191,8 @@ void reg_uni_cat_score_best(std::vector<Reg_Cat_Class>& cat_reduced,
     RightSum -= cat_reduced[i].y;
     rightw -= cat_reduced[i].weight;
     
-    double temp_score = LeftSum*LeftSum/leftw + RightSum*RightSum/rightw;
+    double temp_score = (leftw > 0 && rightw > 0) ?
+      LeftSum*LeftSum/leftw + RightSum*RightSum/rightw : -1;
     
     if (temp_score > best_score)
     {

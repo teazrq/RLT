@@ -80,7 +80,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
       
       for (size_t i = 0; i < N; i++)
       {
-        double wi = SURV_DATA.obsweight(obs_id(i)) / wbar;
+        double wi = survival_node_weight(SURV_DATA.obsweight(obs_id(i)), wsum, wbar, N);
         node_wt(i) = wi;
         double w2i = wi * wi;
         
@@ -220,7 +220,7 @@ void Surv_Uni_Find_A_Split(Split_Class& OneSplit,
       
       for (size_t i = 0; i < N; i++)
       {
-        double wi = SURV_DATA.obsweight(obs_id(i)) / wbar;
+        double wi = survival_node_weight(SURV_DATA.obsweight(obs_id(i)), wsum, wbar, N);
         node_wt(i) = wi;
         double w2i = wi * wi;
         

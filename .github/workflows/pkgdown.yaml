@@ -36,7 +36,16 @@ jobs:
           needs: website
 
       - name: Build site
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+        run: |
+          revision <- Sys.getenv("GITHUB_SHA")
+          source <- sprintf(
+            "Source revision: [%s](https://github.com/%s/tree/%s)",
+            substr(revision, 1, 7), Sys.getenv("GITHUB_REPOSITORY"), revision
+          )
+          pkgdown::build_site_github_pages(
+            new_process = FALSE, install = FALSE,
+            override = list(footer = list(components = list(source = source)))
+          )
         shell: Rscript {0}
 
       - name: Deploy to gh-pages

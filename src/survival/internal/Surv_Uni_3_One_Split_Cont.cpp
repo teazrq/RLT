@@ -251,13 +251,16 @@ double suplogrank(const uvec& Left_Fail,
   }
   
   double denominator = accu(Temp_Vec % w);
+  if (!(denominator > 0) || !std::isfinite(denominator))
+    return -1;
   
   terms = w % terms;
   w = cumsum(terms);
   
   terms = w % w / denominator;
 
-  return max(terms);
+  double score = max(terms);
+  return std::isfinite(score) ? score : -1;
 }
 
 //Function for the CoxGrad split, since it uses a psuedo outcome

@@ -9,11 +9,29 @@
 using namespace Rcpp;
 using namespace arma;
 
+bool cindex_has_comparable_pairs(const arma::uvec& Y,
+                                 const arma::uvec& Censor)
+{
+  for (size_t i = 0; i < Y.n_elem; i++)
+    for (size_t j = 0; j < i; j++)
+    {
+      if ((Y(i) > Y(j) && Censor(j) == 0) ||
+          (Y(i) < Y(j) && Censor(i) == 0))
+        continue;
+      if (Y(i) == Y(j) && Censor(i) == 0 && Censor(j) == 0)
+        continue;
+      return true;
+    }
+  return false;
+}
+
 // [[Rcpp::export()]]
 double cindex_d(arma::vec& Y,
                 arma::uvec& Censor,
                 arma::vec& pred)
 {
+  if (!pred.is_finite())
+    return arma::datum::nan;
 
   size_t P = 0;
   double C = 0;
@@ -77,7 +95,7 @@ double cindex_d(arma::vec& Y,
       }
     }}
   
-  return C/P;
+  return P > 0 ? C/P : arma::datum::nan;
 }
 
 // Rcpp does not allow overloading?
@@ -86,6 +104,8 @@ double cindex_i(arma::uvec& Y,
                 arma::uvec& Censor,
                 arma::vec& pred)
 {
+  if (!pred.is_finite())
+    return arma::datum::nan;
   
   size_t P = 0;
   double C = 0;
@@ -149,6 +169,6 @@ double cindex_i(arma::uvec& Y,
       }
     }}
   
-  return C/P;
+  return P > 0 ? C/P : arma::datum::nan;
   
 }

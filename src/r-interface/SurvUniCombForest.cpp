@@ -207,19 +207,21 @@ List SurvUniCombForestPred(arma::field<arma::imat>& SplitVar,
       }
 
       mat pred_i_survival_full = cumprod(1 - pred_i_hazard_full, 1);
+      mat pred_i_chf_full = cumsum(pred_i_hazard_full, 1);
 
       mat pred_i_hazard_reduced = pred_i_hazard_full.cols(mapping_indices);
       mat pred_i_survival_reduced = pred_i_survival_full.cols(mapping_indices);
+      mat pred_i_for_var = pred_i_chf_full.cols(mapping_indices);
 
       Hazard.row(i) = mean(pred_i_hazard_reduced, 0);
       Surv.row(i) = mean(pred_i_survival_reduced, 0);
-      CHazard.row(i) = cumsum(Hazard.row(i));
+      CHazard.row(i) = mean(pred_i_for_var, 0);
+      if (keep_all)
+        AllHazard.slice(i) = pred_i_hazard_reduced;
 
       // Variance computed on CHF scale (per Formentini et al. 2022)
       if (VarEst)
       {
-        mat pred_i_for_var = cumsum(pred_i_hazard_reduced, 1);
-        
         if (var_mode == 1) // matched (debiased matched-sample variance)
         {
           // Split trees into two halves (matched pairs)

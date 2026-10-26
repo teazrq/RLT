@@ -16,7 +16,8 @@ test_that("RLT identifies x1 and x2 as most important in egg tray model", {
   y <- x1 * x2 + rnorm(n, sd = 0.5)
   
   fit <- RLT(X, y, ntrees = 30, ncores = 2, verbose = FALSE,
-             embed.ntrees = 20, importance = TRUE)
+             reinforcement = TRUE, importance = TRUE,
+             param.control = list(embed.ntrees = 20))
   
   top2 <- colnames(X)[order(fit$VarImp, decreasing = TRUE)[1:2]]
   expect_true("x1" %in% top2)
@@ -36,7 +37,8 @@ test_that("RLT muting reduces noise variable consideration", {
   y <- x1 * x2 + rnorm(n, sd = 0.5)
   
   fit <- RLT(X, y, ntrees = 100, ncores = 2, verbose = FALSE,
-             embed.ntrees = 50, embed.mtry = 2, importance = TRUE)
+             reinforcement = TRUE, importance = TRUE,
+             param.control = list(embed.ntrees = 50, embed.mtry = 2))
   
   # Signal VI should be higher than noise mean (with enough data)
   expect_true(all(!is.na(fit$VarImp)))

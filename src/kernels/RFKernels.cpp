@@ -258,7 +258,7 @@ List Kernel_Self_OOB(arma::field<arma::ivec>& SplitVar,
     uvec oob_idx = find(ObsTrack.col(nt) == 0);
     size_t n_oob = oob_idx.n_elem;
 
-    if (n_oob < 2) continue;
+    if (n_oob == 0) continue;
 
     // Accumulate OOB co-occurrence counts
     Nmat.submat(oob_idx, oob_idx) += 1;
@@ -324,7 +324,7 @@ List Kernel_Self_OOB_Comb(arma::field<arma::imat>& SplitVar,
     uvec oob_idx = find(ObsTrack.col(nt) == 0);
     size_t n_oob = oob_idx.n_elem;
 
-    if (n_oob < 2) continue;
+    if (n_oob == 0) continue;
 
     // Accumulate OOB co-occurrence counts
     Nmat.submat(oob_idx, oob_idx) += 1;

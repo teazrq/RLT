@@ -18,22 +18,24 @@ SurvForest <- function(x, y, censor,
   if (nrow(x) != length(y)) stop("number of observations does not match: x & y")
   if (nrow(x) != length(censor)) stop("number of observations does not match: x & censor")
   if (!is.numeric(y)) stop("y must be numerical for survival")
+  if (any(!is.finite(y))) stop("y must contain finite survival times")
   if (!is.numeric(censor)) stop("censor must be numeric")
   if (!all(censor %in% c(0, 1))) stop("censor must be 0 or 1")
 
+  if (!is.numeric(time.grid.size) || is.complex(time.grid.size) ||
+      length(time.grid.size) != 1L ||
+      !is.finite(time.grid.size) || time.grid.size < 0 ||
+      time.grid.size != floor(time.grid.size))
+    stop("time.grid.size must be a single non-negative integer")
+
   # Get all unique failure time points
   timepoints = sort(unique(y[censor == 1]))
+  if (length(timepoints) == 0L)
+    stop("survival fitting requires at least one observed event")
 
-  # Reduce time grid if time.grid.size is specified and smaller than total
+  # Dropping failure times would leave observed events without valid indices.
   if (time.grid.size != 0 && time.grid.size < length(timepoints))
-  {
-    # Select evenly spaced quantiles, always including min and max
-    timeloc = floor(stats::quantile(1:length(timepoints), 
-                             probs = seq(0, 1, length.out = time.grid.size)))
-    
-    # Reduced set of timepoints
-    timepoints = timepoints[timeloc]
-  }
+    stop("time.grid.size cannot reduce the training failure-time grid; use band.grid.size in predict() for reduced evaluation")
 
   # Map observed times to integer positions in the time grid
   y.point = rep(NA, length(y))
@@ -45,6 +47,10 @@ SurvForest <- function(x, y, censor,
     else
       y.point[i] = sum(y[i] >= timepoints)
   }
+
+  if (anyNA(y.point) || any(y.point < 0) ||
+      any(y.point > length(timepoints)) || any(y.point[censor == 1] < 1))
+    stop("invalid survival time indices before native fitting")
   
   storage.mode(y.point) <- "integer"
   storage.mode(censor) <- "integer"

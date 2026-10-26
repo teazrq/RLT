@@ -209,7 +209,9 @@ double reg_uni_cont_score_rank_sub_w(uvec& indices,
     Right_w += obs_weight(indices(i));
   }
     
-  return LeftSum*LeftSum/Left_w + RightSum*RightSum/Right_w;
+  if (Left_w > 0 && Right_w > 0)
+    return LeftSum*LeftSum/Left_w + RightSum*RightSum/Right_w;
+  return -1;
 }
 
 
@@ -315,7 +317,8 @@ void reg_uni_cont_score_best_sub_w(uvec& indices,
       Right_w -= obs_weight(subj);
     }
     
-    score = LeftSum*LeftSum/Left_w + RightSum*RightSum/Right_w;
+    score = (Left_w > 0 && Right_w > 0) ?
+      LeftSum*LeftSum/Left_w + RightSum*RightSum/Right_w : -1;
     
     if (score > temp_score)
     {

@@ -7,17 +7,24 @@
 cindex(y, censor, pred)
 }
 \arguments{
-\item{y}{survival time}
+\item{y}{Observed survival times.}
 
-\item{censor}{The censoring indicator if survival model is used}
+\item{censor}{Event indicator: 1 for an observed event, 0 for right censoring.}
 
-\item{pred}{the predicted value for each subject}
+\item{pred}{One risk score per observation.}
 }
 \value{
-c-index
+The concordance index, or \code{NaN} when there are no comparable pairs.
 }
 \description{
-Calculate c-index for survival data
+Calculate concordance between survival outcomes and a risk score.
+Larger risk scores indicate earlier failure.
+}
+\details{
+The example uses final OOB cumulative hazard as its risk score.
+The survival forest's stored \code{Error} uses a different score: the sum
+of OOB cumulative hazards over all failure-time grid points. The example
+therefore need not equal \code{1 - fit$Error}.
 }
 \examples{
 \donttest{
@@ -27,8 +34,8 @@ Calculate c-index for survival data
   y <- rexp(n, rate = exp(rowSums(x[, 1:2])))
   censor <- rbinom(n, 1, 0.7)
   fit <- RLT(x, y, censor = censor, model = "survival", ntrees = 100)
-  # Use cumulative hazard at last timepoint as risk score
-  risk <- fit$Prediction[, ncol(fit$Prediction)]
+  # Sum OOB hazard increments to obtain final cumulative hazard.
+  risk <- rowSums(fit$Prediction)
   cindex(y, censor, risk)
 }
 }

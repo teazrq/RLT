@@ -1,18 +1,46 @@
-#' @title get.surv.band
-#' @description Calculate the survival function (two-sided) confidence band from a RLT survival prediction.
+#' @title Construct survival confidence bands
+#' @description Construct two-sided survival limits by transforming a band around
+#' predicted cumulative hazard. The reference curve is \code{exp(-x$CHF)}.
+#' @details For linear combination forests, the returned \code{Survival} is the
+#' mean of tree product-limit curves, which can differ from this reference curve.
+#' These calculations do not directly estimate the sampling variation of that
+#' returned mean product-limit estimator. Limits are evaluated on
+#' \code{x$timepoints}; reducing the grid does not establish simultaneous coverage
+#' between omitted time points. Both approaches simulate using the supplied raw
+#' \code{Cov}; smoothing changes the marginal standardizing scales.
+#' The intended target is the conditional survival curve at a subject's predictor
+#' values. The nominal simultaneous coverage target is across the returned
+#' evaluation times, separately for each subject. It is not joint coverage
+#' across subjects or a prediction interval for an individual's event time.
 #' @importFrom stats predict
-#' @param x     A RLT prediction object. Must be from a forest with var.mode != "none".
-#' @param i     Observation number in the prediction. Default to calculate all (i = 0).
-#' @param alpha alpha level for interval (alpha/2, 1 - alpha/2).
+#' @param x     An RLT survival prediction object containing \code{CHF},
+#' \code{Cov} and \code{timepoints}, obtained with \code{var.est = TRUE}.
+#' See \code{\link{predict.RLT}} for the fitting and tracking requirements.
+#' @param i     Observation number in the prediction. The default \code{i = 0}
+#' calculates a separate band for every observation.
+#' @param alpha Nominal noncoverage level for each subject's simultaneous band;
+#' \code{alpha = 0.05} requests a nominal 95 percent band.
 #' @param approach Confidence band approach:
-#'        - naive: marsd = sqrt(diag(Cov)), MC band using full covariance.
-#'        - smoothed: GAM-smoothed rank-K covariance + eigenvalue-ratio weighted residual correction.
-#' @param nsim  Number of simulations for estimating the Monte Carlo critical value.
-#' @param k_rank Rank truncation K used for the smooth low-rank covariance AND GAM basis size.
+#'        - naive: marginal scales from the supplied covariance diagonal and a
+#'          Monte Carlo critical value using the full covariance.
+#'        - smoothed: marginal scales from a rank-K approximation to a covariance
+#'          smoothed with generalized additive models (GAMs), plus
+#'          an eigenvalue-ratio weighted residual correction. With one or two
+#'          time points, uses the naive calculation with a warning.
+#' @param nsim  Number of Gaussian simulations for estimating the critical value.
+#' Increasing it improves Monte Carlo precision at the cost of runtime.
+#' @param k_rank Nonnegative integer rank of the covariance approximation used
+#' to construct smoothed marginal scales. The effective rank is capped by the
+#' grid dimension. It also guides
+#' the GAM basis size, whose feasibility is bounded separately.
 #' @param k_mode Rank selection mode: "fixed" (use k_rank) or "proportion" (auto-select by eigenvalue cumulative ratio).
 #' @param k_prop Proportion threshold (0,1] for cumulative eigenvalue ratio when k_mode = "proportion".
 #' @param ...   Further arguments (currently not used).
-#' @return An object of class \code{c("RLT", "band", "surv")} with components: \code{lower} (lower bound), \code{upper} (upper bound), and \code{timepoints} (evaluation grid). If \code{i = 0}, a list of such objects for all observations.
+#' @return A list of class \code{c("RLT", "band", "surv")} with one named
+#' \code{Subject<i>} entry per selected observation and a \code{timepoints} entry
+#' containing the evaluation grid. Each subject entry contains \code{lower},
+#' \code{upper}, and \code{diagnostics}. With \code{i = 0}, all observations are
+#' included; otherwise only the requested subject entry is included.
 #' @export
 #' @examples
 #' \donttest{
@@ -46,9 +74,10 @@ get.surv.band <- function(x,
   if (match(approach, all.approach, nomatch = 0) == 0)
     stop("approach not available")
 
-  N  <- dim(x$Cov)[3]
-  p  <- dim(x$Cov)[2]
-  nt <- nrow(x$Cov[,,1])
+  cov_dim <- dim(x$Cov)
+  N  <- cov_dim[3]
+  p  <- cov_dim[2]
+  nt <- cov_dim[1]
 
   if (p != nt)
     stop("Internal dimension mismatch (p vs nt)")
@@ -65,8 +94,21 @@ get.surv.band <- function(x,
     stop("alpha not valid")
 
   k_mode <- match.arg(k_mode)
-  if (k_mode == "proportion" && (k_prop <= 0 || k_prop > 1))
+  if (k_mode == "proportion" &&
+      (length(k_prop) != 1L || !is.numeric(k_prop) || is.complex(k_prop) ||
+       !is.finite(k_prop) || k_prop <= 0 || k_prop > 1))
     stop("k_prop must be in (0, 1] when k_mode = 'proportion'")
+
+  if (approach == "smoothed" && k_mode == "fixed" &&
+      (length(k_rank) != 1L || !is.numeric(k_rank) || is.complex(k_rank) || !is.finite(k_rank) ||
+       k_rank < 0 || k_rank != floor(k_rank)))
+    stop("k_rank must be a finite nonnegative integer")
+
+  if (approach == "smoothed" && nt < 3L) {
+    warning("Smoothing requires at least three time points; using approach = 'naive'.",
+            call. = FALSE)
+    approach <- "naive"
+  }
 
   SurvBand <- list()
   eps <- .Machine$double.eps
@@ -85,10 +127,10 @@ get.surv.band <- function(x,
     if (!requireNamespace("mgcv", quietly = TRUE))
       stop("Package 'mgcv' needed for smoothing. Please install it.", call. = FALSE)
 
-    k_safe  <- max(k_rank, 3)
+    n  <- nrow(G)
+    k_safe  <- as.integer(min(max(k_rank, 3L), n))
     k_basis <- c(k_safe, k_safe)
 
-    n  <- nrow(G)
     ij <- expand.grid(i = 1:n, j = 1:n)
     z  <- as.vector(G[ij$i + (ij$j - 1L) * n])
 
@@ -117,7 +159,8 @@ get.surv.band <- function(x,
     vals <- pmax(eg$values, 0)
     total <- sum(vals)
     if (total <= eps)
-      return(list(k = 0, var_explained = 0, eigen = eg, vals = vals, cum_ratio = rep(0, length(vals))))
+      return(list(k = 0, var_explained = if (total == 0) NA_real_ else 0,
+                  eigen = eg, vals = vals, cum_ratio = rep(0, length(vals))))
     cum_ratio <- cumsum(vals) / total
     k <- which(cum_ratio >= threshold)[1]
     if (is.na(k)) k <- length(vals)
@@ -143,7 +186,7 @@ get.surv.band <- function(x,
   for (idx in allid) {
     band_idx <- band_idx + 1L
 
-    Sigma_raw <- x$Cov[,,idx]
+    Sigma_raw <- matrix(x$Cov[,,idx], nrow = nt, ncol = p)
     raw_sd <- sqrt(pmax(diag(Sigma_raw), eps))
     eig_info <- NULL
 
@@ -158,7 +201,7 @@ get.surv.band <- function(x,
         final_sd  = marsd
       )
       var_explained_info <- list(
-        var_explained = 1.0,
+        var_explained = if (sum(diag(Sigma_raw)) == 0) NA_real_ else 1.0,
         k_rank        = NA,
         total_var     = sum(diag(Sigma_raw)),
         lowrank_var   = sum(diag(Sigma_raw))
@@ -175,7 +218,7 @@ get.surv.band <- function(x,
           var_explained = sel$var_explained
         )
       } else {
-        k_used <- k_rank
+        k_used <- min(k_rank, p)
       }
 
       ## 2) smooth full covariance via GAM + PSD
@@ -215,7 +258,7 @@ get.surv.band <- function(x,
       ## diagnostics
       total_raw_var  <- sum(diag(Sigma_raw))
       smooth_trace   <- sum(diag(Sigma_smoothK))
-      info_retention <- smooth_trace / total_raw_var
+      info_retention <- if (total_raw_var == 0) NA_real_ else smooth_trace / total_raw_var
       ratio_max_mean <- max(diag(R_pos)) / mean(diag(R_pos) + eps)
       ratio_vec      <- marsd / raw_sd
       min_ratio      <- min(ratio_vec)

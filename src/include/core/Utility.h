@@ -14,6 +14,8 @@
 # include <xoshiro.h>
 # include <dqrng_distribution.h>
 # include <limits>
+# include <cmath>
+# include <stdexcept>
 
 using namespace Rcpp;
 using namespace arma;
@@ -441,6 +443,9 @@ public:
     
     if (Num == N)
       return x;
+
+    if (arma::accu(weight > 0) < Num)
+      throw std::invalid_argument("Variable sampling has fewer positive weights than requested candidates.");
     
     // working copies
     arma::vec w = weight;            // mutable weights
@@ -455,6 +460,9 @@ public:
     
     for (size_t k = 0; k < Num; k++)
     {
+      if (!(total_weight > 0) || !std::isfinite(total_weight))
+        throw std::invalid_argument("Variable sampling has no finite positive remaining weight.");
+
       // draw U ~ [0, total_weight)
       boost::random::uniform_real_distribution<double> rand(0.0, total_weight);
       double u = rand(this->lrng);

@@ -74,11 +74,11 @@ test_that("band.grid.size reduces timepoints length", {
   pred_full <- predict(fit_full, d$X, var.est = TRUE)
   full_tp <- ncol(pred_full$Survival)
   
-  fit_sml <- RLT(d$X, d$y, censor = d$censor, model = "survival",
-             ntrees = 30, ncores = 2, verbose = FALSE,
-             param.control = list(var.mode = "matched", band.grid.size = 5))
-  pred_sml <- predict(fit_sml, d$X, var.est = TRUE)
-  expect_true(ncol(pred_sml$Survival) <= full_tp)
+  pred_sml <- predict(fit_full, d$X, var.est = TRUE, band.grid.size = 5)
+  expect_lt(ncol(pred_sml$Survival), full_tp)
+  expect_lte(ncol(pred_sml$Survival), 5)
+  ids <- match(pred_sml$timepoints, pred_full$timepoints)
+  expect_equal(pred_sml$CHF, pred_full$CHF[, ids, drop = FALSE])
 })
 
 test_that("VarVI returned for survival matched mode", {
@@ -120,19 +120,24 @@ test_that("VarVI not returned for jack mode in survival", {
 test_that("keep.all is accepted without error", {
   d <- generate_survival_data(n = 80, p = 10, seed = 1)
   expect_error(
-    RLT(d$X, d$y, censor = d$censor, model = "survival",
-        ntrees = 30, ncores = 2, verbose = FALSE,
-        param.control = list(var.mode = "matched", keep.all = TRUE)),
+    {
+      fit <- RLT(d$X, d$y, censor = d$censor, model = "survival",
+                 ntrees = 30, ncores = 2, verbose = FALSE,
+                 param.control = list(var.mode = "matched"))
+      predict(fit, d$X[1:2, , drop = FALSE], keep.all = TRUE)
+    },
     NA
   )
 })
 
-test_that("keep.all stores FittedForest in fit object", {
+test_that("keep.all stores per-tree hazards in the prediction", {
   d <- generate_survival_data(n = 80, p = 10, seed = 1)
   fit <- RLT(d$X, d$y, censor = d$censor, model = "survival",
              ntrees = 30, ncores = 2, verbose = FALSE,
-             param.control = list(var.mode = "matched", keep.all = TRUE))
-  expect_true("FittedForest" %in% names(fit))
+             param.control = list(var.mode = "matched"))
+  pred <- predict(fit, d$X[1:2, , drop = FALSE], keep.all = TRUE)
+  expect_equal(dim(pred$AllHazard), c(30, length(pred$timepoints), 2))
+  expect_equal(t(apply(pred$AllHazard, c(2, 3), mean)), pred$Hazard)
 })
 
 test_that("NA in y produces error", {
@@ -183,7 +188,7 @@ test_that("get.surv.band returns valid structure", {
              param.control = list(var.mode = "matched"))
   pred <- predict(fit, d$X, var.est = TRUE)
   
-  band <- get.surv.band(pred, subject = 1, alpha = 0.1, nsim = 50)
+  band <- get.surv.band(pred, i = 1, alpha = 0.1, nsim = 50)
   expect_s3_class(band, "RLT")
   expect_true("Subject1" %in% names(band))
   expect_true("timepoints" %in% names(band))
@@ -199,7 +204,7 @@ test_that("Confidence band contains survival curve", {
   pred <- predict(fit, d$X, var.est = TRUE)
   
   subject_idx <- 1
-  band <- get.surv.band(pred, subject = subject_idx, alpha = 0.1, nsim = 50)
+  band <- get.surv.band(pred, i = subject_idx, alpha = 0.1, nsim = 50)
   s1 <- band$Subject1
   n_grid <- length(s1$lower)
   surv <- pred$Survival[subject_idx, 1:n_grid]

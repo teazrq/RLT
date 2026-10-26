@@ -158,6 +158,7 @@ arma::mat sir(arma::mat& newX,
     Sigma = X_centered.t() * X_C_W / sumw;    
     
     // calculate M
+    size_t positive_slices = 0;
     for (size_t k = 0; k < nslice; k++)
     {
       // sample size in this slice
@@ -172,8 +173,14 @@ arma::mat sir(arma::mat& newX,
       rownum += nh;
       
       // add to estimation matrix (adjust for wh)
-      M += xhbar.t() * xhbar / wh;
+      if (wh > 0)
+      {
+        positive_slices++;
+        M += xhbar.t() * xhbar / wh;
+      }
     }
+    if (positive_slices < 2)
+      return mat();
   }else{
     // center data
     mat X_centered = X.each_row() - mean(X, 0);
@@ -208,7 +215,9 @@ arma::mat sir(arma::mat& newX,
   // Get eigenvalues of Sigma to find smallest positive one
   vec sigma_eigval;
   mat sigma_eigvec;
-  eig_sym(sigma_eigval, sigma_eigvec, Sigma);
+  if (!Sigma.is_finite() || !M.is_finite() ||
+      !eig_sym(sigma_eigval, sigma_eigvec, Sigma))
+    return mat();
   
   // Find smallest positive eigenvalue
   double min_pos_eig = 1e-5;  // default floor
@@ -257,7 +266,9 @@ arma::mat sir(arma::mat& newX,
   vec eigval;
   mat eigvec;
   
-  eig_sym(eigval, eigvec, M_transformed);
+  if (!M_transformed.is_finite() ||
+      !eig_sym(eigval, eigvec, M_transformed) || !eigvec.is_finite())
+    return mat();
   
   uvec indices = sort_index(eigval, "descend");
   

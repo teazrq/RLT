@@ -3,7 +3,16 @@
 #' @param x A fitted RLT object
 #' @param tree the tree number, starting from 1 to \code{ntrees}.
 #' @param ... ...
-#' @return A data.frame with columns: Node (depth, BFS), NodeType (Split=1, Leaf=-1), SplitVar, SplitValue, LeftNode, RightNode, N (sample count). Model-specific columns include YAvg (regression), Prob (classification), or Hazard/SurvProb (survival).
+#' @return Invisibly returns a data frame with \code{Node}, \code{Depth},
+#' \code{Split}, \code{Value} and \code{n}. The root has depth zero and terminal
+#' nodes have \code{"*"} in \code{Split}. For numerical predictors, \code{Value}
+#' is the split threshold; for categorical predictors, it encodes the partition
+#' of levels. \code{n} is the node weight, equal to the in-bag count for
+#' unweighted data, including repeated observations.
+#' The printed regression table additionally shows \code{NodeAve}; its terminal
+#' values are that tree's predictions. The printed classification table adds
+#' \code{ClassProbs}. These printed values are not columns of the returned data
+#' frame. Child-node identifiers are not included.
 #' @export
 #' @examples
 #' \donttest{

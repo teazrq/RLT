@@ -2,7 +2,7 @@
 % Please edit documentation in R/forest.kernel.r
 \name{forest.kernel}
 \alias{forest.kernel}
-\title{random forest kernel}
+\title{Compute a random forest kernel}
 \usage{
 forest.kernel(
   object,
@@ -25,21 +25,24 @@ If \code{X2} is supplied, then calculate an \eqn{n_1 \times n_2}
 kernel matrix. If \code{vs.train} is used, then this must be the original
 training data.}
 
-\item{vs.train}{To calculate the kernel weights with respect to the training data.
-This is slightly different than supplying the training data to \code{X2}
-due to re-samplings of the training process. To use this feature, you must
+\item{vs.train}{Include each reference observation's in-bag multiplicity in
+its leaf-sharing count. \code{X2} must be the original training
+data in its original row order. To use this feature, you must
 specify \code{resample.track = TRUE} in \code{param.control} when fitting
 the forest}
 
 \item{oob}{Logical. If \code{TRUE}, compute the OOB (out-of-bag) self-kernel, which
 counts co-occurrence only from trees where both observations are OOB.
-This eliminates the self-contamination bias that arises when in-bag
-observations influence tree structure. Requires \code{resample.track = TRUE}
+Each contributing tree was fitted without either observation
+in the pair. Requires \code{resample.track = TRUE}
 and \code{X1} to be the original training data. \code{X2} must be
 \code{NULL} (OOB kernel is defined for self-kernel only). The returned
 list contains three matrices: \code{Kernel} (normalized co-occurrence
-in \eqn{[0,1]}), \code{N} (number of trees where both are OOB), and
-\code{C} (number of trees where both are OOB and share a leaf).}
+in \eqn{[0,1]} where \code{N > 0}), \code{N} (number of trees
+where both are OOB), and \code{C} (number of trees where both
+are OOB and share a leaf). Entries with \code{N = 0} are
+returned as zero; inspect \code{N} to distinguish these
+unsupported pairs from observed zero leaf sharing.}
 
 \item{verbose}{Whether fitting should be printed.}
 
@@ -50,10 +53,16 @@ A list containing the kernel matrix. For \code{oob = TRUE}, the list also
 contains \code{N} (OOB co-occurrence count) and \code{C} (OOB leaf-sharing count).
 }
 \description{
-\if{html}{\out{<div class="sourceCode">}}\preformatted{Get random forest induced kernel weight matrix of testing samples 
-             or between any two sets of data. This is an experimental feature.
-             Use at your own risk.
-}\if{html}{\out{</div>}}
+Measure how often observations share terminal nodes in a fitted
+forest, within one dataset or between two datasets.
+This is an experimental feature; the available modes and
+their data requirements are described below.
+}
+\details{
+Ordinary kernel entries count trees in which two observations share
+a terminal node. They are not normalized observation contributions to a forest
+prediction. The training-data mode includes in-bag multiplicities; the OOB
+mode instead normalizes by the number of trees eligible for each pair.
 }
 \examples{
 \donttest{

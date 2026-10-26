@@ -205,18 +205,16 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
         pred_i_hazard_full.row(nt) = H_full.subvec(1, NFail).t(); 
       }
 
-      // 2. Compute the full survival matrix for all trees
-      mat pred_i_survival_full = cumprod(1 - pred_i_hazard_full, 1); // row-wise cumulative product
-
-      // 3. Subset both matrices using mapping_indices to get reduced matrices
+      // Accumulate on the full grid before selecting evaluation times.
+      mat pred_i_chf_full = cumsum(pred_i_hazard_full, 1);
       mat pred_i_hazard_reduced = pred_i_hazard_full.cols(mapping_indices);
-      mat pred_i_survival_reduced = pred_i_survival_full.cols(mapping_indices);
+      mat pred_i_for_var = pred_i_chf_full.cols(mapping_indices);
 
-      // 4. Assign the mean hazard, then derive CHF and Survival consistently.
-      //    Survival = exp(-CHF) ensures the band exp(-CHF ± bandk) centers on Surv.
       Hazard.row(i) = mean(pred_i_hazard_reduced, 0);
-      CHazard.row(i) = cumsum(Hazard.row(i));
+      CHazard.row(i) = mean(pred_i_for_var, 0);
       Surv.row(i) = exp(-CHazard.row(i));
+      if (keep_all)
+        AllHazard.slice(i) = pred_i_hazard_reduced;
 
       // 5. Variance estimation using standalone functions
       //    Variance is computed on the CHF (cumulative hazard) scale,
@@ -224,9 +222,6 @@ List SurvUniForestPred(arma::field<arma::ivec>& SplitVar,
       //    T×T covariance for confidence bands must use CHF values.
       if (VarEst)
       {
-        // Row-wise cumulative sum of hazard to get per-tree CHF
-        mat pred_i_for_var = cumsum(pred_i_hazard_reduced, 1);
-        
         if (var_mode == 1) // matched (debiased matched-sample variance)
         {
           // Split trees into two halves (matched pairs)

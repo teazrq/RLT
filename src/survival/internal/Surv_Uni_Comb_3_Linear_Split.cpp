@@ -244,7 +244,7 @@ void Surv_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
       wsum += SURV_DATA.obsweight(obs_id(i));
     double wbar = wsum / N;
     for (size_t i = 0; i < N; i++)
-      node_wt(i) = SURV_DATA.obsweight(obs_id(i)) / wbar;
+      node_wt(i) = survival_node_weight(SURV_DATA.obsweight(obs_id(i)), wsum, wbar, N);
   }
   
   // Manually collapse Y into contiguous integers for this node
@@ -495,6 +495,9 @@ void Surv_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
     {
       // Unweighted suplogrank
       vec Temp_Vec(NFail+1, fill::zeros);
+      vec fail = conv_to<vec>::from(All_Fail_Count);
+      Temp_Vec = (1.0 - (fail - 1.0) / (All_Risk - 1.0)) % fail / All_Risk;
+      Temp_Vec.elem(find(All_Risk < 2)).zeros();
       
       Surv_Uni_Split_Cont(TempSplit,
                           allid,
@@ -643,6 +646,8 @@ void Surv_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
   }
   
   // Safety check
+  if (!std::isfinite(TempSplit.score))
+    TempSplit.score = -1;
   if (TempSplit.score > 0)
   {
     size_t n_left = sum(U1 <= TempSplit.value);

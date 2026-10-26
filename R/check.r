@@ -84,14 +84,21 @@ check_obsw <- function(obs.w, n)
   
   if (any(is.na(obs.w)))
     stop("observation weights (obs.w) should be numerical")
+
+  if (any(!is.finite(obs.w)))
+    stop("observation weights (obs.w) must be finite")
   
   if (any(obs.w < 0))
     stop("observation weights (obs.w) cannot be negative")
   
   if (length(obs.w) != n)
     stop("length of observation weights (obs.w) must be n")
+
+  if (!length(obs.w) || !any(obs.w > 0))
+    stop("observation weights (obs.w) must have positive total mass")
   
   storage.mode(obs.w) <- "double"    
+  obs.w = obs.w/max(obs.w)
   obs.w = obs.w/sum(obs.w)
   
   return(obs.w)
@@ -103,14 +110,21 @@ check_varprob <- function(var.prob, p)
 
   if (any(is.na(var.prob)))
     stop("variable probabilities (var.prob) should be numerical")
+
+  if (any(!is.finite(var.prob)))
+    stop("variable probabilities (var.prob) must be finite")
   
   if (any(var.prob < 0))
     stop("variable probabilities (var.prob) cannot be negative")
   
   if (length(var.prob) != p)
     stop("length of variable probabilities (var.prob) must be p")
+
+  if (!length(var.prob) || !any(var.prob > 0))
+    stop("variable probabilities (var.prob) must have positive total mass")
   
   storage.mode(var.prob) <- "double"
+  var.prob = var.prob/max(var.prob)
   var.prob = var.prob/sum(var.prob)
   return(var.prob)
 }

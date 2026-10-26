@@ -37,216 +37,230 @@ void Cla_Uni_Comb_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
   // set seed
   Rand rng(seed);
   arma::uvec seed_vec = rng.rand_uvec(0, INT_MAX, ntrees);
-  
+
   // track obs matrix
   bool obs_track_pre = false;
-  
+
   if (ObsTrack.n_elem != 0) //if pre-defined
     obs_track_pre = true;
   else
     ObsTrack.zeros(N, ntrees);
-  
+
   // oob sample too small, turn off importance
   // Only applies to non-replacement sampling (replacement always has ~36.8% OOB)
   if (!replacement && N - size < 2)
     importance = 0;
-  
+
   // Calculate predictions
-  
+
   if (importance) do_prediction = true;
-  
+
   // importance
   mat AllImp;
-    
+
   if (importance)
     AllImp.zeros(ntrees, P);
 
   // thread-local storage for OOB accumulation
   std::vector<mat> tl_Prediction(usecores);
   std::vector<uvec> tl_oob_count(usecores);
-  
+
+  // Allocate before entering OpenMP, including embedded forest calls.
+  if (do_prediction)
+    for (size_t t = 0; t < usecores; t++)
+    {
+      tl_Prediction[t].zeros(N, nclass);
+      tl_oob_count[t].zeros(N);
+    }
+  std::vector<std::exception_ptr> tree_errors(ntrees);
+
 #pragma omp parallel num_threads(usecores)
   {
     int tid = omp_get_thread_num();
-    
-    if (do_prediction)
-    {
-      tl_Prediction[tid].zeros(N, nclass);
-      tl_oob_count[tid].zeros(N);
-    }
 
     #pragma omp for schedule(dynamic)
     for (size_t nt = 0; nt < ntrees; nt++) // fit all trees
     {
-      // set xoshiro random seed
-      Rand rngl(seed_vec(nt));
-      
-      // get inbag and oobag index
-      uvec inbag_index, oobag_index;
-
-      //If ObsTrack isn't given, set ObsTrack
-      if (!obs_track_pre)
-        set_obstrack(ObsTrack, nt, size, replacement, rngl);
-        
-      // Find the samples from pre-defined ObsTrack
-      get_index(inbag_index, oobag_index, ObsTrack.unsafe_col(nt));
-      uvec inbag_id = obs_id(inbag_index);
-      uvec oobag_id = obs_id(oobag_index);
- 
-      // initialize a tree (univariate split)
-      Cla_Uni_Comb_Tree_Class OneTree(CLA_FOREST.SplitVarList(nt),
-                                      CLA_FOREST.SplitLoadList(nt),
-                                      CLA_FOREST.SplitValueList(nt),
-                                      CLA_FOREST.LeftNodeList(nt),
-                                      CLA_FOREST.RightNodeList(nt),
-                                      CLA_FOREST.NodeWeightList(nt),
-                                      CLA_FOREST.NodeProbList(nt));
-      
-      size_t TreeLength = 100 + size/nmin*4;
-      OneTree.initiate(TreeLength, nclass, linear_comb);
-      
-      // build the tree
-      uvec var_protect;
-      
-      Cla_Uni_Comb_Split_A_Node(0, OneTree, CLA_DATA, 
-                                Param, inbag_id, var_id, var_protect, rngl);
-      
-      // trim tree
-      TreeLength = OneTree.get_tree_length();
-      OneTree.trim(TreeLength);
-
-      // for predictions
-      size_t NTest = oobag_index.n_elem;
-      uvec proxy_id;
-      uvec TermNode;
-      
-      // inbag and oobag predictions for all subjects
-      if (do_prediction and NTest > 0)
+      try
       {
-        proxy_id = linspace<uvec>(0, NTest-1, NTest);
-        TermNode.zeros(NTest);
-        
-        // find terminal codes
-        Find_Terminal_Node_Comb(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat, 
-                                proxy_id, oobag_id, TermNode);
-        
-        // record terminal node prediction (thread-local)
-        for (size_t i = 0; i < NTest; i++)
-          tl_Prediction[tid].row(oobag_index(i)) += OneTree.NodeProb.row(TermNode(i));
-        
-        tl_oob_count[tid](oobag_index) += 1;
-      }
+        // set xoshiro random seed
+        Rand rngl(seed_vec(nt));
 
-      // calculate permutation importance
-      if (importance == 1 and NTest > 1)
-      {
-        uvec oobY = CLA_DATA.Y(oobag_id);
-        
-        if (TermNode.n_elem == 0){// TermNode not already calculated
+        // get inbag and oobag index
+        uvec inbag_index, oobag_index;
+
+        //If ObsTrack isn't given, set ObsTrack
+        if (!obs_track_pre)
+          set_obstrack(ObsTrack, nt, size, replacement, rngl);
+
+        // Find the samples from pre-defined ObsTrack
+        get_index(inbag_index, oobag_index, ObsTrack.unsafe_col(nt));
+        uvec inbag_id = obs_id(inbag_index);
+        if (Param.useobsweight)
+          check_sampled_tree_weight(CLA_DATA.obsweight, inbag_id);
+        uvec oobag_id = obs_id(oobag_index);
+
+        // initialize a tree (univariate split)
+        Cla_Uni_Comb_Tree_Class OneTree(CLA_FOREST.SplitVarList(nt),
+                                        CLA_FOREST.SplitLoadList(nt),
+                                        CLA_FOREST.SplitValueList(nt),
+                                        CLA_FOREST.LeftNodeList(nt),
+                                        CLA_FOREST.RightNodeList(nt),
+                                        CLA_FOREST.NodeWeightList(nt),
+                                        CLA_FOREST.NodeProbList(nt));
+
+        size_t TreeLength = 100 + size/nmin*4;
+        OneTree.initiate(TreeLength, nclass, linear_comb);
+
+        // build the tree
+        uvec var_protect;
+
+        Cla_Uni_Comb_Split_A_Node(0, OneTree, CLA_DATA,
+                                  Param, inbag_id, var_id, var_protect, rngl);
+
+        // trim tree
+        TreeLength = OneTree.get_tree_length();
+        OneTree.trim(TreeLength);
+
+        // for predictions
+        size_t NTest = oobag_index.n_elem;
+        uvec proxy_id;
+        uvec TermNode;
+
+        // inbag and oobag predictions for all subjects
+        if (do_prediction and NTest > 0)
+        {
           proxy_id = linspace<uvec>(0, NTest-1, NTest);
           TermNode.zeros(NTest);
-          Find_Terminal_Node_Comb(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat, 
+
+          // find terminal codes
+          Find_Terminal_Node_Comb(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat,
                                   proxy_id, oobag_id, TermNode);
+
+          // record terminal node prediction (thread-local)
+          for (size_t i = 0; i < NTest; i++)
+            tl_Prediction[tid].row(oobag_index(i)) += OneTree.NodeProb.row(TermNode(i));
+
+          tl_oob_count[tid](oobag_index) += 1;
         }
-        
-        // oob prediction error for this tree
-        uvec oobpred(NTest);
-        
-        for (size_t i = 0; i < NTest; i++)
-          oobpred(i) = index_max(OneTree.NodeProb.row(TermNode(i)));
-        
-        double baseImp = (double) sum(oobY != oobpred) / NTest;        
-        
-        // what variables are used in this tree
-        // Use SplitLoad != 0 to identify actually used variables (consistent with prediction)
-        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitLoad != 0 ) ) ));
 
-        for (auto shuffle_var_j : AllVar)
+        // calculate permutation importance
+        if (importance == 1 and NTest > 1)
         {
-          uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
-          uvec TermNode(NTest, fill::zeros);
-          
-          // create shuffled variable xj
-          vec tildex = CLA_DATA.X.col(shuffle_var_j);
-          tildex = tildex.elem( rngl.shuffle(oobag_id) ); 
+          uvec oobY = CLA_DATA.Y(oobag_id);
 
-          // find terminal node of shuffled obs
-          Find_Terminal_Node_Comb_ShuffleJ(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat, 
-                                           proxy_id, oobag_id, TermNode,
-                                           tildex, shuffle_var_j);
-          
-          // get prediction error
+          if (TermNode.n_elem == 0){// TermNode not already calculated
+            proxy_id = linspace<uvec>(0, NTest-1, NTest);
+            TermNode.zeros(NTest);
+            Find_Terminal_Node_Comb(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat,
+                                    proxy_id, oobag_id, TermNode);
+          }
+
+          // oob prediction error for this tree
+          uvec oobpred(NTest);
+
           for (size_t i = 0; i < NTest; i++)
             oobpred(i) = index_max(OneTree.NodeProb.row(TermNode(i)));
-          
-          // record
-          size_t locate_j = find_j(var_id, shuffle_var_j);
-          AllImp(nt, locate_j) = (double) sum(oobY != oobpred) / NTest - baseImp;
-        }
-      }
 
-      // probability variable importance
-      if (importance == 2 and NTest > 1)
-      {
-        uvec oobY = CLA_DATA.Y(oobag_id);
-        
-        if (TermNode.n_elem == 0){// TermNode not already calculated
-          proxy_id = linspace<uvec>(0, NTest-1, NTest);
-          TermNode.zeros(NTest);
-          Find_Terminal_Node_Comb(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat, 
-                                  proxy_id, oobag_id, TermNode);
-        }
-        
-        // oob prediction error for this tree
-        uvec oobpred(NTest);
-        
-        for (size_t i = 0; i < NTest; i++)
-          oobpred(i) = index_max(OneTree.NodeProb.row(TermNode(i)));
-        
-        double baseImp = (double) sum(oobY != oobpred) / NTest; 
-        
-        // what variables are used in this tree
-        // Use SplitLoad != 0 to identify actually used variables (consistent with prediction)
-        uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitLoad != 0 ) ) ));
-        vec allerror( NTest, fill::zeros);
-        vec Prob(TreeLength, fill::zeros);
-        
-        // go through all variables
-        for (auto randj : AllVar)
-        {
-          for (size_t i = 0; i < NTest; i ++)
+          double baseImp = (double) sum(oobY != oobpred) / NTest;
+
+          // what variables are used in this tree
+          // Use SplitLoad != 0 to identify actually used variables (consistent with prediction)
+          uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitLoad != 0 ) ) ));
+
+          for (auto shuffle_var_j : AllVar)
           {
-            size_t id = oobag_id(i);            
-            Prob.zeros();
-            
-            Assign_Terminal_Node_Prob_Comb_RandomJ(0,
-                                                   OneTree,
-                                                   CLA_DATA.X, 
-                                                   CLA_DATA.Ncat,
-                                                   id,
-                                                   1.0,
-                                                   Prob,
-                                                   randj);
-            
-            uvec nonzeronodes = find(Prob > 0);
-            mat allprob = OneTree.NodeProb.rows(nonzeronodes);
-            uvec label(nonzeronodes.n_elem, fill::zeros);
-            
-            for (size_t k = 0; k < nonzeronodes.n_elem; k ++)
-              label(k) = allprob.row(k).index_max();
-            
-            allerror(i) = accu( Prob(nonzeronodes) % ( label != oobY(i) ) );
-          }
-          
-          size_t locate_j = find_j(var_id, randj);
-          AllImp(nt, locate_j) = mean(allerror) - baseImp;
-        }
-      }
-      
+            uvec proxy_id = linspace<uvec>(0, NTest-1, NTest);
+            uvec TermNode(NTest, fill::zeros);
 
+            // create shuffled variable xj
+            vec tildex = CLA_DATA.X.col(shuffle_var_j);
+            tildex = tildex.elem( rngl.shuffle(oobag_id) );
+
+            // find terminal node of shuffled obs
+            Find_Terminal_Node_Comb_ShuffleJ(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat,
+                                             proxy_id, oobag_id, TermNode,
+                                             tildex, shuffle_var_j);
+
+            // get prediction error
+            for (size_t i = 0; i < NTest; i++)
+              oobpred(i) = index_max(OneTree.NodeProb.row(TermNode(i)));
+
+            // record
+            size_t locate_j = find_j(var_id, shuffle_var_j);
+            AllImp(nt, locate_j) = (double) sum(oobY != oobpred) / NTest - baseImp;
+          }
+        }
+
+        // probability variable importance
+        if (importance == 2 and NTest > 1)
+        {
+          uvec oobY = CLA_DATA.Y(oobag_id);
+
+          if (TermNode.n_elem == 0){// TermNode not already calculated
+            proxy_id = linspace<uvec>(0, NTest-1, NTest);
+            TermNode.zeros(NTest);
+            Find_Terminal_Node_Comb(0, OneTree, CLA_DATA.X, CLA_DATA.Ncat,
+                                    proxy_id, oobag_id, TermNode);
+          }
+
+          // oob prediction error for this tree
+          uvec oobpred(NTest);
+
+          for (size_t i = 0; i < NTest; i++)
+            oobpred(i) = index_max(OneTree.NodeProb.row(TermNode(i)));
+
+          double baseImp = (double) sum(oobY != oobpred) / NTest;
+
+          // what variables are used in this tree
+          // Use SplitLoad != 0 to identify actually used variables (consistent with prediction)
+          uvec AllVar = conv_to<uvec>::from(unique( OneTree.SplitVar( find( OneTree.SplitLoad != 0 ) ) ));
+          vec allerror( NTest, fill::zeros);
+          vec Prob(TreeLength, fill::zeros);
+
+          // go through all variables
+          for (auto randj : AllVar)
+          {
+            for (size_t i = 0; i < NTest; i ++)
+            {
+              size_t id = oobag_id(i);
+              Prob.zeros();
+
+              Assign_Terminal_Node_Prob_Comb_RandomJ(0,
+                                                     OneTree,
+                                                     CLA_DATA.X,
+                                                     CLA_DATA.Ncat,
+                                                     id,
+                                                     1.0,
+                                                     Prob,
+                                                     randj);
+
+              uvec nonzeronodes = find(Prob > 0);
+              mat allprob = OneTree.NodeProb.rows(nonzeronodes);
+              uvec label(nonzeronodes.n_elem, fill::zeros);
+
+              for (size_t k = 0; k < nonzeronodes.n_elem; k ++)
+                label(k) = allprob.row(k).index_max();
+
+              allerror(i) = accu( Prob(nonzeronodes) % ( label != oobY(i) ) );
+            }
+
+            size_t locate_j = find_j(var_id, randj);
+            AllImp(nt, locate_j) = mean(allerror) - baseImp;
+          }
+        }
+
+
+      }
+      catch (...)
+      {
+        tree_errors[nt] = std::current_exception();
+      }
     }
   }
-  
+
+  rethrow_tree_build_errors(tree_errors);
+
   if (do_prediction)
   {
     // merge thread-local results
@@ -257,7 +271,7 @@ void Cla_Uni_Comb_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
       Prediction += tl_Prediction[t];
       oob_count += tl_oob_count[t];
     }
-    
+
     // normalize only where oob_count > 0
     uvec valid = find(oob_count > 0);
     vec oob_denom = conv_to<vec>::from(oob_count(valid));
@@ -268,20 +282,20 @@ void Cla_Uni_Comb_Forest_Build(const RLT_CLA_DATA& CLA_DATA,
       Prediction.col(i) = tmp;
     }
   }
-  
+
   if (importance)
   {
     VarImp = mean(AllImp, 0).t();
-    
+
     // VI variance estimation (requires var.mode = "matched")
     if (Param.var_mode == 1)
     {
       rowvec Vs = var(AllImp, 1, 0);
-      
+
       size_t B = ntrees / 2;
       mat ImpDiff = AllImp.rows(0, B-1) - AllImp.rows(B, 2*B-1);
       rowvec Vh = mean(square(ImpDiff), 0) / 2;
-      
+
       VarVI = (Vh - Vs).t();
     }
   }

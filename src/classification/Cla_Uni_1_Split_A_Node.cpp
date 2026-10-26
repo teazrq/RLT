@@ -61,8 +61,13 @@ TERMINATENODE:
     }    
     
     // if this happens something about the splitting rule is wrong
-    if (left_id.n_elem == N or obs_id.n_elem == N)
+    if (left_id.n_elem == 0 || left_id.n_elem == N ||
+        (useobsweight && !positive_child_weights(CLA_DATA.obsweight, left_id, obs_id)))
+    {
+      // A terminal estimate must use the complete positive-mass parent.
+      obs_id = join_cols(left_id, obs_id);
       goto TERMINATENODE;
+    }
     
     // record internal node to tree 
     OneTree.SplitVar(Node) = OneSplit.var;
