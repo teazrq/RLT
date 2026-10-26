@@ -2,25 +2,32 @@
 
 ## Overview
 
-This page shows how to fit and predict a regression model with RLT.
+Use a regression forest to predict a continuous response from numeric
+and categorical predictors. We simulate a known signal, fit on 80
+observations, and evaluate predictions on 20 held-out observations.
 
 ## Prerequisites
 
-Install RLT, then load it with
-[`library(RLT)`](https://github.com/teazrq/RLT).
-
-## Data
-
-We generate continuous and categorical predictors with a continuous
-outcome.
+Follow [Get
+Started](https://teazrq.github.io/RLT/articles/get-started.md) to
+install RLT, then load the package:
 
 ``` r
 
-# (Optional) For reproducibility in this tutorial only.
-# Detailed notes on random seeds are in the Seed & Reproducibility feature page.
+library(RLT)
+```
+
+## Data
+
+The first five predictors are numeric and the last five are factors.
+Factor columns tell RLT to use categorical splits. The numeric response
+combines predictors 2 through 6, an additional effect for categories 1
+and 2 of predictor 6, and independent Gaussian noise.
+
+``` r
+
 set.seed(1)
 
-# ---- Generate a small synthetic dataset ----
 trainn <- 80
 testn  <- 20
 n <- trainn + testn
@@ -47,26 +54,21 @@ testY  <- y[(trainn + 1):(trainn + testn)]
 
 ## Fit
 
-``` r
+We use 200 trees and sample half of the predictors as split candidates
+at each node with `mtry = p/2`. Setting `nsplit = 0` searches all
+available cutpoints for numeric candidates. The explicit `seed` controls
+fitting randomness; see [Random Seed and
+Reproducibility](https://teazrq.github.io/RLT/articles/feature-seed.md)
+for the distinction from
+[`set.seed()`](https://rdrr.io/r/base/Random.html) used for data
+generation above.
 
-ntrees <- 200
-ncores <- 1
-nmin   <- 5
-mtry   <- p/2
-samplereplace <- TRUE
-sampleprob    <- 0.80
-rule    <- "best"
-nsplit  <- ifelse(rule == "best", 0, 3)
-importance <- TRUE
+``` r
 
 fit <- RLT(
   trainX, trainY, model = "regression",
-  ntrees = ntrees, mtry = mtry, nmin = nmin,
-  resample.prob = sampleprob, split.gen = rule,
-  resample.replace = samplereplace,
-  nsplit = nsplit, importance = importance,
-  param.control = list(alpha = 0),
-  ncores = ncores, verbose = FALSE
+  ntrees = 200, mtry = p/2, nsplit = 0,
+  seed = 1, ncores = 1, verbose = FALSE
 )
 ```
 
@@ -74,33 +76,47 @@ fit <- RLT(
 
 ``` r
 
-pred <- predict(fit, testX, ncores = ncores)
-
-# Helper in case predict() returns a list with $Prediction
-get_pred <- function(obj) if (is.list(obj) && !is.null(obj$Prediction)) obj$Prediction else as.numeric(obj)
-
-train_pred <- if (!is.null(fit$Prediction)) fit$Prediction else get_pred(predict(fit, trainX, ncores = ncores))
-test_pred  <- get_pred(pred)
+pred <- predict(fit, testX)
+head(data.frame(Observed = testY, Predicted = pred$Prediction))
+##    Observed  Predicted
+## 1  3.027775  3.7546121
+## 2  6.341096  3.6998381
+## 3  5.114996  4.2049286
+## 4 -1.929980 -0.1486038
+## 5  8.651209  5.6871107
+## 6  7.395645  4.1123466
 ```
+
+`pred$Prediction` contains one numeric prediction per held-out row.
+These values estimate the conditional mean response at the supplied
+predictor values.
 
 ## Evaluate
 
+The fitted object’s `Prediction` component contains out-of-bag (OOB)
+predictions. Each training observation is predicted using only trees
+whose resample omitted it. The test predictions use the fitted forest on
+observations reserved before fitting.
+
 ``` r
 
-mse_train <- mean((train_pred - trainY)^2)
-mse_test  <- mean((test_pred  - testY)^2)
-
-# A compact summary
 list(
-  Train_MSE = round(mse_train, 4),
-  Test_MSE  = round(mse_test, 4)
+  OOB_MSE = round(mean((fit$Prediction - trainY)^2), 4),
+  Test_MSE = round(mean((pred$Prediction - testY)^2), 4)
 )
-## $Train_MSE
-## [1] 3.4568
+## $OOB_MSE
+## [1] 3.5013
 ## 
 ## $Test_MSE
-## [1] 4.0864
+## [1] 4.1243
 ```
+
+Both mean squared errors measure prediction error, with smaller values
+indicating more accurate predictions. OOB MSE uses the training
+observations without including them in the corresponding trees; test MSE
+uses the 20 held-out observations. Their difference reflects the
+different evaluation samples and trees used, and the test estimate is
+noisy with only 20 observations.
 
 ## Inspect
 
@@ -114,8 +130,12 @@ print(fit)
 ##           # of trees = 200
 ##         (mtry, nmin) = (5, 5)
 ##       split generate = Best
-##             sampling = 80% w/ replace
-##           importance = permutation
-##             OOB MSE = 3.4568 (R2 = 0.5935)
+##             sampling = 100% w/ replace
+##           importance = none
+##             OOB MSE = 3.5013 (R2 = 0.5883)
 ## -------------------------------------------------------------
 ```
+
+The printed summary records the forest settings and OOB error. To assess
+which predictors the forest relies on, continue to [Variable
+Importance](https://teazrq.github.io/RLT/articles/variable-importance.md).

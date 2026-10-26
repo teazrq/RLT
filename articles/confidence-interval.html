@@ -10,13 +10,14 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Survival Confidence Band - Tutorial (RLT)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="Survival Confidence Band - Tutorial (RLT)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="default" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">RLT</a>
 
@@ -48,7 +49,10 @@
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT" aria-label="GitHub"><span class="fa fa-github fa-lg"></span></a></li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -66,7 +70,7 @@
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
-            <h4 data-toc-skip class="date">Last Updated: July 02,
+            <h4 data-toc-skip class="date">Last Updated: October 26,
 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/teazrq/RLT/blob/master/vignettes/articles/confidence-interval.Rmd" class="external-link"><code>vignettes/articles/confidence-interval.Rmd</code></a></small>
@@ -80,15 +84,17 @@ Zhu</h4>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>This page demonstrates how to construct simultaneous confidence bands
-for individual survival curves predicted by RLT. The example uses the
-smoothed covariance approach in <code><a href="../reference/get.surv.band.html">get.surv.band()</a></code>.</p>
-<p>Two details matter for a sensible visualization:</p>
+<p>This page demonstrates uncertainty bands for the conditional survival
+curve at chosen predictor values. These describe uncertainty about the
+curve, not a prediction interval for an individual’s event time. The
+example uses the smoothed approach in <code><a href="../reference/get.surv.band.html">get.surv.band()</a></code>.</p>
+<p>Assess how much information supports each estimated curve:</p>
 <ul>
-<li>Target points should be inside the observed predictor domain,
-especially for the important variables.</li>
-<li>The displayed time range should avoid the far tail where very few
-training observations remain at risk.</li>
+<li>Target predictor values should be represented in the training data,
+especially for the important variables, to limit extrapolation.</li>
+<li>Inspect the number of observations still at risk over time. The far
+tail has less support when few observations remain under follow-up
+without an event.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -120,7 +126,7 @@ variables <code>X1</code> and <code>X3</code>. The remaining variables
 are fixed at their training medians.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">target_base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">X</span>, <span class="fl">2</span>, <span class="va">median</span><span class="op">)</span></span>
-<span><span class="va">testX</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">target_base</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">testX</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">target_base</span>, times <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">testX</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">testX</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.35</span>, <span class="fl">0.65</span><span class="op">)</span><span class="op">)</span></span>
@@ -135,29 +141,37 @@ are fixed at their training medians.</p>
 <div class="section level2">
 <h2 id="fit-and-predict-with-variance">Fit and Predict with Variance<a class="anchor" aria-label="anchor" href="#fit-and-predict-with-variance"></a>
 </h2>
-<p>We use <code>var.mode = "matched"</code> for variance estimation.
-This prepares covariance estimates on the cumulative hazard scale, which
-is the scale used by the confidence-band calculation.</p>
+<p>We use <code>var.mode = "matched"</code> to estimate the covariance
+of the predicted cumulative hazard over time, which is the scale used by
+the confidence-band calculation. Matched mode requires an even number of
+trees and uses paired half-samples without replacement. Here the 1,000
+trees form 500 pairs; the required sampling settings are explicit in the
+call. This mode automatically enables distributed importance when
+<code>importance = FALSE</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">X</span>, <span class="va">Y</span>, <span class="va">Censor</span>, model <span class="op">=</span> <span class="st">"survival"</span>,</span>
 <span>  ntrees <span class="op">=</span> <span class="fl">1000</span>, mtry <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">p</span>, <span class="fl">10</span><span class="op">)</span>, nmin <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  split.gen <span class="op">=</span> <span class="st">"random"</span>, nsplit <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  resample.prob <span class="op">=</span> <span class="fl">0.8</span>, resample.replace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  nsplit <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  resample.prob <span class="op">=</span> <span class="fl">0.5</span>, resample.replace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  importance <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ncores <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  var.mode <span class="op">=</span> <span class="st">"matched"</span>,</span>
-<span>  param.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>split.rule <span class="op">=</span> <span class="st">"logrank"</span><span class="op">)</span></span>
+<span>  split.rule <span class="op">=</span> <span class="st">"logrank"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">RLTPred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">testX</span>, var.est <span class="op">=</span> <span class="cn">TRUE</span>, ncores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="restrict-to-supported-follow-up-times">Restrict to Supported Follow-up Times<a class="anchor" aria-label="anchor" href="#restrict-to-supported-follow-up-times"></a>
+<h2 id="choose-a-display-range">Choose a Display Range<a class="anchor" aria-label="anchor" href="#choose-a-display-range"></a>
 </h2>
-<p>The fitted object can return predictions over the observed event-time
-grid, but the far right tail has little data support. For this example,
-we only display the region <code>t &lt;= 2</code>.</p>
+<p>The prediction object includes the full observed failure-time grid.
+For this example, we display only
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mo>≤</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">t \leq 2</annotation></semantics></math>
+and report the smallest risk-set count in that range. Time 2 is a
+display choice, not a validated threshold for adequate support. The band
+below is still constructed using every time in
+<code>RLTPred$timepoints</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">risk_set</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">timepoints</span>, <span class="kw">function</span><span class="op">(</span><span class="va">t</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">Y</span> <span class="op">&gt;=</span> <span class="va">t</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">plot_time_max</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
@@ -184,17 +198,34 @@ we only display the region <code>t &lt;= 2</code>.</p>
 <div class="section level2">
 <h2 id="simultaneous-confidence-band">Simultaneous Confidence Band<a class="anchor" aria-label="anchor" href="#simultaneous-confidence-band"></a>
 </h2>
-<p><code><a href="../reference/get.surv.band.html">get.surv.band()</a></code> with <code>approach = "smoothed"</code>
-constructs a simultaneous confidence band using a smoothed low-rank
-approximation of the covariance matrix.</p>
+<p>With <code>alpha = 0.05</code>, <code><a href="../reference/get.surv.band.html">get.surv.band()</a></code>
+constructs a nominal 95% simultaneous band for the conditional survival
+curve over the returned time grid. The default <code>i = 0</code>
+returns a separate band for each target point; the nominal coverage
+applies to each curve separately, not jointly across the two targets or
+over every time between grid points.</p>
+<p>The computed reference curve is <code>exp(-RLTPred$CHF)</code>. The
+function first constructs a band around <code>RLTPred$CHF</code> on the
+cumulative-hazard scale, then transforms its limits to the survival
+scale. For an ordinary survival forest the reference curve equals the
+returned <code>$Survival</code>; linear combination forests instead
+return the mean of tree product-limit curves, whose sampling variation
+is not directly estimated by this CHF-based calculation.</p>
+<p>The smoothed approach uses a low-rank covariance approximation and a
+residual correction to form the marginal standardizing scales. Here
+<code>k_rank = 10</code> allows up to ten components in that
+approximation. The Gaussian simulations retain the original supplied
+covariance. The <code>nsim</code> simulations estimate the critical
+value needed for simultaneous coverage over the grid.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">SurvBand</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get.surv.band.html">get.surv.band</a></span><span class="op">(</span><span class="va">RLTPred</span>, alpha <span class="op">=</span> <span class="fl">0.05</span>, approach <span class="op">=</span> <span class="st">"smoothed"</span>, k_rank <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">SurvBand</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get.surv.band.html">get.surv.band</a></span><span class="op">(</span><span class="va">RLTPred</span>, alpha <span class="op">=</span> <span class="fl">0.05</span>, approach <span class="op">=</span> <span class="st">"smoothed"</span>,</span>
+<span>                          k_rank <span class="op">=</span> <span class="fl">10</span>, nsim <span class="op">=</span> <span class="fl">5000</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">testX</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">tp</span> <span class="op">&lt;-</span> <span class="va">RLTPred</span><span class="op">$</span><span class="va">timepoints</span><span class="op">[</span><span class="va">plot_id</span><span class="op">]</span></span>
-<span>  <span class="va">S</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">Survival</span><span class="op">[</span><span class="va">i</span>, <span class="va">plot_id</span><span class="op">]</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="va">S</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">RLTPred</span><span class="op">$</span><span class="va">CHF</span><span class="op">[</span><span class="va">i</span>, <span class="va">plot_id</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fu">xlink</span><span class="op">(</span><span class="va">testX</span><span class="op">)</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">*</span> <span class="va">tp</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="va">b_lower</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">SurvBand</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">lower</span><span class="op">)</span><span class="op">[</span><span class="va">plot_id</span><span class="op">]</span>, <span class="fl">0</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span></span>
@@ -218,16 +249,25 @@ approximation of the covariance matrix.</p>
 <span>         border <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
 <span>         bty <span class="op">=</span> <span class="st">"n"</span>, cex <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p><img src="confidence-interval_files/figure-html/band-plot-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="confidence-interval_files/figure-html/band-plot-1.png" class="r-plt" alt="Two panels show survival probability against time up to 2 for interior lower-risk and higher-risk targets. Each has a black stepped estimate exp(-CHF), a red dashed true survival curve, and a shaded blue simultaneous 95 percent confidence band. Survival declines faster for the higher-risk target." width="768" height="432" loading="lazy" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The higher-risk target has larger values of both signal variables, so
+its true survival curve falls faster. The black curve is the estimate
+<code>exp(-RLTPred$CHF)</code> of the conditional survival curve, and
+the shaded band describes uncertainty about that target curve. A nominal
+95% simultaneous band need not contain the true curve in every simulated
+dataset; this one simulation does not establish coverage. Each band was
+constructed on the full returned grid, with only the portion through
+time 2 displayed here.</p>
 </div>
 <div class="section level2">
 <h2 id="optional-rank-selection">Optional Rank Selection<a class="anchor" aria-label="anchor" href="#optional-rank-selection"></a>
 </h2>
-<p>The smoothed approach can also choose the rank by cumulative
-eigenvalue proportion instead of a fixed <code>k_rank</code>:</p>
+<p>The rank controls the covariance approximation used for the marginal
+scales. Instead of a fixed <code>k_rank</code>, the smoothed approach
+can choose it by cumulative eigenvalue proportion:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">SurvBand_prop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get.surv.band.html">get.surv.band</a></span><span class="op">(</span></span>
 <span>  <span class="va">RLTPred</span>, alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
@@ -235,8 +275,11 @@ eigenvalue proportion instead of a fixed <code>k_rank</code>:</p>
 <span>  k_mode <span class="op">=</span> <span class="st">"proportion"</span>,</span>
 <span>  k_prop <span class="op">=</span> <span class="fl">0.95</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>You can increase <code>nsim</code> for stability at the cost of
-runtime.</p>
+<p>Increasing <code>nsim</code> reduces Monte Carlo variability in the
+estimated critical value at the cost of runtime. It does not change the
+fitted forest or the supplied covariance used in simulation. See
+<code><a href="../reference/get.surv.band.html">get.surv.band()</a></code> for the smoothing details and the fallback
+to the naive calculation with fewer than three time points.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -245,11 +288,11 @@ runtime.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ruoqing Zhu, Sarah Formentini.</p>
+  <p>Developed by Ruoqing Zhu, Sarah Formentini. Source revision: <a href="https://github.com/teazrq/RLT/tree/398603bb415dc5a9293396cee6145eeeb446b291" class="external-link">398603b</a></p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

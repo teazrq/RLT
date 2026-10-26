@@ -7,17 +7,19 @@ library(RLT)
 
 ## Overview
 
-This page demonstrates how to construct simultaneous confidence bands
-for individual survival curves predicted by RLT. The example uses the
-smoothed covariance approach in
+This page demonstrates uncertainty bands for the conditional survival
+curve at chosen predictor values. These describe uncertainty about the
+curve, not a prediction interval for an individual’s event time. The
+example uses the smoothed approach in
 [`get.surv.band()`](https://teazrq.github.io/RLT/reference/get.surv.band.md).
 
-Two details matter for a sensible visualization:
+Assess how much information supports each estimated curve:
 
-- Target points should be inside the observed predictor domain,
-  especially for the important variables.
-- The displayed time range should avoid the far tail where very few
-  training observations remain at risk.
+- Target predictor values should be represented in the training data,
+  especially for the important variables, to limit extrapolation.
+- Inspect the number of observations still at risk over time. The far
+  tail has less support when few observations remain under follow-up
+  without an event.
 
 ## Data
 
@@ -50,7 +52,7 @@ training medians.
 ``` r
 
 target_base <- apply(X, 2, median)
-testX <- matrix(rep(target_base, each = 2), nrow = 2, byrow = TRUE)
+testX <- matrix(rep(target_base, times = 2), nrow = 2, byrow = TRUE)
 colnames(testX) <- colnames(X)
 
 testX[, 1] <- quantile(X[, 1], probs = c(0.35, 0.65))
@@ -65,31 +67,37 @@ testX[, c(1, 3)]
 
 ## Fit and Predict with Variance
 
-We use `var.mode = "matched"` for variance estimation. This prepares
-covariance estimates on the cumulative hazard scale, which is the scale
-used by the confidence-band calculation.
+We use `var.mode = "matched"` to estimate the covariance of the
+predicted cumulative hazard over time, which is the scale used by the
+confidence-band calculation. Matched mode requires an even number of
+trees and uses paired half-samples without replacement. Here the 1,000
+trees form 500 pairs; the required sampling settings are explicit in the
+call. This mode automatically enables distributed importance when
+`importance = FALSE`.
 
 ``` r
 
 fit <- RLT(
   X, Y, Censor, model = "survival",
   ntrees = 1000, mtry = min(p, 10), nmin = 5,
-  split.gen = "random", nsplit = 3,
-  resample.prob = 0.8, resample.replace = FALSE,
+  nsplit = 3,
+  resample.prob = 0.5, resample.replace = FALSE,
   importance = FALSE, verbose = FALSE,
   ncores = 1,
   var.mode = "matched",
-  param.control = list(split.rule = "logrank")
+  split.rule = "logrank"
 )
 
 RLTPred <- predict(fit, testX, var.est = TRUE, ncores = 1)
 ```
 
-## Restrict to Supported Follow-up Times
+## Choose a Display Range
 
-The fitted object can return predictions over the observed event-time
-grid, but the far right tail has little data support. For this example,
-we only display the region `t <= 2`.
+The prediction object includes the full observed failure-time grid. For
+this example, we display only $`t \leq 2`$ and report the smallest
+risk-set count in that range. Time 2 is a display choice, not a
+validated threshold for adequate support. The band below is still
+constructed using every time in `RLTPred$timepoints`.
 
 ``` r
 
@@ -118,13 +126,33 @@ list(
 
 ## Simultaneous Confidence Band
 
+With `alpha = 0.05`,
 [`get.surv.band()`](https://teazrq.github.io/RLT/reference/get.surv.band.md)
-with `approach = "smoothed"` constructs a simultaneous confidence band
-using a smoothed low-rank approximation of the covariance matrix.
+constructs a nominal 95% simultaneous band for the conditional survival
+curve over the returned time grid. The default `i = 0` returns a
+separate band for each target point; the nominal coverage applies to
+each curve separately, not jointly across the two targets or over every
+time between grid points.
+
+The computed reference curve is `exp(-RLTPred$CHF)`. The function first
+constructs a band around `RLTPred$CHF` on the cumulative-hazard scale,
+then transforms its limits to the survival scale. For an ordinary
+survival forest the reference curve equals the returned `$Survival`;
+linear combination forests instead return the mean of tree product-limit
+curves, whose sampling variation is not directly estimated by this
+CHF-based calculation.
+
+The smoothed approach uses a low-rank covariance approximation and a
+residual correction to form the marginal standardizing scales. Here
+`k_rank = 10` allows up to ten components in that approximation. The
+Gaussian simulations retain the original supplied covariance. The `nsim`
+simulations estimate the critical value needed for simultaneous coverage
+over the grid.
 
 ``` r
 
-SurvBand <- get.surv.band(RLTPred, alpha = 0.05, approach = "smoothed", k_rank = 10)
+SurvBand <- get.surv.band(RLTPred, alpha = 0.05, approach = "smoothed",
+                          k_rank = 10, nsim = 5000)
 ```
 
 ``` r
@@ -133,7 +161,7 @@ par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
 
 for (i in seq_len(nrow(testX))) {
   tp <- RLTPred$timepoints[plot_id]
-  S <- pmin(pmax(as.numeric(RLTPred$Survival[i, plot_id]), 0), 1)
+  S <- exp(-as.numeric(RLTPred$CHF[i, plot_id]))
   truth <- exp(-xlink(testX)[i] * tp)
 
   b_lower <- pmin(pmax(as.numeric(SurvBand[[i]]$lower)[plot_id], 0), 1)
@@ -159,7 +187,12 @@ for (i in seq_len(nrow(testX))) {
 }
 ```
 
-![](confidence-interval_files/figure-html/band-plot-1.png)
+![Two panels show survival probability against time up to 2 for interior
+lower-risk and higher-risk targets. Each has a black stepped estimate
+exp(-CHF), a red dashed true survival curve, and a shaded blue
+simultaneous 95 percent confidence band. Survival declines faster for
+the higher-risk
+target.](confidence-interval_files/figure-html/band-plot-1.png)
 
 ``` r
 
@@ -167,10 +200,20 @@ for (i in seq_len(nrow(testX))) {
 par(mfrow = c(1, 1))
 ```
 
+The higher-risk target has larger values of both signal variables, so
+its true survival curve falls faster. The black curve is the estimate
+`exp(-RLTPred$CHF)` of the conditional survival curve, and the shaded
+band describes uncertainty about that target curve. A nominal 95%
+simultaneous band need not contain the true curve in every simulated
+dataset; this one simulation does not establish coverage. Each band was
+constructed on the full returned grid, with only the portion through
+time 2 displayed here.
+
 ## Optional Rank Selection
 
-The smoothed approach can also choose the rank by cumulative eigenvalue
-proportion instead of a fixed `k_rank`:
+The rank controls the covariance approximation used for the marginal
+scales. Instead of a fixed `k_rank`, the smoothed approach can choose it
+by cumulative eigenvalue proportion:
 
 ``` r
 
@@ -182,4 +225,9 @@ SurvBand_prop <- get.surv.band(
 )
 ```
 
-You can increase `nsim` for stability at the cost of runtime.
+Increasing `nsim` reduces Monte Carlo variability in the estimated
+critical value at the cost of runtime. It does not change the fitted
+forest or the supplied covariance used in simulation. See
+[`get.surv.band()`](https://teazrq.github.io/RLT/reference/get.surv.band.md)
+for the smoothing details and the fallback to the naive calculation with
+fewer than three time points.

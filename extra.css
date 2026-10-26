@@ -1,0 +1,56 @@
+/* Keep Cosmo's reading hierarchy and use its shared palette throughout. */
+.navbar[data-bs-theme="dark"] {
+  --bs-navbar-color: #fff;
+  --bs-navbar-hover-color: #fff;
+  --bs-navbar-active-color: #fff;
+}
+
+/* Bootstrap's text-muted utility otherwise overrides the navbar foreground. */
+.navbar .nav-text.text-muted {
+  color: var(--bs-navbar-color) !important;
+}
+
+.navbar .nav-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.navbar :is(.navbar-brand, .nav-link, .navbar-toggler, #search-input):focus-visible {
+  outline: 2px solid #fff;
+}
+
+/* Prose has a comfortable measure; code, tables, and figures keep their width. */
+#main :is(p, ul, ol) {
+  max-inline-size: 65ch;
+  text-wrap: pretty;
+}
+
+#main p:has(img) {
+  max-inline-size: none;
+}
+
+#main img.r-plt {
+  max-inline-size: 100%;
+  height: auto;
+}
+
+#main :is(h1, h2, h3) {
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+#main dt {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767.98px) {
+  /* The template's 100vw includes the vertical scrollbar. */
+  .row > aside {
+    width: calc(100% - 1rem);
+  }
+}

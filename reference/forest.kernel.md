@@ -1,8 +1,9 @@
-# random forest kernel
+# Compute a random forest kernel
 
-    Get random forest induced kernel weight matrix of testing samples
-                 or between any two sets of data. This is an experimental feature.
-                 Use at your own risk.
+Measure how often observations share terminal nodes in a fitted forest,
+within one dataset or between two datasets. This is an experimental
+feature; the available modes and their data requirements are described
+below.
 
 ## Usage
 
@@ -37,23 +38,24 @@ forest.kernel(
 
 - vs.train:
 
-  To calculate the kernel weights with respect to the training data.
-  This is slightly different than supplying the training data to `X2`
-  due to re-samplings of the training process. To use this feature, you
-  must specify `resample.track = TRUE` in `param.control` when fitting
-  the forest
+  Include each reference observation's in-bag multiplicity in its
+  leaf-sharing count. `X2` must be the original training data in its
+  original row order. To use this feature, you must specify
+  `resample.track = TRUE` in `param.control` when fitting the forest
 
 - oob:
 
   Logical. If `TRUE`, compute the OOB (out-of-bag) self-kernel, which
   counts co-occurrence only from trees where both observations are OOB.
-  This eliminates the self-contamination bias that arises when in-bag
-  observations influence tree structure. Requires
-  `resample.track = TRUE` and `X1` to be the original training data.
-  `X2` must be `NULL` (OOB kernel is defined for self-kernel only). The
-  returned list contains three matrices: `Kernel` (normalized
-  co-occurrence in \\\[0,1\]\\), `N` (number of trees where both are
-  OOB), and `C` (number of trees where both are OOB and share a leaf).
+  Each contributing tree was fitted without either observation in the
+  pair. Requires `resample.track = TRUE` and `X1` to be the original
+  training data. `X2` must be `NULL` (OOB kernel is defined for
+  self-kernel only). The returned list contains three matrices: `Kernel`
+  (normalized co-occurrence in \\\[0,1\]\\ where `N > 0`), `N` (number
+  of trees where both are OOB), and `C` (number of trees where both are
+  OOB and share a leaf). Entries with `N = 0` are returned as zero;
+  inspect `N` to distinguish these unsupported pairs from observed zero
+  leaf sharing.
 
 - verbose:
 
@@ -67,6 +69,14 @@ forest.kernel(
 
 A list containing the kernel matrix. For `oob = TRUE`, the list also
 contains `N` (OOB co-occurrence count) and `C` (OOB leaf-sharing count).
+
+## Details
+
+Ordinary kernel entries count trees in which two observations share a
+terminal node. They are not normalized observation contributions to a
+forest prediction. The training-data mode includes in-bag
+multiplicities; the OOB mode instead normalizes by the number of trees
+eligible for each pair.
 
 ## Examples
 

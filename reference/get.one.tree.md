@@ -24,10 +24,16 @@ get.one.tree(x, tree = 1, ...)
 
 ## Value
 
-A data.frame with columns: Node (depth, BFS), NodeType (Split=1,
-Leaf=-1), SplitVar, SplitValue, LeftNode, RightNode, N (sample count).
-Model-specific columns include YAvg (regression), Prob (classification),
-or Hazard/SurvProb (survival).
+Invisibly returns a data frame with `Node`, `Depth`, `Split`, `Value`
+and `n`. The root has depth zero and terminal nodes have `"*"` in
+`Split`. For numerical predictors, `Value` is the split threshold; for
+categorical predictors, it encodes the partition of levels. `n` is the
+node weight, equal to the in-bag count for unweighted data, including
+repeated observations. The printed regression table additionally shows
+`NodeAve`; its terminal values are that tree's predictions. The printed
+classification table adds `ClassProbs`. These printed values are not
+columns of the returned data frame. Child-node identifiers are not
+included.
 
 ## Examples
 

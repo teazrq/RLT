@@ -2,119 +2,234 @@
 
 ## Install the RLT Package
 
-### Released Version
+These guides describe **RLT source version 6.1.1**. The CRAN release is
+a separate, older version whose interfaces and features may differ.
+Installing from GitHub requires a C++ toolchain compatible with your R
+installation. Set it up using the [platform
+requirements](#platform-requirements) below, then install the source
+into your normal shared R library:
 
-Install from CRAN when the released version is available:
+``` r
+
+# install.packages("remotes")
+remotes::install_github("teazrq/RLT")
+packageVersion("RLT")
+```
+
+These examples target version 6.1.1. GitHub installation uses the
+repository’s current default branch, which can change.
+[`packageVersion()`](https://rdrr.io/r/utils/packageDescription.html)
+checks the version number; different source revisions can share that
+number. See [matching the documentation
+revision](#match-the-documentation-revision) for an exact source match,
+or [the CRAN release](#cran-release) for the separate CRAN installation
+route.
+
+## Fit and evaluate a regression forest
+
+We will predict a continuous response from six numeric predictors. The
+response depends on the first two predictors plus independent noise. We
+reserve 40 observations for evaluation and fit the model on the other
+160.
+
+``` r
+
+library(RLT)
+
+set.seed(1)
+x <- matrix(rnorm(200 * 6), nrow = 200, ncol = 6)
+y <- x[, 1] - x[, 2] + rnorm(200)
+
+trainX <- x[1:160, ]
+trainY <- y[1:160]
+testX <- x[161:200, ]
+testY <- y[161:200]
+```
+
+The default forest uses one variable at each split. Here `mtry = 3`
+samples three candidate variables at a node, and `nsplit = 0` searches
+all available cutpoints for those candidates. We use 100 trees for this
+short example and set `seed` to control fitting randomness.
+
+``` r
+
+fit <- RLT(
+  trainX, trainY, model = "regression",
+  ntrees = 100, mtry = 3, nsplit = 0,
+  resample.replace = TRUE, resample.prob = 0.80,
+  seed = 1, ncores = 1, verbose = FALSE
+)
+```
+
+Each tree makes 128 draws, with replacement, from the training set. An
+observation’s out-of-bag (OOB) prediction uses only trees whose resample
+omitted that observation. The fitted object’s `Prediction` component
+contains these OOB predictions. For held-out observations,
+[`predict()`](https://rdrr.io/r/stats/predict.html) averages predictions
+from the fitted trees.
+
+``` r
+
+pred <- predict(fit, testX)
+
+list(
+  OOB_MSE = mean((fit$Prediction - trainY)^2),
+  Test_MSE = mean((pred$Prediction - testY)^2)
+)
+## $OOB_MSE
+## [1] 1.374119
+## 
+## $Test_MSE
+## [1] 1.186798
+
+head(data.frame(Observed = testY, Predicted = pred$Prediction))
+##     Observed  Predicted
+## 1  2.0239825  2.0611649
+## 2 -2.8588177 -0.6790041
+## 3  0.2598043  1.5173868
+## 4  0.4535536  0.8997102
+## 5  1.2538745 -0.1908594
+## 6  0.9382517  0.7102354
+```
+
+Both results are mean squared errors (MSEs), so smaller values indicate
+more accurate predictions. OOB MSE evaluates predictions within the
+training sample using omitted observations; test MSE evaluates the 40
+observations reserved before fitting. These are two estimates of
+prediction error for this example, and they can differ in a small
+sample.
+
+## Try reinforcement or linear combination splits
+
+Setting `reinforcement = TRUE` fits embedded models within nodes to
+guide single-variable splits. The following fit uses the same training
+data and outer forest settings as the first fit. We set `ntrees = 100`
+explicitly in both calls because its default is 500 without
+reinforcement and 100 with reinforcement.
+
+``` r
+
+reinforced_fit <- RLT(
+  trainX, trainY, model = "regression",
+  reinforcement = TRUE,
+  ntrees = 100, mtry = 3, nsplit = 0,
+  resample.replace = TRUE, resample.prob = 0.80,
+  seed = 1, ncores = 1, verbose = FALSE
+)
+
+reinforced_pred <- predict(reinforced_fit, testX)
+head(reinforced_pred$Prediction)
+##            [,1]
+## [1,]  2.3363702
+## [2,] -0.6634972
+## [3,]  1.7565052
+## [4,]  0.8463552
+## [5,] -0.1653644
+## [6,]  0.6967331
+```
+
+This shows how to request reinforcement. It does not establish an
+accuracy advantage for either fit. Linear combination splits make a
+different choice: they split along a combined predictor direction, with
+`linear.comb` setting the maximum number of variables in that direction.
+They do not require `reinforcement = TRUE`. See the [linear combination
+guide](https://teazrq.github.io/RLT/articles/linear-combinations.md) for
+a worked example.
+
+## Next steps
+
+The
+[Regression](https://teazrq.github.io/RLT/articles/regression-tutorial.md)
+and
+[Classification](https://teazrq.github.io/RLT/articles/classification-tutorial.md)
+tutorials show numeric and factor predictors, OOB evaluation, and
+held-out predictions. The
+[Survival](https://teazrq.github.io/RLT/articles/survival-tutorial.md)
+tutorial covers censored event times. To repeat an analysis, see [Random
+Seed and
+Reproducibility](https://teazrq.github.io/RLT/articles/feature-seed.md).
+
+## Match the Documentation Revision
+
+For reproducible use, check out the same repository revision used to
+build the documentation and install that checkout. Replace
+`DOCUMENTATION_REVISION` below with the revision linked as **Source
+revision** in the published site’s footer. Use your normal shared R
+library.
+
+``` sh
+git clone https://github.com/teazrq/RLT.git
+cd RLT
+git checkout DOCUMENTATION_REVISION
+git rev-parse HEAD
+R CMD INSTALL .
+```
+
+## CRAN Release
+
+Install the separate CRAN release with:
 
 ``` r
 
 install.packages("RLT")
 ```
 
-### Development Version
+CRAN may offer a binary package for your platform, which avoids local
+compilation. Installing from GitHub requires source compilation and the
+tools described below.
 
-Install the development version from GitHub:
-
-``` r
-
-# install.packages("remotes")
-remotes::install_github("teazrq/RLT")
-```
+## Platform Requirements
 
 ### For Windows Users
 
 Source installation on Windows requires Rtools. Install the matching
 version from [the Rtools
 page](https://cran.r-project.org/bin/windows/Rtools/), then install RLT
-from CRAN or GitHub.
+from GitHub.
 
 ### For macOS Users
 
-When installing RLT on macOS, the process can be slightly trickier. It
-mainly consists of two steps:
+Use Apple’s Xcode Command Line Tools for C++ compilation. Follow the [R
+macOS tools instructions](https://mac.r-project.org/tools/), and consult
+the [download page for your R version and
+architecture](https://cran.r-project.org/bin/macosx/) to identify its
+compiler requirements. Any GNU Fortran compiler and runtime libraries
+used for package compilation must match those used to build your R. The
+gfortran 12.2 installer applies to CRAN R 4.3.0 through 4.4.3; it is not
+a general choice for newer R versions.
 
-#### Step 1: Install Compilers
+### For Linux Users
 
-- Follow [this guide](https://mac.r-project.org/tools/) to install the
-  GNU Fortran compiler:
-  [gfortran-12.2-universal.pkg](https://mac.r-project.org/tools/gfortran-12.2-universal.pkg)
-- If you do not already have Xcode (most systems come with Xcode
-  installed already), you can use this line to install it:
+Install your distribution’s R development tools and a compatible C++
+compiler, including the development libraries required by your R
+installation for BLAS/LAPACK and Fortran linking. See [R’s package
+installation
+instructions](https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Installing-packages).
 
-``` sh
-sudo xcode-select --install
-```
+### Optional OpenMP Parallel Support
 
-#### Step 2: Set Makevars to Point to the Compiler
+OpenMP enables RLT to use multiple CPU cores. A build without OpenMP
+runs serially; increasing `ncores` cannot enable parallelism in that
+build.
 
-Create the Makevars file using:
+On macOS, follow the [R macOS OpenMP
+guide](https://mac.r-project.org/openmp/) and choose the runtime from
+its Xcode/Apple clang compatibility table. For example, that table pairs
+Xcode 14.0 through 14.2 with OpenMP 14.0.6, whereas Xcode 16.3 through
+26.3 uses OpenMP 19.1.5. Apple clang 1700 and later cannot use the older
+runtimes listed there. Check the current table for your installed
+compiler before configuring OpenMP, then reinstall RLT from source.
 
-``` sh
-mkdir ~/.R
-touch ~/.R/Makevars
-```
+Changes to `~/.R/Makevars` affect source builds of other R packages too.
+Review any compiler paths or OpenMP flags there whenever R, macOS, or
+Xcode changes; avoid copying flags intended for a different toolchain.
 
-Check your folder of gfortran. The compiler will be installed to
-`/opt/gfortran` folder as default.
+The current validation covers Windows builds with and without OpenMP.
+macOS and Linux source installation has not been verified for this
+documentation revision.
 
-Add these lines to point to the correct folder of the compiler. You may
-use `open -a TextEdit ~/.R/Makevars` to open a text editor and type in
-these lines:
+## Development Note: Local Documentation Previews
 
-    FC = /opt/gfortran/bin/gfortran
-    F77 = /opt/gfortran/bin/gfortran
-    FLIBS = -L/opt/gfortran/lib
-
-After completing these steps, you should be able to install the RLT
-package using `remotes::install_github("teazrq/RLT")` in RStudio. The
-compilation may require a few minutes.
-
-### OpenMP in macOS
-
-The previous steps would not activate OpenMP parallel computing. To
-enable OpenMP while compiling the RLT package, follow these steps:
-
-#### Step 1: Download and Install LLVM
-
-For example, to install the 14.0.6 version (check the ones that
-compatible with your Xcode version), use:
-
-``` sh
-curl -O https://mac.r-project.org/openmp/openmp-14.0.6-darwin20-Release.tar.gz
-sudo tar fvxz openmp-14.0.6-darwin20-Release.tar.gz -C /
-```
-
-You should then see the following message:
-
-    usr/local/lib/libomp.dylib
-    usr/local/include/ompt.h
-    usr/local/include/omp.h
-    usr/local/include/omp-tools.h
-
-#### Step 2: Add Flags into Makevars
-
-The procedure is the same as we explained previously. You should add
-these two lines into your Makevars file:
-
-    CPPFLAGS += -Xclang -fopenmp
-    LDFLAGS += -lomp
-
-After these two steps, you can then use
-`remotes::install_github("teazrq/RLT", force = TRUE)` to re-install the
-RLT package.
-
-## Load the RLT Package
-
-``` r
-
-library(RLT)
-```
-
-## Next steps
-
-See the
-[Regression](https://teazrq.github.io/RLT/articles/regression-tutorial.md),
-[Classification](https://teazrq.github.io/RLT/articles/classification-tutorial.md),
-and
-[Survival](https://teazrq.github.io/RLT/articles/survival-tutorial.md)
-tutorials to get started with modeling.
+For a local documentation preview, run `R CMD INSTALL .` in that same
+package checkout so the installed package includes its local changes.
+Use your normal shared R library.

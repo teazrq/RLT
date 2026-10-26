@@ -10,13 +10,14 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Single Tree - Tutorial (RLT)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="Single Tree - Tutorial (RLT)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="default" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">RLT</a>
 
@@ -48,7 +49,10 @@
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT" aria-label="GitHub"><span class="fa fa-github fa-lg"></span></a></li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -66,7 +70,7 @@
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
-            <h4 data-toc-skip class="date">Last Updated: July 02,
+            <h4 data-toc-skip class="date">Last Updated: October 26,
 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/teazrq/RLT/blob/master/vignettes/articles/feature-single-tree.Rmd" class="external-link"><code>vignettes/articles/feature-single-tree.Rmd</code></a></small>
@@ -78,8 +82,10 @@ Zhu</h4>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>This page shows how to inspect a single tree grown inside an RLT
-forest using <code><a href="../reference/get.one.tree.html">get.one.tree()</a></code>.</p>
+<p>Use <code><a href="../reference/get.one.tree.html">get.one.tree()</a></code> to inspect the splits and
+terminal-node predictions in one tree of a fitted forest. The example
+below fits an unweighted regression forest with both continuous and
+categorical predictors.</p>
 </div>
 <div class="section level2">
 <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a>
@@ -87,13 +93,10 @@ forest using <code><a href="../reference/get.one.tree.html">get.one.tree()</a></
 <p>We generate continuous and categorical predictors with a continuous
 outcome.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># (Optional) For reproducibility in this tutorial only.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># ---- Generate a small synthetic dataset ----</span></span>
-<span><span class="va">trainn</span> <span class="op">&lt;-</span> <span class="fl">80</span></span>
-<span><span class="va">testn</span>  <span class="op">&lt;-</span> <span class="fl">20</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">80</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span></span>
 <span><span class="co"># Continuous + categorical predictors (last half as factors)</span></span>
@@ -102,74 +105,71 @@ outcome.</p>
 <span></span>
 <span><span class="co"># Continuous outcome with a simple signal + noise</span></span>
 <span><span class="va">X_numeric</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">X1</span>, <span class="va">X2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">X_numeric</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">X_numeric</span><span class="op">[</span>, <span class="fl">2</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fl">2</span> <span class="op">*</span> <span class="op">(</span><span class="va">X_numeric</span><span class="op">[</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">X_numeric</span></span>
 <span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span>, <span class="va">as.factor</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Train / test split</span></span>
-<span><span class="va">trainX</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span>, <span class="op">]</span></span>
-<span><span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span><span class="op">]</span></span>
-<span><span class="va">testX</span>  <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="va">testY</span>  <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<span><span class="va">trainX</span> <span class="op">&lt;-</span> <span class="va">X</span></span>
+<span><span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="fit">Fit<a class="anchor" aria-label="anchor" href="#fit"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("devtools"); devtools::install_github("teazrq/RLT")</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/teazrq/RLT" class="external-link">RLT</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">ntrees</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
-<span><span class="va">ncores</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">nmin</span>   <span class="op">&lt;-</span> <span class="fl">5</span></span>
-<span><span class="va">mtry</span>   <span class="op">&lt;-</span> <span class="va">p</span><span class="op">/</span><span class="fl">2</span></span>
-<span><span class="va">samplereplace</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
-<span><span class="va">sampleprob</span>    <span class="op">&lt;-</span> <span class="fl">0.80</span></span>
-<span><span class="va">rule</span>    <span class="op">&lt;-</span> <span class="st">"best"</span></span>
-<span><span class="va">nsplit</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">rule</span> <span class="op">==</span> <span class="st">"best"</span>, <span class="fl">0</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="va">importance</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/teazrq/RLT" class="external-link">RLT</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">trainX</span>, <span class="va">trainY</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
-<span>  ntrees <span class="op">=</span> <span class="va">ntrees</span>, mtry <span class="op">=</span> <span class="va">mtry</span>, nmin <span class="op">=</span> <span class="va">nmin</span>,</span>
-<span>  resample.prob <span class="op">=</span> <span class="va">sampleprob</span>, split.gen <span class="op">=</span> <span class="va">rule</span>,</span>
-<span>  resample.replace <span class="op">=</span> <span class="va">samplereplace</span>,</span>
-<span>  nsplit <span class="op">=</span> <span class="va">nsplit</span>, importance <span class="op">=</span> <span class="va">importance</span>,</span>
-<span>  param.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
-<span>  ncores <span class="op">=</span> <span class="va">ncores</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  ntrees <span class="op">=</span> <span class="fl">200</span>, mtry <span class="op">=</span> <span class="va">p</span><span class="op">/</span><span class="fl">2</span>, nmin <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  resample.prob <span class="op">=</span> <span class="fl">0.8</span>, resample.replace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  nsplit <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  ncores <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>Setting <code>nsplit = 0</code> searches all available cutpoints for
+each candidate split variable.</p>
 </div>
 <div class="section level2">
 <h2 id="inspect-one-tree">Inspect one tree<a class="anchor" aria-label="anchor" href="#inspect-one-tree"></a>
 </h2>
-<p>Use <code>get.one.tree(&lt;fit&gt;, &lt;tree_id&gt;)</code> to
-inspect a single tree. Choose <code>tree_id</code> from 1 to
-<code>ntrees</code> (here we take the first tree).</p>
+<p>Choose a tree number from 1 to the number of fitted trees. This call
+prints the first tree and invisibly returns a data frame.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Preview the first few printed lines.</span></span>
-<span><span class="va">tree_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="fu"><a href="../reference/get.one.tree.html">get.one.tree</a></span><span class="op">(</span><span class="va">fit</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tree_output</span>, <span class="fl">14</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">## Tree #1  [Regression]</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get.one.tree.html">get.one.tree</a></span><span class="op">(</span><span class="va">fit</span>, tree <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Tree #1  [Regression]</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Node  Depth  Split                                Value      n     NodeAve</span></span>
 <span><span class="co">## ------------------------------------------------------------------------------ </span></span>
-<span><span class="co">##     1     0  X1.1(F)                             8.0000     64      0.0000</span></span>
-<span><span class="co">##     2     1  X1.1(F)                             4.0000     44      0.0000</span></span>
-<span><span class="co">##     3     1  X5                                  1.5463     20      0.0000</span></span>
-<span><span class="co">##     4     2  X2                                  0.8354     22      0.0000</span></span>
-<span><span class="co">##     5     2  X2                                 -0.6395     22      0.0000</span></span>
-<span><span class="co">##     6     3  X5                                  0.7657     18      0.0000</span></span>
-<span><span class="co">##     7     3  *                                        -      4      5.5438</span></span>
-<span><span class="co">##     8     4  X3.1(F)                             6.0000     17      0.0000</span></span>
-<span><span class="co">##     9     4  *                                        -      1      2.9351</span></span>
-<span><span class="co">##    10     5  X4.1(F)                             6.0000      7      0.0000</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">tree_output</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">14</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n... output truncated ...\n"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<span><span class="co">##     1     0  X6(F)                              12.0000     64      0.0000</span></span>
+<span><span class="co">##     2     1  X1                                  0.2375     24      0.0000</span></span>
+<span><span class="co">##     3     1  X4                                  0.1177     40      0.0000</span></span>
+<span><span class="co">##     4     2  X4                                 -0.5699     17      0.0000</span></span>
+<span><span class="co">##     5     2  X2                                 -0.1728      7      0.0000</span></span>
+<span><span class="co">##     6     3  *                                        -      3     -0.8053</span></span>
+<span><span class="co">##     7     3  X5                                  1.2344     14      0.0000</span></span>
+<span><span class="co">##     8     4  *                                        -      4      1.2231</span></span>
+<span><span class="co">##     9     4  X4                                 -0.4458     10      0.0000</span></span>
+<span><span class="co">##    10     5  *                                        -      4      2.6146</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## ... output truncated ...</span></span></code></pre></div>
+<span><span class="co">## ... output truncated ...</span></span></code></pre>
+<p>The preview shows the first few printed rows. <code>Node</code>
+identifies the node, and <code>Depth</code> counts splits from the root,
+whose depth is 0. <code>Split</code> names the predictor, with
+<code>(F)</code> marking a factor and <code>*</code> marking a terminal
+node. For a continuous split, <code>Value</code> is the cutpoint; for a
+factor, it encodes a partition of categories and should not be read as a
+numeric threshold. Terminal nodes display <code>-</code> because they
+have no split value.</p>
+<p>Here <code>n</code> is the number of in-bag observations reaching a
+node, counting repeated draws. At a terminal node, the printed
+<code>NodeAve</code> is the mean response used as that leaf’s
+prediction. The values printed under <code>NodeAve</code> for internal
+nodes are not node means. The returned data frame contains
+<code>Node</code>, <code>Depth</code>, <code>Split</code>,
+<code>Value</code>, and <code>n</code>; <code>NodeAve</code> is part of
+the printed regression display.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -178,11 +178,11 @@ inspect a single tree. Choose <code>tree_id</code> from 1 to
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ruoqing Zhu, Sarah Formentini.</p>
+  <p>Developed by Ruoqing Zhu, Sarah Formentini. Source revision: <a href="https://github.com/teazrq/RLT/tree/398603bb415dc5a9293396cee6145eeeb446b291" class="external-link">398603b</a></p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

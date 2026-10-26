@@ -10,13 +10,14 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Variable Importance (Permutation and Distributed) - Tutorial (RLT)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="Variable Importance (Permutation and Distributed) - Tutorial (RLT)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="default" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">RLT</a>
 
@@ -48,7 +49,10 @@
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT" aria-label="GitHub"><span class="fa fa-github fa-lg"></span></a></li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -66,7 +70,7 @@
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
-            <h4 data-toc-skip class="date">Last Updated: July 02,
+            <h4 data-toc-skip class="date">Last Updated: October 26,
 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/teazrq/RLT/blob/master/vignettes/articles/variable-importance.Rmd" class="external-link"><code>vignettes/articles/variable-importance.Rmd</code></a></small>
@@ -78,8 +82,10 @@ Zhu</h4>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>This page demonstrates how to obtain and visualize variable
-importance (VI) from RLT.</p>
+<p>Variable importance (VI) measures how much a fitted forest relies on
+each predictor for prediction. This page illustrates permutation and
+distributed importance using out-of-bag (OOB) observations, which were
+excluded from fitting the tree in which they are evaluated.</p>
 </div>
 <div class="section level2">
 <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a>
@@ -87,13 +93,10 @@ importance (VI) from RLT.</p>
 <p>We generate continuous and categorical predictors with a continuous
 outcome.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># (Optional) For reproducibility in this tutorial only.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># ---- Generate a small synthetic dataset ----</span></span>
-<span><span class="va">trainn</span> <span class="op">&lt;-</span> <span class="fl">80</span></span>
-<span><span class="va">testn</span>  <span class="op">&lt;-</span> <span class="fl">20</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">80</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span></span>
 <span><span class="co"># Continuous + categorical predictors (last half as factors)</span></span>
@@ -102,102 +105,244 @@ outcome.</p>
 <span></span>
 <span><span class="co"># Continuous outcome with a simple signal + noise</span></span>
 <span><span class="va">X_numeric</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">X1</span>, <span class="va">X2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">X_numeric</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">X_numeric</span><span class="op">[</span>, <span class="fl">2</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fl">2</span> <span class="op">*</span> <span class="op">(</span><span class="va">X_numeric</span><span class="op">[</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">X_numeric</span></span>
 <span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span>, <span class="va">as.factor</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Train / test split</span></span>
-<span><span class="va">trainX</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span>, <span class="op">]</span></span>
-<span><span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span><span class="op">]</span></span>
-<span><span class="va">testX</span>  <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="va">testY</span>  <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<span><span class="va">trainX</span> <span class="op">&lt;-</span> <span class="va">X</span></span>
+<span><span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="option-a---permutation-importance">Option A - Permutation Importance<a class="anchor" aria-label="anchor" href="#option-a---permutation-importance"></a>
 </h2>
-<p>Set <code>importance</code> to enable permutation-based VI during
-training.</p>
+<p>Set <code>importance = "permute"</code> to measure the increase in
+OOB mean squared error after permuting a predictor. Extract the results
+with <code><a href="../reference/importance.html">importance()</a></code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("devtools"); devtools::install_github("teazrq/RLT")</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/teazrq/RLT" class="external-link">RLT</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/teazrq/RLT" class="external-link">RLT</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Minimal, sensible defaults</span></span>
+<span><span class="co"># Common fitting and resampling settings for both illustrations</span></span>
 <span><span class="va">ntrees</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
 <span><span class="va">ncores</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">nmin</span>   <span class="op">&lt;-</span> <span class="fl">5</span></span>
 <span><span class="va">mtry</span>   <span class="op">&lt;-</span> <span class="va">p</span><span class="op">/</span><span class="fl">2</span></span>
 <span><span class="va">samplereplace</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
 <span><span class="va">sampleprob</span>    <span class="op">&lt;-</span> <span class="fl">0.80</span></span>
-<span><span class="va">rule</span>    <span class="op">&lt;-</span> <span class="st">"best"</span></span>
-<span><span class="va">nsplit</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">rule</span> <span class="op">==</span> <span class="st">"best"</span>, <span class="fl">0</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">nsplit</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
 <span><span class="va">fit_perm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">trainX</span>, <span class="va">trainY</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
 <span>  ntrees <span class="op">=</span> <span class="va">ntrees</span>, mtry <span class="op">=</span> <span class="va">mtry</span>, nmin <span class="op">=</span> <span class="va">nmin</span>,</span>
-<span>  resample.prob <span class="op">=</span> <span class="va">sampleprob</span>, split.gen <span class="op">=</span> <span class="va">rule</span>,</span>
+<span>  resample.prob <span class="op">=</span> <span class="va">sampleprob</span>,</span>
 <span>  resample.replace <span class="op">=</span> <span class="va">samplereplace</span>,</span>
 <span>  nsplit <span class="op">=</span> <span class="va">nsplit</span>,</span>
 <span>  importance <span class="op">=</span> <span class="st">"permute"</span>,   <span class="co"># permutation-based VI</span></span>
-<span>  ncores <span class="op">=</span> <span class="va">ncores</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  seed <span class="op">=</span> <span class="fl">1</span>, ncores <span class="op">=</span> <span class="va">ncores</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># VI vector lives in fit$VarImp</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">fit_perm</span><span class="op">$</span><span class="va">VarImp</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">##  num [1:6, 1] -0.0234 0.8466 1.9808 0.6242 0.7664 ...</span></span>
-<span><span class="co">##  - attr(*, "dimnames")=List of 2</span></span>
-<span><span class="co">##   ..$ : chr [1:6] "X1" "X2" "X3" "X4" ...</span></span>
-<span><span class="co">##   ..$ : NULL</span></span></code></pre></div>
+<span><span class="va">vi_perm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/importance.html">importance</a></span><span class="op">(</span><span class="va">fit_perm</span><span class="op">)</span></span>
+<span><span class="va">vi_perm</span></span>
+<span><span class="co">## Variable             VI</span></span>
+<span><span class="co">## -------------------------- </span></span>
+<span><span class="co">## X1              -0.0535</span></span>
+<span><span class="co">## X2               1.6080</span></span>
+<span><span class="co">## X3               0.1293</span></span>
+<span><span class="co">## X4               0.5047</span></span>
+<span><span class="co">## X5               0.5113</span></span>
+<span><span class="co">## X6               2.4947</span></span>
+<span><span class="co">## X7              -0.0116</span></span>
+<span><span class="co">## X8               0.0371</span></span>
+<span><span class="co">## X9               0.0057</span></span>
+<span><span class="co">## X10             -0.1269</span></span></code></pre></div>
+<p>Here <code>nsplit = 0</code> searches all available cutpoints. Each
+tree draws 80% of the sample size with replacement, so some observations
+can be drawn more than once. OOB importance does not require retaining
+the resampling records with <code>resample.track = TRUE</code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Simple visualization</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">fit_perm</span><span class="op">$</span><span class="va">VarImp</span><span class="op">)</span>,</span>
+<span>  <span class="va">vi_perm</span><span class="op">$</span><span class="va">VI</span>,</span>
 <span>  main <span class="op">=</span> <span class="st">"Permutation Variable Importance (RLT)"</span>,</span>
-<span>  ylab <span class="op">=</span> <span class="st">"Importance"</span>,</span>
+<span>  names.arg <span class="op">=</span> <span class="va">vi_perm</span><span class="op">$</span><span class="va">Variable</span>,</span>
+<span>  ylab <span class="op">=</span> <span class="st">"Increase in OOB MSE"</span>,</span>
 <span>  xlab <span class="op">=</span> <span class="st">"Predictors"</span>,</span>
 <span>  las <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="variable-importance_files/figure-html/perm-viz-1.png" class="r-plt" alt="" width="80%" style="display: block; margin: auto;"></p>
+<p><img src="variable-importance_files/figure-html/perm-viz-1.png" class="r-plt" alt="Bar chart of permutation importance for predictors X1 through X10, in predictor order. The vertical axis is the increase in out-of-bag mean squared error after permuting a predictor. Taller bars indicate greater predictive importance; exact values are given in the following table." width="672" height="480" loading="lazy" style="display: block; margin: auto;"></p>
+<p>The simulated response depends on X2 through X6. In this fit, X6 has
+the largest permutation importance. Values near zero or slightly below
+zero indicate little measured loss from permutation in this small
+sample; they do not prove that a variable has no effect.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Predictor <span class="op">=</span> <span class="va">vi_perm</span><span class="op">$</span><span class="va">Variable</span>, Importance <span class="op">=</span> <span class="va">vi_perm</span><span class="op">$</span><span class="va">VI</span><span class="op">)</span>,</span>
+<span>  digits <span class="op">=</span> <span class="fl">3</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  caption <span class="op">=</span> <span class="st">"Permutation importance values used in the bar chart."</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>Permutation importance values used in the bar chart.</caption>
+<thead><tr class="header">
+<th align="left">Predictor</th>
+<th align="right">Importance</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">X1</td>
+<td align="right">-0.053</td>
+</tr>
+<tr class="even">
+<td align="left">X2</td>
+<td align="right">1.608</td>
+</tr>
+<tr class="odd">
+<td align="left">X3</td>
+<td align="right">0.129</td>
+</tr>
+<tr class="even">
+<td align="left">X4</td>
+<td align="right">0.505</td>
+</tr>
+<tr class="odd">
+<td align="left">X5</td>
+<td align="right">0.511</td>
+</tr>
+<tr class="even">
+<td align="left">X6</td>
+<td align="right">2.495</td>
+</tr>
+<tr class="odd">
+<td align="left">X7</td>
+<td align="right">-0.012</td>
+</tr>
+<tr class="even">
+<td align="left">X8</td>
+<td align="right">0.037</td>
+</tr>
+<tr class="odd">
+<td align="left">X9</td>
+<td align="right">0.006</td>
+</tr>
+<tr class="even">
+<td align="left">X10</td>
+<td align="right">-0.127</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section level2">
-<h2 id="option-b---distributed-assignment-importance">Option B - Distributed Assignment Importance<a class="anchor" aria-label="anchor" href="#option-b---distributed-assignment-importance"></a>
+<h2 id="option-b---distributed-importance">Option B - Distributed Importance<a class="anchor" aria-label="anchor" href="#option-b---distributed-importance"></a>
 </h2>
-<p>This configuration assigns importance using distributed attribution
-with OOB tracking. Use <code>importance = "distribute"</code> for
-distributed assignment importance. Unlike permutation importance,
-distributed importance works by probabilistically routing OOB
-observations through the tree when a split on the target variable is
-encountered. This requires sufficient OOB samples per tree — avoid very
-high <code>resample.prob</code> with
-<code>resample.replace = FALSE</code>, which leaves too few OOB
-observations.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>Set <code>importance = "distribute"</code> to route OOB observations
+to both children at splits involving the assessed predictor, with
+probabilities proportional to the child node weights. For regression,
+the method averages squared losses over the resulting terminal-node
+routes, then compares this expected loss with the ordinary OOB loss. It
+does not first average the terminal-node predictions and then compute a
+squared loss.</p>
+<p>The next fit uses the same data and fitting and resampling settings,
+changing only the importance method. Both methods need OOB observations;
+sampling almost all observations without replacement can leave too few
+for importance calculation.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_dist</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">trainX</span>, <span class="va">trainY</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
 <span>  ntrees <span class="op">=</span> <span class="va">ntrees</span>, mtry <span class="op">=</span> <span class="va">mtry</span>, nmin <span class="op">=</span> <span class="va">nmin</span>,</span>
-<span>  split.gen <span class="op">=</span> <span class="va">rule</span>, nsplit <span class="op">=</span> <span class="va">nsplit</span>,</span>
-<span>  resample.prob <span class="op">=</span> <span class="fl">0.632</span>,                <span class="co"># ~63.2% in-bag, ~36.8% OOB</span></span>
-<span>  resample.replace <span class="op">=</span> <span class="cn">FALSE</span>,              <span class="co"># without replacement</span></span>
-<span>  importance <span class="op">=</span> <span class="st">"distribute"</span>,             <span class="co"># distributed assignment VI</span></span>
-<span>  ncores <span class="op">=</span> <span class="va">ncores</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  nsplit <span class="op">=</span> <span class="va">nsplit</span>,</span>
+<span>  resample.prob <span class="op">=</span> <span class="va">sampleprob</span>,</span>
+<span>  resample.replace <span class="op">=</span> <span class="va">samplereplace</span>,</span>
+<span>  importance <span class="op">=</span> <span class="st">"distribute"</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">1</span>, ncores <span class="op">=</span> <span class="va">ncores</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># VI vector lives in fit$VarImp</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">fit_dist</span><span class="op">$</span><span class="va">VarImp</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">##  num [1:6, 1] -0.064 0.915 1.847 0.687 0.98 ...</span></span>
-<span><span class="co">##  - attr(*, "dimnames")=List of 2</span></span>
-<span><span class="co">##   ..$ : chr [1:6] "X1" "X2" "X3" "X4" ...</span></span>
-<span><span class="co">##   ..$ : NULL</span></span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<span><span class="va">vi_dist</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/importance.html">importance</a></span><span class="op">(</span><span class="va">fit_dist</span><span class="op">)</span></span>
+<span><span class="va">vi_dist</span></span>
+<span><span class="co">## Variable             VI</span></span>
+<span><span class="co">## -------------------------- </span></span>
+<span><span class="co">## X1              -0.0453</span></span>
+<span><span class="co">## X2               1.5990</span></span>
+<span><span class="co">## X3               0.1913</span></span>
+<span><span class="co">## X4               0.4246</span></span>
+<span><span class="co">## X5               0.5500</span></span>
+<span><span class="co">## X6               2.4991</span></span>
+<span><span class="co">## X7              -0.0454</span></span>
+<span><span class="co">## X8              -0.0137</span></span>
+<span><span class="co">## X9              -0.0004</span></span>
+<span><span class="co">## X10             -0.1190</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">fit_dist</span><span class="op">$</span><span class="va">VarImp</span><span class="op">)</span>,</span>
+<span>  <span class="va">vi_dist</span><span class="op">$</span><span class="va">VI</span>,</span>
 <span>  main <span class="op">=</span> <span class="st">"Distributed Variable Importance (RLT)"</span>,</span>
-<span>  ylab <span class="op">=</span> <span class="st">"Importance"</span>,</span>
+<span>  names.arg <span class="op">=</span> <span class="va">vi_dist</span><span class="op">$</span><span class="va">Variable</span>,</span>
+<span>  ylab <span class="op">=</span> <span class="st">"Increase in OOB expected squared loss"</span>,</span>
 <span>  xlab <span class="op">=</span> <span class="st">"Predictors"</span>,</span>
 <span>  las <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="variable-importance_files/figure-html/dist-viz-1.png" class="r-plt" alt="" width="80%" style="display: block; margin: auto;"></p>
+<p><img src="variable-importance_files/figure-html/dist-viz-1.png" class="r-plt" alt="Bar chart of distributed importance for predictors X1 through X10, in predictor order. The vertical axis is the increase in out-of-bag expected squared loss from distributed routing at splits on each predictor. Exact values are given in the following table." width="672" height="480" loading="lazy" style="display: block; margin: auto;"></p>
+<p>The largest distributed importance in this fit belongs to X6. Both
+methods describe predictive reliance, but they perturb predictor use
+differently. Their rankings illustrate these two fits; common settings
+do not make the measures equivalent or establish a performance
+comparison. Near-zero or negative distributed importance likewise
+indicates little measured increase in loss, rather than proof that a
+predictor has no effect.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Predictor <span class="op">=</span> <span class="va">vi_dist</span><span class="op">$</span><span class="va">Variable</span>, Importance <span class="op">=</span> <span class="va">vi_dist</span><span class="op">$</span><span class="va">VI</span><span class="op">)</span>,</span>
+<span>  digits <span class="op">=</span> <span class="fl">3</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  caption <span class="op">=</span> <span class="st">"Distributed importance values used in the bar chart."</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<table class="table">
+<caption>Distributed importance values used in the bar chart.</caption>
+<thead><tr class="header">
+<th align="left">Predictor</th>
+<th align="right">Importance</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">X1</td>
+<td align="right">-0.045</td>
+</tr>
+<tr class="even">
+<td align="left">X2</td>
+<td align="right">1.599</td>
+</tr>
+<tr class="odd">
+<td align="left">X3</td>
+<td align="right">0.191</td>
+</tr>
+<tr class="even">
+<td align="left">X4</td>
+<td align="right">0.425</td>
+</tr>
+<tr class="odd">
+<td align="left">X5</td>
+<td align="right">0.550</td>
+</tr>
+<tr class="even">
+<td align="left">X6</td>
+<td align="right">2.499</td>
+</tr>
+<tr class="odd">
+<td align="left">X7</td>
+<td align="right">-0.045</td>
+</tr>
+<tr class="even">
+<td align="left">X8</td>
+<td align="right">-0.014</td>
+</tr>
+<tr class="odd">
+<td align="left">X9</td>
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="left">X10</td>
+<td align="right">-0.119</td>
+</tr>
+</tbody>
+</table>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -206,11 +351,11 @@ observations.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ruoqing Zhu, Sarah Formentini.</p>
+  <p>Developed by Ruoqing Zhu, Sarah Formentini. Source revision: <a href="https://github.com/teazrq/RLT/tree/398603bb415dc5a9293396cee6145eeeb446b291" class="external-link">398603b</a></p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

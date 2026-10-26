@@ -10,13 +10,14 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Random Forest Kernel - Tutorial (RLT)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="Random Forest Kernel - Tutorial (RLT)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="default" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">RLT</a>
 
@@ -48,7 +49,10 @@
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT" aria-label="GitHub"><span class="fa fa-github fa-lg"></span></a></li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -66,7 +70,7 @@
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
-            <h4 data-toc-skip class="date">Last Updated: July 02,
+            <h4 data-toc-skip class="date">Last Updated: October 26,
 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/teazrq/RLT/blob/master/vignettes/articles/feature-kernel.Rmd" class="external-link"><code>vignettes/articles/feature-kernel.Rmd</code></a></small>
@@ -78,14 +82,28 @@ Zhu</h4>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>This page shows how to compute and visualize the random forest kernel
-induced by an RLT forest via <code><a href="../reference/forest.kernel.html">forest.kernel()</a></code>.</p>
+<p>The random forest kernel describes which observations a fitted forest
+groups together. In the ordinary mode of <code><a href="../reference/forest.kernel.html">forest.kernel()</a></code>,
+each matrix entry counts the trees in which the corresponding pair
+shares a terminal node. These raw counts are not normalized observation
+weights for a forest prediction.</p>
+<p>With both <code>X1</code> and <code>X2</code>, the result has one row
+per observation in <code>X1</code> and one column per observation in
+<code>X2</code>. Omitting <code>X2</code> gives a self-kernel for
+<code>X1</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="example-1---axis-aligned">Example 1 - Axis-aligned<a class="anchor" aria-label="anchor" href="#example-1---axis-aligned"></a>
 </h2>
-<p>We build a regression forest using “best” splits and compute kernel
-weights.</p>
+<p>We fit a regression forest with single-variable splits and compute
+leaf-sharing counts between a target point and the training
+observations. Setting <code>nsplit = 0</code> searches all available
+cutpoints.</p>
+<p>This example also uses <code>vs.train = TRUE</code>. That mode
+weights each tree’s leaf-sharing indicator by the reference
+observation’s in-bag multiplicity in that tree. It requires
+<code>resample.track = TRUE</code> when fitting and the original
+training data, in their original row order, as <code>X2</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># ---- Generate a small dataset (about 100 obs) ----</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
@@ -93,14 +111,13 @@ weights.</p>
 <span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="va">p</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Train the forest (axis-aligned "best" splits)</span></span>
+<span><span class="co"># Train the forest with axis-aligned splits</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/teazrq/RLT" class="external-link">RLT</a></span><span class="op">)</span></span>
 <span><span class="va">fit_rect</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">X</span>, <span class="va">y</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
 <span>  ntrees <span class="op">=</span> <span class="fl">300</span>, mtry <span class="op">=</span> <span class="va">p</span>, nmin <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  split.gen <span class="op">=</span> <span class="st">"best"</span>,</span>
+<span>  nsplit <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  resample.prob <span class="op">=</span> <span class="fl">0.8</span>, resample.replace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  importance <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  param.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"resample.track"</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  ncores <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -109,50 +126,69 @@ weights.</p>
 <span><span class="co"># Choose a target point</span></span>
 <span><span class="va">newX</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span><span class="op">)</span>, <span class="fl">1</span>, <span class="va">p</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Forest kernel weights between newX and all X</span></span>
+<span><span class="co"># Leaf-sharing tree counts between newX and all X</span></span>
 <span><span class="va">KW_rect</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/forest.kernel.html">forest.kernel</a></span><span class="op">(</span><span class="va">fit_rect</span>, X1 <span class="op">=</span> <span class="va">newX</span>, X2 <span class="op">=</span> <span class="va">X</span><span class="op">)</span><span class="op">$</span><span class="va">Kernel</span></span>
 <span></span>
-<span><span class="co"># A simple size mapping for visualization (normalized)</span></span>
+<span><span class="co"># Rescale counts only to set circle sizes in the plots</span></span>
 <span><span class="va">size_scale</span> <span class="op">&lt;-</span> <span class="fl">10</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">KW_rect</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">KW_rect</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">op</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># X1 vs X2 (both are signal features)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel - X1 vs X2"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Axis-aligned kernel - X1 vs X2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"bottomright"</span>, <span class="st">"Target Point"</span>, pch <span class="op">=</span> <span class="fl">4</span>, col <span class="op">=</span> <span class="st">"black"</span>, lwd <span class="op">=</span> <span class="fl">5</span>, lty <span class="op">=</span> <span class="cn">NA</span>, cex <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># X1 vs X3 (X3 is noise)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel - X1 vs X3"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Axis-aligned kernel - X1 vs X3"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Optionally, compute kernel inside the original training forest (vs.train = TRUE)</span></span>
+<span><span class="co"># Weight leaf sharing by each training observation's in-bag multiplicity</span></span>
 <span><span class="va">KW_rect_train</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/forest.kernel.html">forest.kernel</a></span><span class="op">(</span><span class="va">fit_rect</span>, X1 <span class="op">=</span> <span class="va">newX</span>, X2 <span class="op">=</span> <span class="va">X</span>, vs.train <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">Kernel</span></span>
 <span><span class="va">size_scale_train</span> <span class="op">&lt;-</span> <span class="fl">10</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">KW_rect_train</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">KW_rect_train</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel (vs.train=TRUE) - X1 vs X2"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Axis-aligned kernel (vs.train=TRUE) - X1 vs X2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale_train</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Another projection</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"deepskyblue"</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"Rectangular kernel - X2 vs X3"</span><span class="op">)</span></span>
+<span>     main <span class="op">=</span> <span class="st">"Axis-aligned kernel - X2 vs X3"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
-<p><img src="feature-kernel_files/figure-html/rect-viz-1.png" class="r-plt" alt="" width="75%" style="display: block; margin: auto;"></p>
+<p><img src="feature-kernel_files/figure-html/rect-viz-1.png" class="r-plt" alt="Four scatterplots of an axis-aligned forest kernel: X1 versus X2, X1 versus X3, X1 versus X2 with vs.train=TRUE, and X2 versus X3. Blue dots are training observations; larger orange circles indicate larger leaf-sharing counts for the target, marked by a black cross. The vs.train panel weights counts by in-bag multiplicity." width="700" height="560" loading="lazy" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
+<p>The panels show leaf sharing with the target at
+<code>(X1, X2, X3) = (0.5, 0.3, 0.5)</code>. Orange circle size
+increases with the count. Compare the two X1/X2 panels to see the effect
+of in-bag multiplicity; the projections containing the noise variable X3
+spread the highlighted observations along a direction that does not
+contribute to the simulated response. These are projections of a
+five-dimensional kernel, so distance to the cross in one panel does not
+fully determine leaf sharing.</p>
+<p>The <code>size_scale</code> calculations rescale each kernel vector
+for plotting. They do not change the returned counts or produce
+prediction weights. Because each vector is rescaled separately, circle
+sizes across panels should be read relative to the other circles in the
+same panel.</p>
 </div>
 <div class="section level2">
 <h2 id="example-2---linear-combination">Example 2 - Linear-combination<a class="anchor" aria-label="anchor" href="#example-2---linear-combination"></a>
 </h2>
-<p>We build a regression forest using random linear-combination splits
-and compute kernel weights.</p>
+<p>We next use sliced inverse regression (SIR) to estimate predictor
+directions for linear-combination splits. Setting
+<code>linear.comb = 2</code> permits up to two variables in a direction,
+and <code>nsplit = 3</code> compares three random candidate cutpoints
+along it.</p>
+<p>This is a separate simulation with a different response, noise level,
+and resampling scheme. The two examples illustrate kernel structure,
+rather than provide a controlled comparison of split methods.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">120</span>; <span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
@@ -162,9 +198,9 @@ and compute kernel weights.</p>
 <span><span class="va">fit_lc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">X</span>, <span class="va">y</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
 <span>  ntrees <span class="op">=</span> <span class="fl">300</span>, mtry <span class="op">=</span> <span class="va">p</span>, nmin <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  split.gen <span class="op">=</span> <span class="st">"random"</span>, nsplit <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  nsplit <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  resample.prob <span class="op">=</span> <span class="fl">0.9</span>, resample.replace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  importance <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  linear.comb <span class="op">=</span> <span class="fl">2</span>, linear.comb.method <span class="op">=</span> <span class="st">"sir"</span>,</span>
 <span>  ncores <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
@@ -179,42 +215,23 @@ and compute kernel weights.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"darkorange"</span>, cex <span class="op">=</span> <span class="va">size_scale_lc</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">newX</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">newX</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"black"</span>, pch <span class="op">=</span> <span class="fl">4</span>, cex <span class="op">=</span> <span class="fl">4</span>, lwd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">"topright"</span>, <span class="st">"Target Point"</span>, pch <span class="op">=</span> <span class="fl">4</span>, col <span class="op">=</span> <span class="st">"black"</span>, lwd <span class="op">=</span> <span class="fl">5</span>, lty <span class="op">=</span> <span class="cn">NA</span>, cex <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="feature-kernel_files/figure-html/lc-viz-1.png" class="r-plt" alt="" width="75%" style="display: block; margin: auto;"></p>
+<p><img src="feature-kernel_files/figure-html/lc-viz-1.png" class="r-plt" alt="Scatterplot of X1 against X3 for the SIR linear-combination forest kernel. Blue dots are training observations, orange circle size increases with the leaf-sharing tree count, and a black cross marks the target at X1=0.5 and X3=0.5." width="672" height="480" loading="lazy" style="display: block; margin: auto;"></p>
+<p>Here the response depends on the sum of X1 and X3. The plot shows
+which observations share terminal nodes with the target across the
+forest. Linear-combination splits can group observations along an
+oblique direction, so a large leaf-sharing count does not require each
+coordinate to be close to the target separately.</p>
 </div>
 <div class="section level2">
-<h2 id="example-3---linear-combination-sir-no-embedded-model">Example 3 - Linear-combination (SIR, no embedded model)<a class="anchor" aria-label="anchor" href="#example-3---linear-combination-sir-no-embedded-model"></a>
+<h2 id="oob-self-kernel">OOB Self-kernel<a class="anchor" aria-label="anchor" href="#oob-self-kernel"></a>
 </h2>
-<p>Fit a model using linear-combination splits without an embedded
-forest; variables are ranked by marginal screening.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.stats.ox.ac.uk/pub/MASS4/" class="external-link">MASS</a></span><span class="op">)</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">300</span></span>
-<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
-<span><span class="va">S</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="va">p</span>, <span class="va">p</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">S</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">S</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">S</span><span class="op">[</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0.9</span></span>
-<span><span class="va">S</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">S</span><span class="op">[</span><span class="fl">3</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">S</span><span class="op">[</span><span class="fl">5</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">S</span><span class="op">[</span><span class="fl">3</span>, <span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">0.3</span></span>
-<span></span>
-<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/MASS/man/mvrnorm.html" class="external-link">mvrnorm</a></span><span class="op">(</span><span class="va">n</span>, mu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">p</span><span class="op">)</span>, Sigma <span class="op">=</span> <span class="va">S</span><span class="op">)</span></span>
-<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">X</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">+</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">X</span><span class="op">[</span>, <span class="fl">5</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">RLTfit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
-<span>  <span class="va">X</span>, <span class="va">y</span>, model <span class="op">=</span> <span class="st">"regression"</span>, obs.w <span class="op">=</span> <span class="va">w</span>,</span>
-<span>  ntrees <span class="op">=</span> <span class="fl">100</span>, ncores <span class="op">=</span> <span class="fl">1</span>, nmin <span class="op">=</span> <span class="fl">20</span>, mtry <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  split.gen <span class="op">=</span> <span class="st">"random"</span>, nsplit <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  resample.prob <span class="op">=</span> <span class="fl">0.8</span>, resample.replace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  linear.comb <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  linear.comb.method <span class="op">=</span> <span class="st">"sir"</span>,</span>
-<span>  importance <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">RLTfit</span><span class="op">$</span><span class="va">Prediction</span>, <span class="va">y</span><span class="op">)</span></span></code></pre></div>
-<p><img src="feature-kernel_files/figure-html/sir-example-1.png" class="r-plt" alt="" width="75%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">RLTfit</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">y</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">## [1] 1.283215</span></span></code></pre></div>
+<p>The separate <code>oob = TRUE</code> mode uses only trees in which
+both observations are out of bag. It requires retained resampling
+records and the original training data as <code>X1</code>, with
+<code>X2</code> omitted. Unlike the ordinary counts shown above, its
+<code>Kernel</code> is normalized by the number of trees where both
+observations are OOB. The returned <code>C</code> and <code>N</code>
+matrices contain the leaf-sharing and joint-OOB counts; see <a href="../reference/forest.kernel.html"><code>forest.kernel()</code></a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -223,11 +240,11 @@ forest; variables are ranked by marginal screening.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ruoqing Zhu, Sarah Formentini.</p>
+  <p>Developed by Ruoqing Zhu, Sarah Formentini. Source revision: <a href="https://github.com/teazrq/RLT/tree/398603bb415dc5a9293396cee6145eeeb446b291" class="external-link">398603b</a></p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

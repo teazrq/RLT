@@ -10,13 +10,14 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Random Seed and Reproducibility - Tutorial (RLT)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="Random Seed and Reproducibility - Tutorial (RLT)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="default" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">RLT</a>
 
@@ -48,7 +49,10 @@
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT" aria-label="GitHub"><span class="fa fa-github fa-lg"></span></a></li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -66,7 +70,7 @@
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
-            <h4 data-toc-skip class="date">Last Updated: July 02,
+            <h4 data-toc-skip class="date">Last Updated: October 26,
 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/teazrq/RLT/blob/master/vignettes/articles/feature-seed.Rmd" class="external-link"><code>vignettes/articles/feature-seed.Rmd</code></a></small>
@@ -78,68 +82,32 @@ Zhu</h4>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>This page explains how to control randomness in your analyses with
-base R’s <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>.</p>
-</div>
-<div class="section level2">
-<h2 id="where-to-set-the-seed">Where to set the seed<a class="anchor" aria-label="anchor" href="#where-to-set-the-seed"></a>
-</h2>
-<p>At the very beginning of your analysis (recommended). This covers
-synthetic data generation and internal resampling randomness in
-<code><a href="../reference/RLT.html">RLT()</a></code>. Or immediately before model fitting if your data are
-fixed and only modeling randomness matters.</p>
-<p><strong>Prerequisites</strong> — See <a href="get-started.html">Get
-Started</a>.</p>
-</div>
-<div class="section level2">
-<h2 id="demonstration-same-seed-same-results-regression">Demonstration — same seed, same results (regression)<a class="anchor" aria-label="anchor" href="#demonstration-same-seed-same-results-regression"></a>
-</h2>
-<p>We run the same pipeline twice with the same seed and compare
-outputs.</p>
+<p>Use <code>RLT(seed = ...)</code> to repeat a forest fit on fixed
+data. Use base R’s <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> to repeat random steps in the
+wider analysis, such as data generation or a random train/test split.
+Keeping these two sources of randomness separate helps you check whether
+a change comes from fitting or from the data.</p>
+<p>Follow <a href="get-started.html">Get Started</a> to install RLT,
+then load the package:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># ---------- Run A (seed = 1) ----------</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/teazrq/RLT" class="external-link">RLT</a></span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="generate-the-data-once">Generate the data once<a class="anchor" aria-label="anchor" href="#generate-the-data-once"></a>
+</h2>
+<p>We use the same numeric and factor predictors, continuous response,
+and held-out split as in the <a href="regression-tutorial.html">Regression Tutorial</a>. The response
+depends on predictors 2 through 6 and an additional categorical effect
+for predictor 6, plus independent Gaussian noise.
+<code>set.seed(1)</code> repeats this data generation; the data remain
+fixed for all fits below.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Small dataset (~100 obs)</span></span>
-<span><span class="va">trainn</span> <span class="op">&lt;-</span> <span class="fl">80</span>; <span class="va">testn</span> <span class="op">&lt;-</span> <span class="fl">20</span>; <span class="va">n</span> <span class="op">&lt;-</span> <span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span>; <span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
-<span><span class="va">X1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">X2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">3</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span>  <span class="co"># integers 0,1,2</span></span>
-<span><span class="va">X_numeric</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">X1</span>, <span class="va">X2</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">X_numeric</span><span class="op">[</span>, <span class="fl">2</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fl">2</span> <span class="op">*</span> <span class="op">(</span><span class="va">X_numeric</span><span class="op">[</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">X_numeric</span></span>
-<span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span>, <span class="va">as.factor</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">trainX</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span>, <span class="op">]</span>; <span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span><span class="op">]</span></span>
-<span><span class="va">testX</span>  <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span>, <span class="op">]</span>; <span class="va">testY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
-<span><span class="co"># Fit</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/teazrq/RLT" class="external-link">RLT</a></span><span class="op">)</span></span>
-<span><span class="va">ntrees</span> <span class="op">&lt;-</span> <span class="fl">200</span>; <span class="va">ncores</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">nmin</span> <span class="op">&lt;-</span> <span class="fl">5</span>; <span class="va">mtry</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">/</span><span class="fl">2</span>; <span class="va">samplereplace</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span>; <span class="va">sampleprob</span> <span class="op">&lt;-</span> <span class="fl">0.80</span></span>
-<span><span class="va">rule</span> <span class="op">&lt;-</span> <span class="st">"best"</span>; <span class="va">nsplit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">rule</span> <span class="op">==</span> <span class="st">"best"</span>, <span class="fl">0</span>, <span class="fl">3</span><span class="op">)</span>; <span class="va">importance</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
-<span></span>
-<span><span class="va">fit_A</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
-<span>  <span class="va">trainX</span>, <span class="va">trainY</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
-<span>  ntrees <span class="op">=</span> <span class="va">ntrees</span>, mtry <span class="op">=</span> <span class="va">mtry</span>, nmin <span class="op">=</span> <span class="va">nmin</span>,</span>
-<span>  resample.prob <span class="op">=</span> <span class="va">sampleprob</span>, split.gen <span class="op">=</span> <span class="va">rule</span>,</span>
-<span>  resample.replace <span class="op">=</span> <span class="va">samplereplace</span>,</span>
-<span>  nsplit <span class="op">=</span> <span class="va">nsplit</span>, importance <span class="op">=</span> <span class="va">importance</span>,</span>
-<span>  param.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
-<span>  ncores <span class="op">=</span> <span class="va">ncores</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">pred_A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_A</span>, <span class="va">testX</span>, ncores <span class="op">=</span> <span class="va">ncores</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">mse_train_A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">fit_A</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">trainY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">mse_test_A</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">pred_A</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">testY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># ---------- Run B (same seed = 1) ----------</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Recreate the same data and pipeline</span></span>
-<span><span class="va">trainn</span> <span class="op">&lt;-</span> <span class="fl">80</span>; <span class="va">testn</span> <span class="op">&lt;-</span> <span class="fl">20</span>; <span class="va">n</span> <span class="op">&lt;-</span> <span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span>; <span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
+<span><span class="va">trainn</span> <span class="op">&lt;-</span> <span class="fl">80</span></span>
+<span><span class="va">testn</span> <span class="op">&lt;-</span> <span class="fl">20</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span><span class="va">X1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">X2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">3</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">X_numeric</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">X1</span>, <span class="va">X2</span><span class="op">)</span></span>
@@ -149,107 +117,98 @@ outputs.</p>
 <span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">X_numeric</span></span>
 <span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span>, <span class="va">as.factor</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">trainX</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span>, <span class="op">]</span>; <span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span><span class="op">]</span></span>
-<span><span class="va">testX</span>  <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span>, <span class="op">]</span>; <span class="va">testY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
+<span><span class="va">trainX</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span>, <span class="op">]</span></span>
+<span><span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span><span class="op">]</span></span>
+<span><span class="va">testX</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="va">testY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="repeat-a-fit-with-the-same-seed">Repeat a fit with the same seed<a class="anchor" aria-label="anchor" href="#repeat-a-fit-with-the-same-seed"></a>
+</h2>
+<p>Both calls use the same data, forest settings, and explicit fitting
+seed. No data are regenerated between them.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_A</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
+<span>  <span class="va">trainX</span>, <span class="va">trainY</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
+<span>  ntrees <span class="op">=</span> <span class="fl">200</span>, mtry <span class="op">=</span> <span class="va">p</span><span class="op">/</span><span class="fl">2</span>, nsplit <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">1</span>, ncores <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
 <span><span class="va">fit_B</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">trainX</span>, <span class="va">trainY</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
-<span>  ntrees <span class="op">=</span> <span class="va">ntrees</span>, mtry <span class="op">=</span> <span class="va">mtry</span>, nmin <span class="op">=</span> <span class="va">nmin</span>,</span>
-<span>  resample.prob <span class="op">=</span> <span class="va">sampleprob</span>, split.gen <span class="op">=</span> <span class="va">rule</span>,</span>
-<span>  resample.replace <span class="op">=</span> <span class="va">samplereplace</span>,</span>
-<span>  nsplit <span class="op">=</span> <span class="va">nsplit</span>, importance <span class="op">=</span> <span class="va">importance</span>,</span>
-<span>  param.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
-<span>  ncores <span class="op">=</span> <span class="va">ncores</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  ntrees <span class="op">=</span> <span class="fl">200</span>, mtry <span class="op">=</span> <span class="va">p</span><span class="op">/</span><span class="fl">2</span>, nsplit <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">1</span>, ncores <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">pred_B</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_B</span>, <span class="va">testX</span>, ncores <span class="op">=</span> <span class="va">ncores</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">mse_train_B</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">fit_B</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">trainY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">mse_test_B</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">pred_B</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">testY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">pred_A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_A</span>, <span class="va">testX</span><span class="op">)</span></span>
+<span><span class="va">pred_B</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_B</span>, <span class="va">testX</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># ---------- Summary for same-seed runs ----------</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  A_Train_MSE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mse_train_A</span>, <span class="fl">6</span><span class="op">)</span>,</span>
-<span>  A_Test_MSE  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mse_test_A</span>, <span class="fl">6</span><span class="op">)</span>,</span>
-<span>  B_Train_MSE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mse_train_B</span>, <span class="fl">6</span><span class="op">)</span>,</span>
-<span>  B_Test_MSE  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mse_test_B</span>, <span class="fl">6</span><span class="op">)</span>,</span>
-<span>  SameSeed_Predictions_Identical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">pred_A</span><span class="op">$</span><span class="va">Prediction</span>, <span class="va">pred_B</span><span class="op">$</span><span class="va">Prediction</span><span class="op">)</span><span class="op">)</span></span>
+<span>  Same_OOB_Predictions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">fit_A</span><span class="op">$</span><span class="va">Prediction</span>, <span class="va">fit_B</span><span class="op">$</span><span class="va">Prediction</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  Same_Test_Predictions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">pred_A</span><span class="op">$</span><span class="va">Prediction</span>, <span class="va">pred_B</span><span class="op">$</span><span class="va">Prediction</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  OOB_MSE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">fit_A</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">trainY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>  Test_MSE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">pred_A</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">testY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">## $A_Train_MSE</span></span>
-<span><span class="co">## [1] 3.456843</span></span>
+<span><span class="co">## $Same_OOB_Predictions</span></span>
+<span><span class="co">## [1] TRUE</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## $A_Test_MSE</span></span>
-<span><span class="co">## [1] 4.086383</span></span>
+<span><span class="co">## $Same_Test_Predictions</span></span>
+<span><span class="co">## [1] TRUE</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## $B_Train_MSE</span></span>
-<span><span class="co">## [1] 3.456843</span></span>
+<span><span class="co">## $OOB_MSE</span></span>
+<span><span class="co">## [1] 3.501257</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## $B_Test_MSE</span></span>
-<span><span class="co">## [1] 4.086383</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## $SameSeed_Predictions_Identical</span></span>
-<span><span class="co">## [1] TRUE</span></span></code></pre></div>
+<span><span class="co">## $Test_MSE</span></span>
+<span><span class="co">## [1] 4.124253</span></span></code></pre></div>
+<p>The two prediction comparisons should be <code>TRUE</code> in the
+same software environment. OOB MSE uses each training observation’s
+out-of-bag prediction, computed only from trees whose resample omitted
+it. Test MSE uses the 20 held-out observations.</p>
 </div>
 <div class="section level2">
-<h2 id="demonstration-different-seed-potentially-different-results">Demonstration — different seed, potentially different results<a class="anchor" aria-label="anchor" href="#demonstration-different-seed-potentially-different-results"></a>
+<h2 id="change-only-the-fitting-seed">Change only the fitting seed<a class="anchor" aria-label="anchor" href="#change-only-the-fitting-seed"></a>
 </h2>
-<p>Now we change the seed and rerun the same pipeline once.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># ---------- Run C (seed = 2) ----------</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">trainn</span> <span class="op">&lt;-</span> <span class="fl">80</span>; <span class="va">testn</span> <span class="op">&lt;-</span> <span class="fl">20</span>; <span class="va">n</span> <span class="op">&lt;-</span> <span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span>; <span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
-<span><span class="va">X1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">X2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fl">3</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">X_numeric</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">X1</span>, <span class="va">X2</span><span class="op">)</span></span>
-<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">X_numeric</span><span class="op">[</span>, <span class="fl">2</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fl">2</span> <span class="op">*</span> <span class="op">(</span><span class="va">X_numeric</span><span class="op">[</span>, <span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">X_numeric</span></span>
-<span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="op">(</span><span class="va">p</span><span class="op">/</span><span class="fl">2</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">p</span><span class="op">]</span>, <span class="va">as.factor</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">trainX</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span>, <span class="op">]</span>; <span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">trainn</span><span class="op">]</span></span>
-<span><span class="va">testX</span>  <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span>, <span class="op">]</span>; <span class="va">testY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="op">(</span><span class="va">trainn</span> <span class="op">+</span> <span class="va">testn</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
-<span><span class="va">fit_C</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
+<p>The next fit changes <code>seed</code> while leaving the data and
+other settings fixed. Resampling and split-candidate selection can
+therefore change, so the resulting predictions may differ.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_C</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span></span>
 <span>  <span class="va">trainX</span>, <span class="va">trainY</span>, model <span class="op">=</span> <span class="st">"regression"</span>,</span>
-<span>  ntrees <span class="op">=</span> <span class="va">ntrees</span>, mtry <span class="op">=</span> <span class="va">mtry</span>, nmin <span class="op">=</span> <span class="va">nmin</span>,</span>
-<span>  resample.prob <span class="op">=</span> <span class="va">sampleprob</span>, split.gen <span class="op">=</span> <span class="va">rule</span>,</span>
-<span>  resample.replace <span class="op">=</span> <span class="va">samplereplace</span>,</span>
-<span>  nsplit <span class="op">=</span> <span class="va">nsplit</span>, importance <span class="op">=</span> <span class="va">importance</span>,</span>
-<span>  param.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
-<span>  ncores <span class="op">=</span> <span class="va">ncores</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  ntrees <span class="op">=</span> <span class="fl">200</span>, mtry <span class="op">=</span> <span class="va">p</span><span class="op">/</span><span class="fl">2</span>, nsplit <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">2</span>, ncores <span class="op">=</span> <span class="fl">1</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">pred_C</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_C</span>, <span class="va">testX</span>, ncores <span class="op">=</span> <span class="va">ncores</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">mse_train_C</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">fit_C</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">trainY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">mse_test_C</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">pred_C</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">testY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">pred_C</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_C</span>, <span class="va">testX</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  C_Train_MSE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mse_train_C</span>, <span class="fl">6</span><span class="op">)</span>,</span>
-<span>  C_Test_MSE  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mse_test_C</span>, <span class="fl">6</span><span class="op">)</span>,</span>
-<span>  DiffSeed_Predictions_EqualTo_RunA <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">pred_C</span><span class="op">$</span><span class="va">Prediction</span>, <span class="va">pred_A</span><span class="op">$</span><span class="va">Prediction</span><span class="op">)</span><span class="op">)</span></span>
+<span>  Same_Test_Predictions_As_A <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">pred_C</span><span class="op">$</span><span class="va">Prediction</span>, <span class="va">pred_A</span><span class="op">$</span><span class="va">Prediction</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  OOB_MSE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">fit_C</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">trainY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>  Test_MSE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">pred_C</span><span class="op">$</span><span class="va">Prediction</span> <span class="op">-</span> <span class="va">testY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">## $C_Train_MSE</span></span>
-<span><span class="co">## [1] 3.323691</span></span>
+<span><span class="co">## $Same_Test_Predictions_As_A</span></span>
+<span><span class="co">## [1] FALSE</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## $C_Test_MSE</span></span>
-<span><span class="co">## [1] 2.306646</span></span>
+<span><span class="co">## $OOB_MSE</span></span>
+<span><span class="co">## [1] 3.430922</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## $DiffSeed_Predictions_EqualTo_RunA</span></span>
-<span><span class="co">## [1] FALSE</span></span></code></pre></div>
+<span><span class="co">## $Test_MSE</span></span>
+<span><span class="co">## [1] 3.955942</span></span></code></pre></div>
+<p>Any difference here comes from fitting randomness on the same
+observations.</p>
 </div>
 <div class="section level2">
-<h2 id="tips">Tips<a class="anchor" aria-label="anchor" href="#tips"></a>
+<h2 id="repeat-the-whole-analysis">Repeat the whole analysis<a class="anchor" aria-label="anchor" href="#repeat-the-whole-analysis"></a>
 </h2>
-<ul>
-<li>Choose any integer you like for the seed; the specific value doesn’t
-matter—consistency does.</li>
-<li>Keep one <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> near the top of your script to make
-the whole workflow reproducible.</li>
-<li>The same pattern works for classification and survival: place
-<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> before data simulation (if any) and before
-<code><a href="../reference/RLT.html">RLT()</a></code>.</li>
-</ul>
+<p>Place <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> before the first random step when you
+want to repeat data generation, a random data split, and subsequent
+analysis together. If <code><a href="../reference/RLT.html">RLT()</a></code> has no explicit
+<code>seed</code>, it draws one from R’s random number generator, so the
+preceding random steps also determine that seed. Supplying
+<code>RLT(seed = ...)</code> makes the fitting seed explicit even if
+earlier random steps change. The same distinction applies to
+classification and survival models.</p>
+<p>Record the data, code, package version, and source revision as well
+as the seed. Fixed seeds do not establish identical numerical results
+across platforms, compilers, or package revisions. See <a href="get-started.html#match-the-documentation-revision">matching the
+documentation revision</a> for source installation details.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -258,11 +217,11 @@ the whole workflow reproducible.</li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ruoqing Zhu, Sarah Formentini.</p>
+  <p>Developed by Ruoqing Zhu, Sarah Formentini. Source revision: <a href="https://github.com/teazrq/RLT/tree/398603bb415dc5a9293396cee6145eeeb446b291" class="external-link">398603b</a></p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

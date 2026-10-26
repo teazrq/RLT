@@ -1,4 +1,4 @@
-# prediction using RLT
+# Predict with an RLT forest
 
 Predict the outcome (regression, classification or survival) using a
 fitted RLT object
@@ -28,15 +28,21 @@ predict(
 
 - testx:
 
-  The testing samples, must have the same structure as the training
-  samples
+  New observations with the training feature structure. If omitted,
+  returns the stored OOB `object$Prediction` directly. For supplied
+  data, labels are matched using the saved training dictionaries;
+  numerical values for encoded features mean integer training codes.
+  Legacy fits require their original dictionaries or refitting before
+  accepting labels.
 
 - var.est:
 
-  Whether to estimate the variance of each testing data. The original
-  forest must be fitted with `var.mode != "none"`. For survival forests,
-  calculates the covariance matrix over all observed time points and
-  calculates critical value for the confidence band.
+  Whether to estimate prediction uncertainty. Fit with an active
+  `var.mode`, or satisfy the requirements for an explicit
+  prediction-time mode described below. Regression returns prediction
+  variance; classification returns variance for each class probability.
+  Survival returns cumulative-hazard covariance over the evaluation
+  times.
 
 - var.mode:
 
@@ -62,11 +68,12 @@ predict(
 
 - band.grid.size:
 
-  An integer specifying the number of time points for confidence band
-  calculation. Default is 0, which uses all unique failure time points.
-  If a positive integer is provided, a subset of time points will be
-  selected using quantiles, skipping the earliest 5% of time points to
-  improve stability.
+  A nonnegative integer specifying the requested maximum number of
+  evaluation time points. Default is 0, which uses all unique failure
+  time points. If a positive integer is provided, a subset of time
+  points will be selected using quantiles from the fifth percentile
+  through the last time point. Quantile selection may return fewer
+  distinct points. A request of 1 selects the fifth-percentile point.
 
 - ...:
 
@@ -74,81 +81,67 @@ predict(
 
 ## Value
 
-A `RLT` prediction object, constructed as a list consisting
+With `testx = NULL`, returns `object$Prediction` directly, without a
+prediction list. Otherwise returns an `RLT` prediction list.
+
+For regression and classification:
 
 - Prediction:
 
-  Prediction
+  Regression: an \\N \times 1\\ numeric matrix. Classification: a factor
+  of predicted labels using the training response levels. Here
+  `N = nrow(testx)`.
+
+- Prob:
+
+  Classification only: an \\N \times K\\ matrix of class probabilities,
+  with columns in the order of the fitted object's `ylabels`, where `K`
+  is the number of classes.
 
 - Variance:
 
-  if `var.est = TRUE` and the fitted object is `var.mode != "none"`
+  When variance estimation is requested, regression prediction variances
+  or an \\N \times K\\ matrix of class-probability variances. Negative
+  variance estimates are returned as `NA`.
 
 **For Survival Forests**
 
-- hazard:
+`Hazard`, `CHF` and `Survival` each have one row per test observation
+and one column per evaluation time. There is no `Prediction` component
+in this list.
 
-  predicted hazard functions
+- Hazard:
 
-- CumHazard:
+  predicted pointwise hazard increments at the selected times
 
-  predicted cumulative hazard function
+- CHF:
+
+  predicted cumulative hazard, accumulated on the complete training grid
+  before selecting evaluation times. On a reduced grid, accumulating
+  only `Hazard` does not in general reproduce `CHF`.
 
 - Survival:
 
-  predicted survival function
+  ordinary forests return `exp(-CHF)`. Linear combination forests return
+  the mean of the tree product-limit survival curves. The
+  [`get.surv.band()`](https://teazrq.github.io/RLT/reference/get.surv.band.md)
+  interface uses `exp(-CHF)` as its reference curve.
 
-- Allhazard:
+- AllHazard:
 
-  if `keep.all = TRUE`, the predicted hazard function for each
-  observation and each tree
-
-- AllCHF:
-
-  if `keep.all = TRUE`, the predicted cumulative hazard function for
-  each observation and each tree
+  if `keep.all = TRUE`, the pointwise hazard increments for each tree,
+  selected time, and observation, in that array order
 
 - Cov:
 
-  if `var.est = TRUE` and the fitted object is `var.mode != "none"`. For
-  each test subject, a matrix of size NFail\\\times\\NFail where NFail
-  is the number of observed failure times in the training data
-
-- Var:
-
-  if `var.est = TRUE` and the fitted object is `var.mode != "none"`.
-  Marginal variance for each subject
+  when variance estimation is requested, an array with one \\T\times T\\
+  cumulative-hazard covariance matrix per test subject, where
+  `T = length(timepoints)`. Its dimensions are time, time, and test
+  observation, in that order.
 
 - timepoints:
 
-  ordered observed failure times from the training data
-
-- MarginalVar:
-
-  if `var.est = TRUE` and the fitted object is `var.mode != "none"`.
-  Marginal variance for each subject from the Cov matrix projected to
-  the nearest positive definite matrix
-
-- MarginalVarSmooth:
-
-  if `var.est = TRUE` and the fitted object is `var.mode != "none"`.
-  Marginal variance for each subject from the Cov matrix projected to
-  the nearest positive definite matrix and then smoothed using Gaussian
-  kernel smoothing
-
-- CVproj:
-
-  if `var.est = TRUE` and the fitted object is `var.mode != "none"`.
-  Critical values to calculate confidence bands around cumulative hazard
-  predictions at several confidence levels. Calculated using
-  `MarginalVar`
-
-- CVprojSmooth:
-
-  if `var.est = TRUE` and the fitted object is `var.mode != "none"`.
-  Critical values to calculate confidence bands around cumulative hazard
-  predictions at several confidence levels. Calculated using
-  `MarginalVarSmooth`
+  ordered evaluation times selected from the training failure grid
 
 ## Examples
 

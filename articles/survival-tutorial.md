@@ -3,9 +3,9 @@
 ## Introduction
 
 This vignette introduces survival analysis with **RLT** (Reinforcement
-Learning Trees). RLT survival forests estimate individual survival,
-hazard, and cumulative hazard functions via ensemble tree methods. Key
-features include:
+Learning Trees). RLT survival forests estimate survival probabilities
+and cumulative hazards for given predictor values, and return hazard
+increments on an observed failure-time grid. Key features include:
 
 - **Three split rules**: logrank (default), suplogrank, and coxgrad.
 - **Linear combination (LC) splits**: combine multiple variables into a
@@ -25,8 +25,8 @@ quickly.
 ## Simulated data
 
 We simulate data from a proportional hazards model with exponential
-event times. The first two predictors carry signal; the rest are noise.
-About 30% of observations are censored.
+event times and independent censoring. The first two predictors carry
+signal; the rest are noise.
 
 ``` r
 
@@ -79,17 +79,19 @@ fit
 #> --------------------------------------
 ```
 
-Predict on new data (or the training data) to obtain survival curves,
-hazards, and cumulative hazards:
+Predict at selected predictor values to obtain survival probabilities,
+hazard increments, and cumulative hazards. Here we use five training
+rows to illustrate the returned values; these predictions use all trees
+and do not evaluate out-of-sample performance.
 
 ``` r
 
 pred <- predict(fit, X[1:5, ])
 
-# Each component is an N x T matrix, where T is the number of unique failure times
+# Each component is an N x T matrix: N subjects and T observed failure times
 str(pred$Survival)      # Survival function S(t)
 #>  num [1:5, 1:124] 1 1 0.98 0.985 1 ...
-str(pred$Hazard)        # Hazard function h(t)
+str(pred$Hazard)        # Hazard increments at the failure times
 #>  num [1:5, 1:124] 0 0 0.02 0.015 0 0.002 0 0 0 0 ...
 str(pred$CHF)           # Cumulative hazard H(t)
 #>  num [1:5, 1:124] 0 0 0.02 0.015 0 0.002 0 0.02 0.015 0 ...
@@ -98,6 +100,10 @@ str(pred$CHF)           # Cumulative hazard H(t)
 pred$Prediction
 #> NULL
 ```
+
+The columns follow `pred$timepoints`. On this full grid, cumulative sums
+of the hazard increments give the cumulative hazard, and an ordinary
+survival forest returns `Survival = exp(-CHF)`.
 
 Plot the predicted survival curve for the first subject:
 
@@ -108,20 +114,36 @@ plot(pred$timepoints, pred$Survival[1, ], type = "s",
      main = "Predicted Survival Curve (Subject 1)")
 ```
 
-![](survival-tutorial_files/figure-html/basic-plot-1.png)
+![Step curve for subject 1, with time on the horizontal axis and
+predicted survival probability on the vertical axis. Survival decreases
+in steps, with the steepest decline early in
+follow-up.](survival-tutorial_files/figure-html/basic-plot-1.png)
+
+Each downward step lowers the estimated probability that subject 1
+survives beyond that time. Flat segments indicate no change in the
+forest’s estimate between the displayed failure times. This is one
+subject’s predicted curve, rather than a survival curve for the whole
+sample.
 
 ## Split rules
 
 RLT provides three splitting criteria for survival trees:
 
-| Rule | Description | Best for |
-|----|----|----|
-| `logrank` | Standard log-rank test statistic (default) | General use, clear hazard differences |
-| `suplogrank` | Supremum (maximum) of the standardized log-rank process over time | Non-proportional hazards, time-varying effects |
-| `coxgrad` | Gradient of Cox partial likelihood | When a Cox-like direction is plausible; supports observation weights |
+| Rule | How it scores a split |
+|----|----|
+| `logrank` | Standard log-rank test statistic (default) |
+| `suplogrank` | Supremum (maximum) of the standardized log-rank process over time |
+| `coxgrad` | Gradient of Cox partial likelihood |
 
-Fit the three rules on the same data and compare out-of-bag error
-estimates:
+The survival `$Error` is one minus the out-of-bag (OOB) concordance
+index, so smaller values indicate better risk ordering. Each
+observation’s OOB predictions use trees fitted without that observation.
+The risk score sums its OOB cumulative hazards over the full
+failure-time grid, with larger scores indicating higher risk. This sum
+is neither the final cumulative hazard nor a time integral. Concordance
+is undefined when no comparable event-time pairs exist.
+
+Fit the three rules on the same data and inspect their OOB errors:
 
 ``` r
 
@@ -137,17 +159,19 @@ c(logrank = fit_lr$Error, suplogrank = fit_slr$Error, coxgrad = fit_cg$Error)
 #>  0.3341685  0.3252302  0.3718174
 ```
 
-In practice, `logrank` is a safe default. `suplogrank` can be
-advantageous when hazard ratios change over time. `coxgrad` is useful
-when you want to incorporate observation weights (see below) or when the
-data follow a Cox-like structure.
+The default is `logrank`. This example compares OOB scores on one
+simulated dataset; it does not establish which rule is best for other
+data.
 
 ## Observation weights
 
-Observation weights are passed via `obs.w`. For survival forests,
-weights are **not** used by `logrank` or `suplogrank` (due to the
-difficulty of weighted variance estimation for the test statistic), but
-they **are** used by `coxgrad`.
+Observation weights are passed via `obs.w`. All three survival split
+rules use them; weighted `logrank` and `suplogrank` account for weights
+in their split-score variance calculation. Weights must be finite and
+nonnegative with positive total mass, and do not change how observations
+are sampled for each tree. The arbitrary positive weights below
+illustrate the syntax; they have no scientific interpretation in this
+simulation.
 
 ``` r
 
@@ -169,16 +193,21 @@ fit_w
 #> --------------------------------------
 ```
 
+Individual zero weights are allowed. See the observation-weight
+restrictions in [`RLT()`](https://teazrq.github.io/RLT/reference/RLT.md)
+for sampled trees with zero total weight.
+
 ## Linear combination splits
 
-When `linear.comb > 1`, each split uses a linear combination of
-`linear.comb` variables instead of a single variable. For survival
-forests, the available methods are:
+When `linear.comb > 1`, a split can combine up to `linear.comb`
+variables in one direction. For survival forests, the available methods
+are:
 
 - `"coxph"` (default): coefficients from a local Cox model fit.
-- `"naive"`: simple correlation-based direction.
+- `"naive"`: direction based on weighted survival score statistics.
 
-Specify these through `param.control`:
+Here `linear.comb = 3` allows up to three variables per split, with a
+local Cox fit determining their coefficients:
 
 ``` r
 
@@ -186,10 +215,8 @@ fit_lc <- RLT(X, y, censor,
               model = "survival",
               ntrees = 100,
               split.rule = "logrank",
-              param.control = list(
-                linear.comb = 3,
-                linear.comb.method = "coxph"
-              ),
+              linear.comb = 3,
+              linear.comb.method = "coxph",
               verbose = FALSE)
 fit_lc
 #> ----------------------------------------
@@ -206,7 +233,9 @@ fit_lc
 #> ----------------------------------------
 ```
 
-Predictions from LC forests have the same structure as standard forests:
+Predictions from LC forests have the same fields as standard forests.
+Their `$Survival` is the mean of the trees’ product-limit survival
+curves, which can differ from `exp(-CHF)`:
 
 ``` r
 
@@ -217,9 +246,10 @@ str(pred_lc$Survival)
 
 ## Variable importance
 
-Set `importance = TRUE` to compute variable importance. The importance
-measure for survival forests is based on the decrease in the splitting
-criterion (logrank, suplogrank, or coxgrad).
+Set `importance = TRUE` to compute variable importance. Survival
+importance measures the decrease in OOB concordance after perturbing a
+variable. OOB outcomes with no comparable pairs cannot supply a defined
+importance contribution.
 
 ``` r
 
@@ -239,32 +269,49 @@ importance(fit_imp)
 #> V5              -0.0007
 ```
 
-When variance estimation is enabled (see next section),
+With matched variance estimation (see next section),
 [`importance()`](https://teazrq.github.io/RLT/reference/importance.md)
-also reports standard errors, Z-scores, and significance codes.
+also reports estimated standard errors, Z-scores, and significance
+codes. Importance or its variance can be unavailable when required
+comparisons are undefined. See the [variable importance
+guide](https://teazrq.github.io/RLT/articles/variable-importance.md) for
+interpretation of these quantities.
 
 ## Variance estimation and confidence bands
 
 RLT supports three variance estimation strategies for survival
 predictions:
 
-- **`"matched"`**: matched-sample U-statistic decomposition. Requires an
-  even number of trees and subsampling without replacement at 50%
-  (automatically adjusted).
+- **`"matched"`**: matched-sample U-statistic decomposition for
+  prediction and importance variance. Uses paired half-samples without
+  replacement and an even number of trees.
 - **`"IJ"`**: infinitesimal jackknife.
-- **`"jack"`**: jackknife variance.
+- **`"jack"`**: jackknife-after-bootstrap.
 
-Enable variance estimation during fitting via `var.mode`, then request
-covariance matrices at prediction time with `var.est = TRUE`.
+The example uses matched mode to estimate covariance of the predicted
+cumulative hazard over time. Its 1,000 trees form 500 matched pairs,
+with `resample.prob = 0.5` and `resample.replace = FALSE` stated
+explicitly. Matched mode enforces these resampling settings and reduces
+an odd tree count to the preceding even number; at least two trees are
+required.
 
-The following example uses `eval = FALSE` because reliable variance
-estimation typically requires many trees (e.g., 1,000+).
+Set `var.mode` during fitting, then request the covariance at prediction
+time with `var.est = TRUE`. Variance estimation generally needs more
+trees than the small fitting examples above. The IJ and jackknife
+alternatives use bootstrap sampling, retain the requested sampling
+proportion, and estimate prediction variance only. All active variance
+modes retain observation tracking and enable distributed importance when
+importance was disabled. See
+[`RLT()`](https://teazrq.github.io/RLT/reference/RLT.md) for the
+resampling details.
 
 ``` r
 
 fit_var <- RLT(X, y, censor,
                model = "survival",
                ntrees = 1000,
+               resample.prob = 0.5,
+               resample.replace = FALSE,
                var.mode = "matched",
                verbose = FALSE)
 
@@ -274,22 +321,44 @@ pred_var <- predict(fit_var, X[1:3, ], var.est = TRUE)
 # pred_var$Cov is a T x T x N array: covariance of the cumulative hazard over time
 str(pred_var$Cov)
 
-# Marginal variances and critical values for bands
-str(pred_var$MarginalVar)
-str(pred_var$CVproj)
+# Marginal standard deviations on the cumulative-hazard scale
+sqrt(diag(pred_var$Cov[, , 1]))
 ```
 
 ### Confidence bands with `get.surv.band()`
 
-Given a prediction object with variance information,
+For given predictor values, a survival confidence band describes
+uncertainty about the conditional survival curve, not a prediction
+interval for an individual’s event time. With `alpha = 0.05`,
 [`get.surv.band()`](https://teazrq.github.io/RLT/reference/get.surv.band.md)
-computes simultaneous confidence bands for the survival function. Two
-approaches are available:
+constructs a nominal 95% simultaneous band over the returned time grid,
+separately for each requested subject. This does not provide joint
+coverage across subjects or continuous-time coverage between grid
+points.
+
+The function transforms a cumulative-hazard band with computed reference
+curve `exp(-pred_var$CHF)`. For ordinary forests this is also the
+returned survival estimate. Linear combination forests instead return a
+mean of tree product-limit curves; the CHF-based calculation does not
+directly estimate the sampling variation of that alternative estimator.
+Two approaches are available:
 
 - **`"naive"`**: uses the full covariance matrix with a Monte Carlo
   critical value.
-- **`"smoothed"`**: GAM-smoothed low-rank covariance plus
-  eigenvalue-ratio weighted residual correction.
+- **`"smoothed"`**: smooths the covariance and uses a low-rank
+  approximation with a residual correction to form marginal
+  standardizing scales.
+
+Both approaches simulate with the original supplied covariance. For the
+smoothed approach, `k_rank` controls the rank of the approximation used
+for the marginal scales. In either approach, `nsim` controls the number
+of simulations used to estimate the critical value; increasing it
+reduces Monte Carlo variability at the cost of runtime. See the
+[confidence-band
+tutorial](https://teazrq.github.io/RLT/articles/confidence-interval.md)
+and
+[`get.surv.band()`](https://teazrq.github.io/RLT/reference/get.surv.band.md)
+for rank selection and covariance details.
 
 ``` r
 
@@ -302,9 +371,9 @@ band_smooth <- get.surv.band(pred_var, i = 1, alpha = 0.05,
                              approach = "smoothed",
                              nsim = 5000, k_rank = 10)
 
-# Plot survival curve with naive band
+# Plot the reference curve for the CHF-based naive band
 t <- band_naive$timepoints
-plot(t, pred_var$Survival[1, ], type = "s", ylim = c(0, 1),
+plot(t, exp(-pred_var$CHF[1, ]), type = "s", ylim = c(0, 1),
      xlab = "Time", ylab = "Survival",
      main = "Survival Curve with 95% Confidence Band")
 lines(t, band_naive$Subject1$lower, type = "s", col = "blue", lty = 2)
@@ -327,6 +396,15 @@ on a reduced quantile-based grid:
 pred_reduced <- predict(fit_var, X[1:3, ], var.est = TRUE, band.grid.size = 50)
 length(pred_reduced$timepoints)  # <= 50 time points
 ```
+
+The requested size is a maximum because selected quantiles can coincide.
+Cumulative hazards still include increments at all earlier failure
+times. Therefore, on a reduced grid, `cumsum(pred_reduced$Hazard[1, ])`
+need not equal `pred_reduced$CHF[1, ]`. Bands describe the selected
+grid, not simultaneous coverage between omitted times. See
+[`predict()`](https://rdrr.io/r/stats/predict.html) for grid-selection
+details and [`RLT()`](https://teazrq.github.io/RLT/reference/RLT.md) for
+the full failure-time grid retained during fitting.
 
 ## Inspecting individual trees
 
@@ -398,9 +476,9 @@ if (length(tree_output) > 14) {
   and `$CHF`.
 - Choose `split.rule` among `"logrank"`, `"suplogrank"`, and
   `"coxgrad"`.
-- Use `obs.w` with `split.rule = "coxgrad"` for weighted splits.
-- Enable LC splits via
-  `param.control = list(linear.comb = k, linear.comb.method = "coxph")`.
+- Use `obs.w` for weighted fitting with any of the three split rules.
+- Allow up to `k` variables per LC split with
+  `linear.comb = k, linear.comb.method = "coxph"`.
 - Request variable importance with `importance = TRUE` and inspect via
   `importance(fit)`.
 - Estimate prediction variance with `var.mode = "matched"` / `"IJ"` /

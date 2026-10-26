@@ -32,8 +32,12 @@ testX <- X[-train_id, ]
 testY <- y[-train_id]
 ```
 
-Fit a regression forest that considers three-variable linear
-combinations at a split.
+Fit a regression forest that considers linear combinations of up to
+three variables at a split. Here `linear.comb.method = "sir"` selects
+sliced inverse regression (SIR), which uses the response to estimate a
+predictor direction. The tree then searches for a cutpoint along that
+direction. With `nsplit = 3`, it compares three random candidate
+cutpoints; `nsplit = 0` would search all available cutpoints.
 
 ``` r
 
@@ -45,7 +49,6 @@ fit_lc <- RLT(
   ntrees = 200,
   nmin = 5,
   mtry = 3,
-  split.gen = "random",
   nsplit = 3,
   linear.comb = 3,
   linear.comb.method = "sir",
@@ -68,27 +71,31 @@ print(fit_lc)
 ## ------------------------------------------
 ```
 
+Linear combinations do not require `reinforcement = TRUE`; this fit uses
+the default `reinforcement = FALSE`.
+
 ## Prediction
 
 ``` r
 
 pred <- predict(fit_lc, testX, ncores = 1)
-test_pred <- if (is.list(pred) && !is.null(pred$Prediction)) {
-  pred$Prediction
-} else {
-  as.numeric(pred)
-}
+test_pred <- pred$Prediction
 
 list(
   Test_MSE = round(mean((test_pred - testY)^2), 4),
-  Linear_Combination_Size = fit_lc$parameters$linear.comb
+  Maximum_Combination_Size = fit_lc$parameters$linear.comb
 )
 ## $Test_MSE
 ## [1] 0.7021
 ## 
-## $Linear_Combination_Size
+## $Maximum_Combination_Size
 ## [1] 3
 ```
+
+The held-out mean squared error summarizes prediction error on the 40
+observations excluded from fitting. It describes this simulated dataset
+and fit. The stored combination setting confirms the maximum of three
+variables, not the number used at every split.
 
 ## Other Model Types
 

@@ -10,13 +10,14 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="RLT with Linear Combinations">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="RLT with Linear Combinations">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="default" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">RLT</a>
 
@@ -48,7 +49,10 @@
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT" aria-label="GitHub"><span class="fa fa-github fa-lg"></span></a></li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -66,7 +70,7 @@
                         <h4 data-toc-skip class="author">Ruoqing
 Zhu</h4>
             
-            <h4 data-toc-skip class="date">Last Updated: July 02,
+            <h4 data-toc-skip class="date">Last Updated: October 26,
 2026</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/teazrq/RLT/blob/master/vignettes/articles/linear-combinations.Rmd" class="external-link"><code>vignettes/articles/linear-combinations.Rmd</code></a></small>
@@ -105,8 +109,13 @@ and choosing a model-appropriate <code>linear.comb.method</code>.</p>
 <span><span class="va">trainY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="va">train_id</span><span class="op">]</span></span>
 <span><span class="va">testX</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="op">-</span><span class="va">train_id</span>, <span class="op">]</span></span>
 <span><span class="va">testY</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="op">-</span><span class="va">train_id</span><span class="op">]</span></span></code></pre></div>
-<p>Fit a regression forest that considers three-variable linear
-combinations at a split.</p>
+<p>Fit a regression forest that considers linear combinations of up to
+three variables at a split. Here <code>linear.comb.method = "sir"</code>
+selects sliced inverse regression (SIR), which uses the response to
+estimate a predictor direction. The tree then searches for a cutpoint
+along that direction. With <code>nsplit = 3</code>, it compares three
+random candidate cutpoints; <code>nsplit = 0</code> would search all
+available cutpoints.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/teazrq/RLT" class="external-link">RLT</a></span><span class="op">)</span></span>
 <span></span>
@@ -116,7 +125,6 @@ combinations at a split.</p>
 <span>  ntrees <span class="op">=</span> <span class="fl">200</span>,</span>
 <span>  nmin <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  mtry <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  split.gen <span class="op">=</span> <span class="st">"random"</span>,</span>
 <span>  nsplit <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  linear.comb <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  linear.comb.method <span class="op">=</span> <span class="st">"sir"</span>,</span>
@@ -137,27 +145,29 @@ combinations at a split.</p>
 <span><span class="co">##           importance = none</span></span>
 <span><span class="co">##             OOB MSE = 0.4451 (R2 = 0.7977)</span></span>
 <span><span class="co">## ------------------------------------------</span></span></code></pre></div>
+<p>Linear combinations do not require <code>reinforcement = TRUE</code>;
+this fit uses the default <code>reinforcement = FALSE</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="prediction">Prediction<a class="anchor" aria-label="anchor" href="#prediction"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_lc</span>, <span class="va">testX</span>, ncores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">test_pred</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">is.list</a></span><span class="op">(</span><span class="va">pred</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">pred</span><span class="op">$</span><span class="va">Prediction</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">pred</span><span class="op">$</span><span class="va">Prediction</span></span>
-<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">pred</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<span><span class="va">test_pred</span> <span class="op">&lt;-</span> <span class="va">pred</span><span class="op">$</span><span class="va">Prediction</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  Test_MSE <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">test_pred</span> <span class="op">-</span> <span class="va">testY</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>,</span>
-<span>  Linear_Combination_Size <span class="op">=</span> <span class="va">fit_lc</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">linear.comb</span></span>
+<span>  Maximum_Combination_Size <span class="op">=</span> <span class="va">fit_lc</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">linear.comb</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">## $Test_MSE</span></span>
 <span><span class="co">## [1] 0.7021</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## $Linear_Combination_Size</span></span>
+<span><span class="co">## $Maximum_Combination_Size</span></span>
 <span><span class="co">## [1] 3</span></span></code></pre></div>
+<p>The held-out mean squared error summarizes prediction error on the 40
+observations excluded from fitting. It describes this simulated dataset
+and fit. The stored combination setting confirms the maximum of three
+variables, not the number used at every split.</p>
 </div>
 <div class="section level2">
 <h2 id="other-model-types">Other Model Types<a class="anchor" aria-label="anchor" href="#other-model-types"></a>
@@ -175,11 +185,11 @@ as <code>"coxph"</code> or <code>"naive"</code>.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ruoqing Zhu, Sarah Formentini.</p>
+  <p>Developed by Ruoqing Zhu, Sarah Formentini. Source revision: <a href="https://github.com/teazrq/RLT/tree/398603bb415dc5a9293396cee6145eeeb446b291" class="external-link">398603b</a></p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

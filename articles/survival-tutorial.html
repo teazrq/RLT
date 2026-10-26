@@ -10,13 +10,14 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="RLT Survival Analysis Tutorial">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<script src="../extra.js"></script><meta property="og:title" content="RLT Survival Analysis Tutorial">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="default" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">RLT</a>
 
@@ -48,7 +49,10 @@
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT" aria-label="GitHub"><span class="fa fa-github fa-lg"></span></a></li>
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/teazrq/RLT/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -75,9 +79,10 @@
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>This vignette introduces survival analysis with <strong>RLT</strong>
-(Reinforcement Learning Trees). RLT survival forests estimate individual
-survival, hazard, and cumulative hazard functions via ensemble tree
-methods. Key features include:</p>
+(Reinforcement Learning Trees). RLT survival forests estimate survival
+probabilities and cumulative hazards for given predictor values, and
+return hazard increments on an observed failure-time grid. Key features
+include:</p>
 <ul>
 <li>
 <strong>Three split rules</strong>: logrank (default), suplogrank,
@@ -102,8 +107,8 @@ quickly.</p>
 <h2 id="simulated-data">Simulated data<a class="anchor" aria-label="anchor" href="#simulated-data"></a>
 </h2>
 <p>We simulate data from a proportional hazards model with exponential
-event times. The first two predictors carry signal; the rest are noise.
-About 30% of observations are censored.</p>
+event times and independent censoring. The first two predictors carry
+signal; the rest are noise.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
@@ -151,15 +156,17 @@ argument is the censoring indicator (<code>1</code> = event observed,
 <span><span class="co">#&gt;           importance = none</span></span>
 <span><span class="co">#&gt;           OOB error = 0.3283</span></span>
 <span><span class="co">#&gt; --------------------------------------</span></span></code></pre></div>
-<p>Predict on new data (or the training data) to obtain survival curves,
-hazards, and cumulative hazards:</p>
+<p>Predict at selected predictor values to obtain survival
+probabilities, hazard increments, and cumulative hazards. Here we use
+five training rows to illustrate the returned values; these predictions
+use all trees and do not evaluate out-of-sample performance.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Each component is an N x T matrix, where T is the number of unique failure times</span></span>
+<span><span class="co"># Each component is an N x T matrix: N subjects and T observed failure times</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred</span><span class="op">$</span><span class="va">Survival</span><span class="op">)</span>      <span class="co"># Survival function S(t)</span></span>
 <span><span class="co">#&gt;  num [1:5, 1:124] 1 1 0.98 0.985 1 ...</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred</span><span class="op">$</span><span class="va">Hazard</span><span class="op">)</span>        <span class="co"># Hazard function h(t)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred</span><span class="op">$</span><span class="va">Hazard</span><span class="op">)</span>        <span class="co"># Hazard increments at the failure times</span></span>
 <span><span class="co">#&gt;  num [1:5, 1:124] 0 0 0.02 0.015 0 0.002 0 0 0 0 ...</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred</span><span class="op">$</span><span class="va">CHF</span><span class="op">)</span>           <span class="co"># Cumulative hazard H(t)</span></span>
 <span><span class="co">#&gt;  num [1:5, 1:124] 0 0 0.02 0.015 0 0.002 0 0.02 0.015 0 ...</span></span>
@@ -167,12 +174,21 @@ hazards, and cumulative hazards:</p>
 <span><span class="co"># For survival forests, $Prediction is NULL</span></span>
 <span><span class="va">pred</span><span class="op">$</span><span class="va">Prediction</span></span>
 <span><span class="co">#&gt; NULL</span></span></code></pre></div>
+<p>The columns follow <code>pred$timepoints</code>. On this full grid,
+cumulative sums of the hazard increments give the cumulative hazard, and
+an ordinary survival forest returns
+<code>Survival = exp(-CHF)</code>.</p>
 <p>Plot the predicted survival curve for the first subject:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">pred</span><span class="op">$</span><span class="va">timepoints</span>, <span class="va">pred</span><span class="op">$</span><span class="va">Survival</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span>, type <span class="op">=</span> <span class="st">"s"</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time"</span>, ylab <span class="op">=</span> <span class="st">"Survival Probability"</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"Predicted Survival Curve (Subject 1)"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="survival-tutorial_files/figure-html/basic-plot-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="survival-tutorial_files/figure-html/basic-plot-1.png" class="r-plt" alt="Step curve for subject 1, with time on the horizontal axis and predicted survival probability on the vertical axis. Survival decreases in steps, with the steepest decline early in follow-up." width="700" height="433" loading="lazy"></p>
+<p>Each downward step lowers the estimated probability that subject 1
+survives beyond that time. Flat segments indicate no change in the
+forest’s estimate between the displayed failure times. This is one
+subject’s predicted curve, rather than a survival curve for the whole
+sample.</p>
 </div>
 <div class="section level2">
 <h2 id="split-rules">Split rules<a class="anchor" aria-label="anchor" href="#split-rules"></a>
@@ -181,36 +197,37 @@ hazards, and cumulative hazards:</p>
 <table class="table">
 <colgroup>
 <col width="20%">
-<col width="44%">
-<col width="34%">
+<col width="79%">
 </colgroup>
 <thead><tr class="header">
 <th>Rule</th>
-<th>Description</th>
-<th>Best for</th>
+<th>How it scores a split</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>logrank</code></td>
 <td>Standard log-rank test statistic (default)</td>
-<td>General use, clear hazard differences</td>
 </tr>
 <tr class="even">
 <td><code>suplogrank</code></td>
 <td>Supremum (maximum) of the standardized log-rank process over
 time</td>
-<td>Non-proportional hazards, time-varying effects</td>
 </tr>
 <tr class="odd">
 <td><code>coxgrad</code></td>
 <td>Gradient of Cox partial likelihood</td>
-<td>When a Cox-like direction is plausible; supports observation
-weights</td>
 </tr>
 </tbody>
 </table>
-<p>Fit the three rules on the same data and compare out-of-bag error
-estimates:</p>
+<p>The survival <code>$Error</code> is one minus the out-of-bag (OOB)
+concordance index, so smaller values indicate better risk ordering. Each
+observation’s OOB predictions use trees fitted without that observation.
+The risk score sums its OOB cumulative hazards over the full
+failure-time grid, with larger scores indicating higher risk. This sum
+is neither the final cumulative hazard nor a time integral. Concordance
+is undefined when no comparable event-time pairs exist.</p>
+<p>Fit the three rules on the same data and inspect their OOB
+errors:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_lr</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, <span class="va">censor</span>, model <span class="op">=</span> <span class="st">"survival"</span>, ntrees <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>               split.rule <span class="op">=</span> <span class="st">"logrank"</span>,  verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -222,20 +239,20 @@ estimates:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>logrank <span class="op">=</span> <span class="va">fit_lr</span><span class="op">$</span><span class="va">Error</span>, suplogrank <span class="op">=</span> <span class="va">fit_slr</span><span class="op">$</span><span class="va">Error</span>, coxgrad <span class="op">=</span> <span class="va">fit_cg</span><span class="op">$</span><span class="va">Error</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    logrank suplogrank    coxgrad </span></span>
 <span><span class="co">#&gt;  0.3341685  0.3252302  0.3718174</span></span></code></pre></div>
-<p>In practice, <code>logrank</code> is a safe default.
-<code>suplogrank</code> can be advantageous when hazard ratios change
-over time. <code>coxgrad</code> is useful when you want to incorporate
-observation weights (see below) or when the data follow a Cox-like
-structure.</p>
+<p>The default is <code>logrank</code>. This example compares OOB scores
+on one simulated dataset; it does not establish which rule is best for
+other data.</p>
 </div>
 <div class="section level2">
 <h2 id="observation-weights">Observation weights<a class="anchor" aria-label="anchor" href="#observation-weights"></a>
 </h2>
-<p>Observation weights are passed via <code>obs.w</code>. For survival
-forests, weights are <strong>not</strong> used by <code>logrank</code>
-or <code>suplogrank</code> (due to the difficulty of weighted variance
-estimation for the test statistic), but they <strong>are</strong> used
-by <code>coxgrad</code>.</p>
+<p>Observation weights are passed via <code>obs.w</code>. All three
+survival split rules use them; weighted <code>logrank</code> and
+<code>suplogrank</code> account for weights in their split-score
+variance calculation. Weights must be finite and nonnegative with
+positive total mass, and do not change how observations are sampled for
+each tree. The arbitrary positive weights below illustrate the syntax;
+they have no scientific interpretation in this simulation.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
 <span><span class="va">fit_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, <span class="va">censor</span>, model <span class="op">=</span> <span class="st">"survival"</span>, ntrees <span class="op">=</span> <span class="fl">100</span>,</span>
@@ -253,30 +270,33 @@ by <code>coxgrad</code>.</p>
 <span><span class="co">#&gt;           importance = none</span></span>
 <span><span class="co">#&gt;           OOB error = 0.3717</span></span>
 <span><span class="co">#&gt; --------------------------------------</span></span></code></pre></div>
+<p>Individual zero weights are allowed. See the observation-weight
+restrictions in <code><a href="../reference/RLT.html">RLT()</a></code> for sampled trees with zero total
+weight.</p>
 </div>
 <div class="section level2">
 <h2 id="linear-combination-splits">Linear combination splits<a class="anchor" aria-label="anchor" href="#linear-combination-splits"></a>
 </h2>
-<p>When <code>linear.comb &gt; 1</code>, each split uses a linear
-combination of <code>linear.comb</code> variables instead of a single
-variable. For survival forests, the available methods are:</p>
+<p>When <code>linear.comb &gt; 1</code>, a split can combine up to
+<code>linear.comb</code> variables in one direction. For survival
+forests, the available methods are:</p>
 <ul>
 <li>
 <code>"coxph"</code> (default): coefficients from a local Cox model
 fit.</li>
 <li>
-<code>"naive"</code>: simple correlation-based direction.</li>
+<code>"naive"</code>: direction based on weighted survival score
+statistics.</li>
 </ul>
-<p>Specify these through <code>param.control</code>:</p>
+<p>Here <code>linear.comb = 3</code> allows up to three variables per
+split, with a local Cox fit determining their coefficients:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_lc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, <span class="va">censor</span>,</span>
 <span>              model <span class="op">=</span> <span class="st">"survival"</span>,</span>
 <span>              ntrees <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>              split.rule <span class="op">=</span> <span class="st">"logrank"</span>,</span>
-<span>              param.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>                linear.comb <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>                linear.comb.method <span class="op">=</span> <span class="st">"coxph"</span></span>
-<span>              <span class="op">)</span>,</span>
+<span>              linear.comb <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>              linear.comb.method <span class="op">=</span> <span class="st">"coxph"</span>,</span>
 <span>              verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit_lc</span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
@@ -291,8 +311,9 @@ fit.</li>
 <span><span class="co">#&gt;           importance = none</span></span>
 <span><span class="co">#&gt;           OOB error = 0.3148</span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span></code></pre></div>
-<p>Predictions from LC forests have the same structure as standard
-forests:</p>
+<p>Predictions from LC forests have the same fields as standard forests.
+Their <code>$Survival</code> is the mean of the trees’ product-limit
+survival curves, which can differ from <code>exp(-CHF)</code>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred_lc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_lc</span>, <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_lc</span><span class="op">$</span><span class="va">Survival</span><span class="op">)</span></span>
@@ -302,8 +323,9 @@ forests:</p>
 <h2 id="variable-importance">Variable importance<a class="anchor" aria-label="anchor" href="#variable-importance"></a>
 </h2>
 <p>Set <code>importance = TRUE</code> to compute variable importance.
-The importance measure for survival forests is based on the decrease in
-the splitting criterion (logrank, suplogrank, or coxgrad).</p>
+Survival importance measures the decrease in OOB concordance after
+perturbing a variable. OOB outcomes with no comparable pairs cannot
+supply a defined importance contribution.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, <span class="va">censor</span>,</span>
 <span>               model <span class="op">=</span> <span class="st">"survival"</span>,</span>
@@ -319,9 +341,11 @@ the splitting criterion (logrank, suplogrank, or coxgrad).</p>
 <span><span class="co">#&gt; V3               0.0038</span></span>
 <span><span class="co">#&gt; V4              -0.0008</span></span>
 <span><span class="co">#&gt; V5              -0.0007</span></span></code></pre></div>
-<p>When variance estimation is enabled (see next section),
-<code><a href="../reference/importance.html">importance()</a></code> also reports standard errors, Z-scores, and
-significance codes.</p>
+<p>With matched variance estimation (see next section),
+<code><a href="../reference/importance.html">importance()</a></code> also reports estimated standard errors,
+Z-scores, and significance codes. Importance or its variance can be
+unavailable when required comparisons are undefined. See the <a href="variable-importance.html">variable importance guide</a> for
+interpretation of these quantities.</p>
 </div>
 <div class="section level2">
 <h2 id="variance-estimation-and-confidence-bands">Variance estimation and confidence bands<a class="anchor" aria-label="anchor" href="#variance-estimation-and-confidence-bands"></a>
@@ -331,22 +355,34 @@ predictions:</p>
 <ul>
 <li>
 <strong><code>"matched"</code></strong>: matched-sample U-statistic
-decomposition. Requires an even number of trees and subsampling without
-replacement at 50% (automatically adjusted).</li>
+decomposition for prediction and importance variance. Uses paired
+half-samples without replacement and an even number of trees.</li>
 <li>
 <strong><code>"IJ"</code></strong>: infinitesimal jackknife.</li>
 <li>
-<strong><code>"jack"</code></strong>: jackknife variance.</li>
+<strong><code>"jack"</code></strong>:
+jackknife-after-bootstrap.</li>
 </ul>
-<p>Enable variance estimation during fitting via <code>var.mode</code>,
-then request covariance matrices at prediction time with
-<code>var.est = TRUE</code>.</p>
-<p>The following example uses <code>eval = FALSE</code> because reliable
-variance estimation typically requires many trees (e.g., 1,000+).</p>
+<p>The example uses matched mode to estimate covariance of the predicted
+cumulative hazard over time. Its 1,000 trees form 500 matched pairs,
+with <code>resample.prob = 0.5</code> and
+<code>resample.replace = FALSE</code> stated explicitly. Matched mode
+enforces these resampling settings and reduces an odd tree count to the
+preceding even number; at least two trees are required.</p>
+<p>Set <code>var.mode</code> during fitting, then request the covariance
+at prediction time with <code>var.est = TRUE</code>. Variance estimation
+generally needs more trees than the small fitting examples above. The IJ
+and jackknife alternatives use bootstrap sampling, retain the requested
+sampling proportion, and estimate prediction variance only. All active
+variance modes retain observation tracking and enable distributed
+importance when importance was disabled. See <code><a href="../reference/RLT.html">RLT()</a></code> for the
+resampling details.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_var</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/RLT.html">RLT</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, <span class="va">censor</span>,</span>
 <span>               model <span class="op">=</span> <span class="st">"survival"</span>,</span>
 <span>               ntrees <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>               resample.prob <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>               resample.replace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>               var.mode <span class="op">=</span> <span class="st">"matched"</span>,</span>
 <span>               verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
@@ -356,23 +392,41 @@ variance estimation typically requires many trees (e.g., 1,000+).</p>
 <span><span class="co"># pred_var$Cov is a T x T x N array: covariance of the cumulative hazard over time</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_var</span><span class="op">$</span><span class="va">Cov</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Marginal variances and critical values for bands</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_var</span><span class="op">$</span><span class="va">MarginalVar</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pred_var</span><span class="op">$</span><span class="va">CVproj</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Marginal standard deviations on the cumulative-hazard scale</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">pred_var</span><span class="op">$</span><span class="va">Cov</span><span class="op">[</span>, , <span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="confidence-bands-with-get-surv-band">Confidence bands with <code>get.surv.band()</code><a class="anchor" aria-label="anchor" href="#confidence-bands-with-get-surv-band"></a>
 </h3>
-<p>Given a prediction object with variance information,
-<code><a href="../reference/get.surv.band.html">get.surv.band()</a></code> computes simultaneous confidence bands for
-the survival function. Two approaches are available:</p>
+<p>For given predictor values, a survival confidence band describes
+uncertainty about the conditional survival curve, not a prediction
+interval for an individual’s event time. With <code>alpha = 0.05</code>,
+<code><a href="../reference/get.surv.band.html">get.surv.band()</a></code> constructs a nominal 95% simultaneous band
+over the returned time grid, separately for each requested subject. This
+does not provide joint coverage across subjects or continuous-time
+coverage between grid points.</p>
+<p>The function transforms a cumulative-hazard band with computed
+reference curve <code>exp(-pred_var$CHF)</code>. For ordinary forests
+this is also the returned survival estimate. Linear combination forests
+instead return a mean of tree product-limit curves; the CHF-based
+calculation does not directly estimate the sampling variation of that
+alternative estimator. Two approaches are available:</p>
 <ul>
 <li>
 <strong><code>"naive"</code></strong>: uses the full covariance
 matrix with a Monte Carlo critical value.</li>
 <li>
-<strong><code>"smoothed"</code></strong>: GAM-smoothed low-rank
-covariance plus eigenvalue-ratio weighted residual correction.</li>
+<strong><code>"smoothed"</code></strong>: smooths the covariance and
+uses a low-rank approximation with a residual correction to form
+marginal standardizing scales.</li>
 </ul>
+<p>Both approaches simulate with the original supplied covariance. For
+the smoothed approach, <code>k_rank</code> controls the rank of the
+approximation used for the marginal scales. In either approach,
+<code>nsim</code> controls the number of simulations used to estimate
+the critical value; increasing it reduces Monte Carlo variability at the
+cost of runtime. See the <a href="confidence-interval.html">confidence-band tutorial</a> and
+<code><a href="../reference/get.surv.band.html">get.surv.band()</a></code> for rank selection and covariance
+details.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Naive band for the first test subject</span></span>
 <span><span class="va">band_naive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get.surv.band.html">get.surv.band</a></span><span class="op">(</span><span class="va">pred_var</span>, i <span class="op">=</span> <span class="fl">1</span>, alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
@@ -383,9 +437,9 @@ covariance plus eigenvalue-ratio weighted residual correction.</li>
 <span>                             approach <span class="op">=</span> <span class="st">"smoothed"</span>,</span>
 <span>                             nsim <span class="op">=</span> <span class="fl">5000</span>, k_rank <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Plot survival curve with naive band</span></span>
+<span><span class="co"># Plot the reference curve for the CHF-based naive band</span></span>
 <span><span class="va">t</span> <span class="op">&lt;-</span> <span class="va">band_naive</span><span class="op">$</span><span class="va">timepoints</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">t</span>, <span class="va">pred_var</span><span class="op">$</span><span class="va">Survival</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span>, type <span class="op">=</span> <span class="st">"s"</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">t</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">pred_var</span><span class="op">$</span><span class="va">CHF</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"s"</span>, ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Time"</span>, ylab <span class="op">=</span> <span class="st">"Survival"</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"Survival Curve with 95% Confidence Band"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="va">t</span>, <span class="va">band_naive</span><span class="op">$</span><span class="va">Subject1</span><span class="op">$</span><span class="va">lower</span>, type <span class="op">=</span> <span class="st">"s"</span>, col <span class="op">=</span> <span class="st">"blue"</span>, lty <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -405,6 +459,14 @@ grid:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred_reduced</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_var</span>, <span class="va">X</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span>, var.est <span class="op">=</span> <span class="cn">TRUE</span>, band.grid.size <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pred_reduced</span><span class="op">$</span><span class="va">timepoints</span><span class="op">)</span>  <span class="co"># &lt;= 50 time points</span></span></code></pre></div>
+<p>The requested size is a maximum because selected quantiles can
+coincide. Cumulative hazards still include increments at all earlier
+failure times. Therefore, on a reduced grid,
+<code>cumsum(pred_reduced$Hazard[1, ])</code> need not equal
+<code>pred_reduced$CHF[1, ]</code>. Bands describe the selected grid,
+not simultaneous coverage between omitted times. See
+<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for grid-selection details and <code><a href="../reference/RLT.html">RLT()</a></code>
+for the full failure-time grid retained during fitting.</p>
 </div>
 </div>
 <div class="section level2">
@@ -472,10 +534,10 @@ combination coefficients at each internal node:</p>
 <code>$CHF</code>.</li>
 <li>Choose <code>split.rule</code> among <code>"logrank"</code>,
 <code>"suplogrank"</code>, and <code>"coxgrad"</code>.</li>
-<li>Use <code>obs.w</code> with <code>split.rule = "coxgrad"</code> for
-weighted splits.</li>
-<li>Enable LC splits via
-<code>param.control = list(linear.comb = k, linear.comb.method = "coxph")</code>.</li>
+<li>Use <code>obs.w</code> for weighted fitting with any of the three
+split rules.</li>
+<li>Allow up to <code>k</code> variables per LC split with
+<code>linear.comb = k, linear.comb.method = "coxph"</code>.</li>
 <li>Request variable importance with <code>importance = TRUE</code> and
 inspect via <code>importance(fit)</code>.</li>
 <li>Estimate prediction variance with <code>var.mode = "matched"</code>
@@ -493,11 +555,11 @@ inspect via <code>importance(fit)</code>.</li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ruoqing Zhu, Sarah Formentini.</p>
+  <p>Developed by Ruoqing Zhu, Sarah Formentini. Source revision: <a href="https://github.com/teazrq/RLT/tree/398603bb415dc5a9293396cee6145eeeb446b291" class="external-link">398603b</a></p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
