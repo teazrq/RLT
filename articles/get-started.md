@@ -225,8 +225,9 @@ Review any compiler paths or OpenMP flags there whenever R, macOS, or
 Xcode changes; avoid copying flags intended for a different toolchain.
 
 The current validation covers Windows builds with and without OpenMP.
-macOS and Linux source installation has not been verified for this
-documentation revision.
+Source installation on Ubuntu Linux is checked by the [documentation
+workflow](https://github.com/teazrq/RLT/actions/workflows/pkgdown.yaml).
+macOS source installation has not been verified.
 
 ## Development Note: Local Documentation Previews
 
