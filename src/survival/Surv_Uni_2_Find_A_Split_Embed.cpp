@@ -32,7 +32,7 @@ void Surv_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
   if (vi_embed.is_empty() || !vi_embed.is_finite())
     return;
 
-  uvec vi_rank = sort_index(vi_embed, "descend");
+  uvec vi_rank = stable_sort_index(vi_embed, "descend");
   var_id = var_id(vi_rank);
   vi_embed = vi_embed(vi_rank);
   

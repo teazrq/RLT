@@ -49,7 +49,7 @@ void Reg_Uni_Split_Cont(Split_Class& TempSplit,
   }
   
   // indices is obs_id sorted based on x values
-  uvec indices = obs_id(sort_index(x(obs_id)));
+  uvec indices = obs_id(stable_sort_index(x(obs_id)));
   
   // check identical
   if ( x(indices(0)) == x(indices(N-1)) ) return;

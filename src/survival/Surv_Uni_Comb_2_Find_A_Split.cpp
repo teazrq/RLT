@@ -263,7 +263,7 @@ void Surv_Uni_Comb_Find_A_Split(Comb_Split_Class& OneSplit,
   if (n_cont == 0) return;
 
   // Sort continuous variables by score descending
-  uvec score_rank = sort_index(cont_scores, "descend");
+  uvec score_rank = stable_sort_index(cont_scores, "descend");
   cont_indices = cont_indices(score_rank);
   cont_scores = cont_scores(score_rank);
 

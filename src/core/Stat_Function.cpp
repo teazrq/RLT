@@ -111,7 +111,7 @@ arma::mat xpc(arma::mat& newX,
     return result;
   }
   
-  uvec indices = sort_index(eigenvalues, "descend");
+  uvec indices = stable_sort_index(eigenvalues, "descend");
   
   eigenvectors = eigenvectors.cols(indices);
 
@@ -128,7 +128,7 @@ arma::mat sir(arma::mat& newX,
 {
   // prepare objects
   size_t N = newX.n_rows;
-  uvec index = sort_index(newY);    
+  uvec index = stable_sort_index(newY);
   mat X = newX.rows(index);
   vec Y = newY(index);
 
@@ -270,7 +270,7 @@ arma::mat sir(arma::mat& newX,
       !eig_sym(eigval, eigvec, M_transformed) || !eigvec.is_finite())
     return mat();
   
-  uvec indices = sort_index(eigval, "descend");
+  uvec indices = stable_sort_index(eigval, "descend");
   
   return eigvec.cols(indices);
 }

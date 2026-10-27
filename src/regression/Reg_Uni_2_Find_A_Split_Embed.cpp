@@ -32,7 +32,7 @@ void Reg_Uni_Find_A_Split_Embed(Split_Class& OneSplit,
                                           var_id,
                                           rngl);
   
-  uvec vi_rank = sort_index(vi_embed, "descend");
+  uvec vi_rank = stable_sort_index(vi_embed, "descend");
   var_id = var_id(vi_rank);
   vi_embed = vi_embed(vi_rank);
   

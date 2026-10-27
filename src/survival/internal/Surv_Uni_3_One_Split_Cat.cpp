@@ -140,7 +140,7 @@ void Surv_Uni_CoxGrad_Cat(Split_Class& TempSplit,
       for (size_t j = 0; j < true_cat; j++)
         rand_scores(j) = rngl.rand_01();
 
-      uvec perm = sort_index(rand_scores);
+      uvec perm = stable_sort_index(rand_scores);
 
       size_t temp_cut = rngl.rand_sizet(0, true_cat - 2);
 

@@ -51,7 +51,7 @@ void Cla_Uni_Split_Cont(Split_Class& TempSplit,
   }
   
   // Sort obs_id based on x values
-  uvec indices = obs_id(sort_index(x(obs_id)));
+  uvec indices = obs_id(stable_sort_index(x(obs_id)));
   
   // Check identical values and return if identical
   if (x(indices(0)) == x(indices(N - 1))) return;

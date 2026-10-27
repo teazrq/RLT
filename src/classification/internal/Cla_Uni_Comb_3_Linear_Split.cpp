@@ -170,7 +170,7 @@ void Cla_LDA_Loading(mat& V,
     mat real_eigvecs = real(eigvecs);
     
     // Sort eigenvalues descending
-    uvec sorted_idx = sort_index(real_eigvals, "descend");
+    uvec sorted_idx = stable_sort_index(real_eigvals, "descend");
     
     // Count directions with positive eigenvalues
     size_t D = 0;
@@ -550,7 +550,7 @@ void Cla_Random_Loading(mat& V,
   }
   
   // Keep top n_keep directions by quality
-  uvec sorted = sort_index(quality, "descend");
+  uvec sorted = stable_sort_index(quality, "descend");
   
   V.set_size(P, n_keep);
   for (size_t d = 0; d < n_keep; d++)

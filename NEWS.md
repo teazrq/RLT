@@ -1,5 +1,8 @@
 # RLT development
 
+* Preserve tied-observation order explicitly across Armadillo versions,
+  including failure-before-censor ordering in survival linear-combination
+  splits and reproducible weighted split searches.
 * Report insufficient positive variable-sampling support as a catchable error
   instead of looping. Skip zero-weight SIR slices and use the established
   fallback when the response direction cannot be estimated. Correct the

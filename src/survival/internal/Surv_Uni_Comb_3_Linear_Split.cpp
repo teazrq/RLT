@@ -252,8 +252,8 @@ void Surv_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
   uvec Y_collapse(N);
   uvec Censor_collapse(N);
   
-  // Sort by Y then by Censor for collapse
-    uvec sort_idx = sort_index(newY);
+  // Preserve failure-before-censor order within tied Y when collapsing the node.
+    uvec sort_idx = stable_sort_index(newY);
     uvec sorted_newY = newY(sort_idx);
     uvec sorted_newCensor = newCensor(sort_idx);
     
@@ -582,7 +582,7 @@ void Surv_Uni_Comb_Linear(Comb_Split_Class& OneSplit,
     else
     {
       // Best split: exhaust all cutpoints on sorted U1
-      uvec obs_ranked = sort_index(U1);
+      uvec obs_ranked = stable_sort_index(U1);
       uvec indices = allid(obs_ranked);
       
       // Check identical

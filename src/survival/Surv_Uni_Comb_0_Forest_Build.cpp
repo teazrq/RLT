@@ -113,7 +113,7 @@ void Surv_Uni_Comb_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
         uvec oobag_id = obs_id(oobag_index);
 
         // sort inbag obs by Y then by censoring (consistent with survival forest)
-        uvec sort_idx = sort_index(SURV_DATA.Y(inbag_id));
+        uvec sort_idx = stable_sort_index(SURV_DATA.Y(inbag_id));
         inbag_id = inbag_id(sort_idx);
 
         // sort by censoring within tied Y
@@ -126,7 +126,7 @@ void Surv_Uni_Comb_Forest_Build(const RLT_SURV_DATA& SURV_DATA,
           if (j - i > 1)
           {
             uvec sub_idx = linspace<uvec>(i, j-1, j-i);
-            uvec sub_sort = sort_index(SURV_DATA.Censor(inbag_id(sub_idx)), "descend");
+            uvec sub_sort = stable_sort_index(SURV_DATA.Censor(inbag_id(sub_idx)), "descend");
             uvec tmp = inbag_id(sub_idx);
             inbag_id(sub_idx) = tmp(sub_sort);
           }
