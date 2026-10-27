@@ -14,6 +14,9 @@ models with regression, classification, and survival analysis support.
 The package uses a C++/Rcpp backend with OpenMP for parallel
 computation.
 
+For Python, see the [Python
+version](https://teazrq.github.io/RLT-Python/).
+
 [Website](https://teazrq.github.io/RLT/) \|
 [GitHub](https://github.com/teazrq/RLT) \|
 [Issues](https://github.com/teazrq/RLT/issues)
