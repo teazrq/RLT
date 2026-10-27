@@ -50,6 +50,8 @@ navbar:
       href: reference/index.html
     - text: "Changelog"
       href: news/index.html
+    - text: "Python version"
+      href: https://teazrq.github.io/RLT-Python/
 articles:
   - title: "Start Here"
     contents:
