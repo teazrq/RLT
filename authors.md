@@ -59,3 +59,32 @@ Journal of the American Statistical Association, 107(497), 331-340.
       doi = {10.1080/01621459.2011.637468},
       url = {https://doi.org/10.1080/01621459.2011.637468},
     }
+
+Xu, T., Zhu, R., & Shao, X. (2024). On variance estimation of random
+forests with Infinite-order U-statistics. Electronic Journal of
+Statistics, 18(1), 2135-2207. https://doi.org/10.1214/24-EJS2247
+
+    @Article{,
+      title = {On variance estimation of random forests with Infinite-order U-statistics},
+      author = {Tianning Xu and Ruoqing Zhu and Xiaofeng Shao},
+      journal = {Electronic Journal of Statistics},
+      year = {2024},
+      volume = {18},
+      number = {1},
+      pages = {2135-2207},
+      doi = {10.1214/24-EJS2247},
+      url = {https://doi.org/10.1214/24-EJS2247},
+    }
+
+Formentini, S. E., Liang, W., & Zhu, R. (2022). Confidence Band
+Estimation for Survival Random Forests. arXiv preprint arXiv:2204.12038.
+https://arxiv.org/abs/2204.12038
+
+    @Misc{,
+      title = {Confidence Band Estimation for Survival Random Forests},
+      author = {Sarah Elizabeth Formentini and Wei Liang and Ruoqing Zhu},
+      year = {2022},
+      howpublished = {arXiv preprint arXiv:2204.12038},
+      doi = {10.48550/arXiv.2204.12038},
+      url = {https://arxiv.org/abs/2204.12038},
+    }

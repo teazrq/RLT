@@ -86,7 +86,7 @@ list(
   Maximum_Combination_Size = fit_lc$parameters$linear.comb
 )
 ## $Test_MSE
-## [1] 0.7021
+## [1] 0.7038
 ## 
 ## $Maximum_Combination_Size
 ## [1] 3

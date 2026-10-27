@@ -99,6 +99,16 @@ returned evaluation times, separately for each subject. It is not joint
 coverage across subjects or a prediction interval for an individual's
 event time.
 
+For the matched-sample CHF covariance and Gaussian-simulation framework,
+see Formentini, Liang, and Zhu (2022). The `approach` argument and these
+details describe the current smoothing and covariance handling.
+
+## References
+
+Formentini, S. E., Liang, W., & Zhu, R. (2022). Confidence Band
+Estimation for Survival Random Forests. arXiv preprint arXiv:2204.12038.
+<https://arxiv.org/abs/2204.12038>.
+
 ## Examples
 
 ``` r

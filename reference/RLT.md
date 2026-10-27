@@ -360,13 +360,14 @@ Survival forests also provide:
   Trees." Journal of the American Statistical Association. 110(512),
   1770-1784.
 
-- Xu, T., Zhu, R., & Shao, X. (2023) "On Variance Estimation of Random
-  Forests with Infinite-Order U-statistics." arXiv preprint
-  arXiv:2202.09008.
+- Xu, T., Zhu, R., & Shao, X. (2024) "On variance estimation of random
+  forests with Infinite-order U-statistics." Electronic Journal of
+  Statistics. 18(1), 2135-2207.
+  [doi:10.1214/24-EJS2247](https://doi.org/10.1214/24-EJS2247) .
 
-- Formentini, S. E., Wei L., & Zhu, R. (2022) "Confidence Band
+- Formentini, S. E., Liang, W., & Zhu, R. (2022) "Confidence Band
   Estimation for Survival Random Forests." arXiv preprint
-  arXiv:2204.12038.
+  arXiv:2204.12038. <https://arxiv.org/abs/2204.12038>.
 
 ## Examples
 
