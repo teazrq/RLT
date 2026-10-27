@@ -12,6 +12,10 @@
 #' values. The nominal simultaneous coverage target is across the returned
 #' evaluation times, separately for each subject. It is not joint coverage
 #' across subjects or a prediction interval for an individual's event time.
+#'
+#' For the matched-sample CHF covariance and Gaussian-simulation framework,
+#' see Formentini, Liang, and Zhu (2022). The \code{approach} argument and
+#' these details describe the current smoothing and covariance handling.
 #' @importFrom stats predict
 #' @param x     An RLT survival prediction object containing \code{CHF},
 #' \code{Cov} and \code{timepoints}, obtained with \code{var.est = TRUE}.
@@ -41,6 +45,10 @@
 #' containing the evaluation grid. Each subject entry contains \code{lower},
 #' \code{upper}, and \code{diagnostics}. With \code{i = 0}, all observations are
 #' included; otherwise only the requested subject entry is included.
+#' @references
+#' Formentini, S. E., Liang, W., & Zhu, R. (2022). Confidence Band Estimation
+#' for Survival Random Forests. arXiv preprint arXiv:2204.12038.
+#' \url{https://arxiv.org/abs/2204.12038}.
 #' @export
 #' @examples
 #' \donttest{

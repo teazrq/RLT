@@ -74,6 +74,10 @@ The intended target is the conditional survival curve at a subject's predictor
 values. The nominal simultaneous coverage target is across the returned
 evaluation times, separately for each subject. It is not joint coverage
 across subjects or a prediction interval for an individual's event time.
+
+For the matched-sample CHF covariance and Gaussian-simulation framework,
+see Formentini, Liang, and Zhu (2022). The \code{approach} argument and
+these details describe the current smoothing and covariance handling.
 }
 \examples{
 \donttest{
@@ -87,4 +91,9 @@ across subjects or a prediction interval for an individual's event time.
   pred <- predict(fit, testx = x[1:3, ], var.est = TRUE)
   band <- get.surv.band(pred, i = 1, alpha = 0.05)
 }
+}
+\references{
+Formentini, S. E., Liang, W., & Zhu, R. (2022). Confidence Band Estimation
+for Survival Random Forests. arXiv preprint arXiv:2204.12038.
+\url{https://arxiv.org/abs/2204.12038}.
 }

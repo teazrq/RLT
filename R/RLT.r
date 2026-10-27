@@ -242,8 +242,8 @@
 #' @references
 #' \itemize{
 #'  \item Zhu, R., Zeng, D., & Kosorok, M. R. (2015) "Reinforcement Learning Trees." Journal of the American Statistical Association. 110(512), 1770-1784.
-#'  \item Xu, T., Zhu, R., & Shao, X. (2023) "On Variance Estimation of Random Forests with Infinite-Order U-statistics." arXiv preprint arXiv:2202.09008.
-#'  \item Formentini, S. E., Wei L., & Zhu, R. (2022) "Confidence Band Estimation for Survival Random Forests." arXiv preprint arXiv:2204.12038.
+#'  \item Xu, T., Zhu, R., & Shao, X. (2024) "On variance estimation of random forests with Infinite-order U-statistics." Electronic Journal of Statistics. 18(1), 2135-2207. \doi{10.1214/24-EJS2247}.
+#'  \item Formentini, S. E., Liang, W., & Zhu, R. (2022) "Confidence Band Estimation for Survival Random Forests." arXiv preprint arXiv:2204.12038. \url{https://arxiv.org/abs/2204.12038}.
 #' }
 #'
 #' @examples

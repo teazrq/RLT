@@ -1,4 +1,12 @@
-citHeader("To cite RLT in publications use:")
+citHeader(paste(
+  "Cite the RLT package and the papers relevant to the methods used:",
+  "Zhu et al. (2015) for reinforcement learning trees;",
+  "Xu et al. (2024) for matched-sample variance estimation; and",
+  "Formentini et al. (2022) for the CHF covariance and Gaussian-simulation",
+  "framework for survival bands. The current implementation details are",
+  "documented in the package reference. Zhu and Kosorok (2012) is also",
+  "provided for recursively imputed survival trees."
+))
 
 titl <- meta$Title
 year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
@@ -56,6 +64,51 @@ bibentry(
     "Zhu, R. & Kosorok, M. R. (2012). ",
     "Recursively imputed survival trees. ",
     "Journal of the American Statistical Association, 107(497), 331-340.",
+    sep = ""
+  )
+)
+
+bibentry(
+  bibtype = "Article",
+  title = "On variance estimation of random forests with Infinite-order U-statistics",
+  author = c(
+    person(family = "Xu", given = "Tianning"),
+    person(family = "Zhu", given = "Ruoqing"),
+    person(family = "Shao", given = "Xiaofeng")
+  ),
+  journal = "Electronic Journal of Statistics",
+  year = "2024",
+  volume = "18",
+  number = "1",
+  pages = "2135-2207",
+  doi = "10.1214/24-EJS2247",
+  url = "https://doi.org/10.1214/24-EJS2247",
+  textVersion = paste(
+    "Xu, T., Zhu, R., & Shao, X. (2024). ",
+    "On variance estimation of random forests with Infinite-order U-statistics. ",
+    "Electronic Journal of Statistics, 18(1), 2135-2207. ",
+    "https://doi.org/10.1214/24-EJS2247",
+    sep = ""
+  )
+)
+
+bibentry(
+  bibtype = "Misc",
+  title = "Confidence Band Estimation for Survival Random Forests",
+  author = c(
+    person(family = "Formentini", given = "Sarah Elizabeth"),
+    person(family = "Liang", given = "Wei"),
+    person(family = "Zhu", given = "Ruoqing")
+  ),
+  year = "2022",
+  howpublished = "arXiv preprint arXiv:2204.12038",
+  doi = "10.48550/arXiv.2204.12038",
+  url = "https://arxiv.org/abs/2204.12038",
+  textVersion = paste(
+    "Formentini, S. E., Liang, W., & Zhu, R. (2022). ",
+    "Confidence Band Estimation for Survival Random Forests. ",
+    "arXiv preprint arXiv:2204.12038. ",
+    "https://arxiv.org/abs/2204.12038",
     sep = ""
   )
 )

@@ -104,11 +104,18 @@ Use the guides to install RLT, fit models, and interpret their predictions:
 
 ## References
 
+Cite the papers relevant to the methods used: Zhu et al. (2015) for
+reinforcement learning trees, Xu et al. (2024) for matched-sample variance
+estimation, and Formentini et al. (2022) for the CHF covariance and
+Gaussian-simulation framework for survival bands.
+
 - Zhu, R., Zeng, D., and Kosorok, M. R. (2015). Reinforcement Learning Trees.
   *Journal of the American Statistical Association*, 110(512), 1770-1784.
   <https://doi.org/10.1080/01621459.2015.1036994>
 - Xu, T., Zhu, R., and Shao, X. (2024). On variance estimation of random
-  forests with infinite-order U-statistics. *Electronic Journal of Statistics*,
+  forests with Infinite-order U-statistics. *Electronic Journal of Statistics*,
   18(1), 2135-2207.
-- Formentini, S., Liang, K., and Zhu, R. (2022). Survival Function Confidence
-  Band Estimation using Random Forests. <https://arxiv.org/abs/2204.12038>
+  <https://doi.org/10.1214/24-EJS2247>
+- Formentini, S. E., Liang, W., and Zhu, R. (2022). Confidence Band Estimation
+  for Survival Random Forests. *arXiv preprint*, arXiv:2204.12038.
+  <https://arxiv.org/abs/2204.12038>
