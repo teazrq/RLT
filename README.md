@@ -60,8 +60,10 @@ On Windows, use the matching [Rtools](https://cran.r-project.org/bin/windows/Rto
 For macOS and Linux requirements, see the
 [installation guide](https://teazrq.github.io/RLT/articles/get-started.html).
 OpenMP enables parallel computation; builds without it run serially. Windows
-builds with and without OpenMP have been validated. macOS and Linux source
-installation has not been verified for this documentation revision.
+builds with and without OpenMP have been validated. Source installation on
+Ubuntu Linux is checked by the
+[documentation workflow](https://github.com/teazrq/RLT/actions/workflows/pkgdown.yaml).
+macOS source installation has not been verified.
 
 ## Quick Example
 
